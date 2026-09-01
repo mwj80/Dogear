@@ -1,45 +1,30 @@
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { UserButton } from "@clerk/nextjs";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 
-export default function HomePage() {
+export default async function ParentPage() {
+  const { userId } = await auth();
+  if (!userId) redirect("/sign-in");
+
+  const user = await currentUser();
+
   return (
     <main>
       <header className="top">
-        <strong>DogEar</strong>
-        <span>
-          <SignedOut>
-            <SignInButton mode="redirect">
-              <button type="button" className="btn">
-                Parent sign in
-              </button>
-            </SignInButton>
-          </SignedOut>
-          <SignedIn>
-            <Link href="/parent">Parent dashboard</Link>
-            <UserButton />
-          </SignedIn>
-        </span>
+        <Link href="/">DogEar</Link>
+        <UserButton />
       </header>
-      <h1>Reading rewards</h1>
+      <h1>Parent dashboard</h1>
       <p>
-        Parents fund a pot. Kids read real books. Rewards unlock when reading
-        goals are met.
+        Signed in as {user?.primaryEmailAddress?.emailAddress ?? "parent"}.
       </p>
       <div className="card">
-        <SignedOut>
-          <p>Phase 1: create a parent account to continue.</p>
-          <p>
-            <Link href="/sign-up">Create parent account</Link>
-            {" · "}
-            <Link href="/sign-in">Sign in</Link>
-          </p>
-        </SignedOut>
-        <SignedIn>
-          <p>You are signed in.</p>
-          <p>
-            <Link href="/parent">Go to parent dashboard</Link>
-          </p>
-        </SignedIn>
+        <p>
+          Accounts work. Next: create a household + child in Neon when you add
+          a kid (P1-2b).
+        </p>
+        <p>Pot, rewards, and reader are not wired yet.</p>
       </div>
     </main>
   );
