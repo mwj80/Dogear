@@ -1,14 +1,45 @@
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import Link from "next/link";
+
 export default function HomePage() {
   return (
     <main>
+      <header className="top">
+        <strong>DogEar</strong>
+        <span>
+          <SignedOut>
+            <SignInButton mode="redirect">
+              <button type="button" className="btn">
+                Parent sign in
+              </button>
+            </SignInButton>
+          </SignedOut>
+          <SignedIn>
+            <Link href="/parent">Parent dashboard</Link>
+            <UserButton />
+          </SignedIn>
+        </span>
+      </header>
       <h1>Reading rewards</h1>
-      <p>Phase 1 scaffold. Spec lives in PRODUCT_SPEC.md at the repo root.</p>
+      <p>
+        Parents fund a pot. Kids read real books. Rewards unlock when reading
+        goals are met.
+      </p>
       <div className="card">
-        <p>
-          Next tickets: database (P1-1), parent sign-in (P1-2), EPUB reader
-          (P1-3).
-        </p>
-        <p className="code">docs/PHASE1.md</p>
+        <SignedOut>
+          <p>Phase 1: create a parent account to continue.</p>
+          <p>
+            <Link href="/sign-up">Create parent account</Link>
+            {" · "}
+            <Link href="/sign-in">Sign in</Link>
+          </p>
+        </SignedOut>
+        <SignedIn>
+          <p>You are signed in.</p>
+          <p>
+            <Link href="/parent">Go to parent dashboard</Link>
+          </p>
+        </SignedIn>
       </div>
     </main>
   );
