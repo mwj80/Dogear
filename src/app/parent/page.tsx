@@ -66,7 +66,10 @@ export default async function ParentPage() {
           ) : (
             <ul>
               {kids.map((kid) => (
-                <li key={kid.id}>{kid.display_name}</li>
+                <li key={kid.id}>
+                  {kid.display_name}{" "}
+                  <Link href={`/kid/${kid.id}`}>Open kid view</Link>
+                </li>
               ))}
             </ul>
           )}
