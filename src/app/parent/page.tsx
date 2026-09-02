@@ -3,6 +3,8 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ensureHousehold } from "@/lib/ensure-household";
+import { sql } from "@/lib/db";
+import { createChild } from "./actions";
 
 export default async function ParentPage() {
   const { userId } = await auth();
@@ -16,10 +18,18 @@ export default async function ParentPage() {
     household_id: string;
     pot_available_cents: number;
   } | null = null;
+  let kids: { id: string; display_name: string }[] = [];
   let dbError: string | null = null;
 
   try {
     household = await ensureHousehold({ clerkUserId: userId, email });
+    const rows = await sql()`
+      SELECT id, display_name
+      FROM children
+      WHERE household_id = ${household.household_id}::uuid
+      ORDER BY created_at
+    `;
+    kids = rows as { id: string; display_name: string }[];
   } catch (err) {
     dbError = err instanceof Error ? err.message : "Database error";
   }
@@ -36,6 +46,7 @@ export default async function ParentPage() {
       </header>
       <h1>Parent dashboard</h1>
       <p>Signed in as {email}.</p>
+
       <div className="card">
         {dbError ? (
           <p>Could not reach the database: {dbError}</p>
@@ -45,8 +56,37 @@ export default async function ParentPage() {
             <p>Reward pot: ${potDollars}</p>
           </>
         )}
-        <p>Next: add a child profile, then the reader.</p>
       </div>
+
+      {!dbError && (
+        <div className="card">
+          <h2>Kids</h2>
+          {kids.length === 0 ? (
+            <p>No kids yet.</p>
+          ) : (
+            <ul>
+              {kids.map((kid) => (
+                <li key={kid.id}>{kid.display_name}</li>
+              ))}
+            </ul>
+          )}
+          <form action={createChild} className="stack">
+            <label>
+              Name
+              <input
+                name="display_name"
+                type="text"
+                required
+                maxLength={40}
+                placeholder="Lucille"
+              />
+            </label>
+            <button type="submit" className="btn">
+              Add kid
+            </button>
+          </form>
+        </div>
+      )}
     </main>
   );
 }
