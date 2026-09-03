@@ -18,6 +18,13 @@ export default async function KidHomePage({
   const books = await db`
     SELECT slug, title, author FROM books ORDER BY title
   `;
+  const rewards = await db`
+    SELECT r.face_value, r.status, b.title, b.slug
+    FROM rewards r
+    JOIN books b ON b.id = r.book_id
+    WHERE r.child_id = ${childId}::uuid
+    ORDER BY r.created_at DESC
+  `;
 
   const kid = kids[0] as { id: string; display_name: string };
 
@@ -27,7 +34,29 @@ export default async function KidHomePage({
         <Link href="/parent">Back to parent</Link>
       </header>
       <h1>Hi, {kid.display_name}</h1>
-      <p>Pick a book. The full page-turner lands in the next step.</p>
+      <p>Pick a book and earn your rewards.</p>
+      <div className="card">
+        <h2>Rewards</h2>
+        {rewards.length === 0 ? (
+          <p>No rewards yet.</p>
+        ) : (
+          <ul>
+            {rewards.map((reward, i) => {
+              const r = reward as {
+                face_value: string;
+                status: string;
+                title: string;
+                slug: string;
+              };
+              return (
+                <li key={`${r.slug}-${i}`}>
+                  Finish {r.title} → {r.face_value} ({r.status})
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
       <div className="card">
         <h2>Library</h2>
         <ul>
