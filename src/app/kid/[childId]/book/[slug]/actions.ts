@@ -1,6 +1,7 @@
 "use server";
 
 import { sql } from "@/lib/db";
+import { checkFinishBookUnlocks } from "@/lib/check-unlocks";
 
 export async function saveProgress(input: {
   childId: string;
@@ -23,4 +24,5 @@ export async function saveProgress(input: {
       total_locations = EXCLUDED.total_locations,
       updated_at = now()
   `;
+  await checkFinishBookUnlocks(input.childId, input.bookId);
 }
