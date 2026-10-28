@@ -30,8 +30,13 @@ function criteriaLabel(
   pages: number | null,
   title: string | null,
   scope: string,
-  mode: string | null
+  mode: string | null,
+  days: number | null
 ) {
+  if (type === "daily_streak") {
+    const where = scope === "any" ? "in any book" : `in ${title}`;
+    return `reading ${pages} pages a day for ${days} days ${where}`;
+  }
   const read = mode === "read" || scope === "any";
   if (scope === "any") {
     return pages ? `reading ${pages} pages in any book` : "reading pages in any book";
@@ -69,6 +74,7 @@ export default async function ParentPage() {
     criteria_type: string;
     scope: string;
     pages: number | null;
+    days: number | null;
     mode: string | null;
   }[] = [];
   let progress: {
@@ -99,6 +105,7 @@ export default async function ParentPage() {
       SELECT r.id, r.face_value, r.reward_type, r.status, r.cost_cents,
              r.shortfall_cents, r.child_id, r.criteria_type, r.scope,
              (r.criteria_json->>'pages')::int AS pages,
+             (r.criteria_json->>'days')::int AS days,
              r.criteria_json->>'mode' AS mode,
              c.display_name, b.title
       FROM rewards r
@@ -181,7 +188,7 @@ export default async function ParentPage() {
               <button type="submit" className="btn secondary">
                 Reset demo
               </button>
-              <p className="muted">Sets progress to page 5, clears pages read, rewards back to active, balance to $20.</p>
+              <p className="muted">Sets progress to page 5, seeds 5 pages on the last two days, rewards back to active, balance to $20.</p>
             </form>
           </>
         )}
@@ -250,7 +257,7 @@ export default async function ParentPage() {
                       <ul className="reward-list">
                         {kidRewards.map((r) => (
                           <li key={r.id} className={r.status === "unlocked" ? "unlocked" : ""}>
-                            {r.face_value} for {criteriaLabel(r.criteria_type, r.pages, r.title, r.scope, r.mode)} — {r.status}
+                            {r.face_value} for {criteriaLabel(r.criteria_type, r.pages, r.title, r.scope, r.mode, r.days)} — {r.status}
                             {Number(r.shortfall_cents) > 0 ? ` (short ${money(Number(r.shortfall_cents))})` : ""}
                           </li>
                         ))}
@@ -285,7 +292,7 @@ export default async function ParentPage() {
                 {rewards.map((reward) => (
                   <li key={reward.id} className={reward.status === "unlocked" ? "unlocked" : ""}>
                     {reward.display_name}: {reward.face_value} for{" "}
-                    {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope, reward.mode)} — {reward.status} (
+                    {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope, reward.mode, reward.days)} — {reward.status} (
                     {money(Number(reward.cost_cents))} from balance)
                     {Number(reward.shortfall_cents) > 0
                       ? ` — short ${money(Number(reward.shortfall_cents))}`
