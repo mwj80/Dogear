@@ -135,6 +135,34 @@ export async function createAssignment(formData: FormData) {
   revalidatePath("/kid");
 }
 
+export async function updateAssignment(formData: FormData) {
+  const teacher = await teacherOfUser();
+  const assignmentId = String(formData.get("assignment_id") ?? "");
+  const bookId = String(formData.get("book_id") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const goal = String(formData.get("goal") ?? "finish");
+  const pages = Number(formData.get("pages") ?? 0);
+  if (!assignmentId || !bookId || !title) throw new Error("Assignment, book, and title are required");
+  if (goal === "pages" && (!pages || pages < 1)) throw new Error("Enter a page count");
+  const db = sql();
+  const type = goal === "pages" ? "total_pages" : "finish_book";
+  const criteria = goal === "pages" ? JSON.stringify({ pages }) : "{}";
+  await db`
+    UPDATE assignments a
+    SET title = ${title},
+        book_id = ${bookId}::uuid,
+        criteria_type = ${type},
+        criteria_json = ${criteria}::jsonb
+    FROM classes cl
+    WHERE a.id = ${assignmentId}::uuid
+      AND a.class_id = cl.id
+      AND cl.teacher_user_id = ${teacher.user_id}::uuid
+  `;
+  revalidatePath("/teacher");
+  revalidatePath("/parent");
+  revalidatePath("/kid");
+}
+
 export async function removeAssignment(formData: FormData) {
   const teacher = await teacherOfUser();
   const assignmentId = String(formData.get("assignment_id") ?? "");
