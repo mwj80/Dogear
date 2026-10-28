@@ -189,7 +189,7 @@ export default async function ParentPage() {
                 Reset demo
               </button>
               <p className="muted">
-                Clears test rewards and loads one of each type per kid. Progress to page 5, 5 pages on the last two days, balance to $40.
+                Clears test rewards and loads one of each type per kid. Progress to page 5, 5 pages on the last two days in the first book, balance to $40.
               </p>
             </form>
           </>
