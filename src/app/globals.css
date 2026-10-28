@@ -45,7 +45,7 @@ a { color: var(--accent); }
 h2 { font-size: 1.15rem; margin: 0 0 0.5rem; }
 .stack { display: grid; gap: 0.75rem; margin-top: 1rem; }
 label { display: grid; gap: 0.35rem; color: var(--ink); }
-input {
+input, select {
   font: inherit;
   padding: 0.45rem 0.6rem;
   border: 1px solid var(--line);
@@ -98,3 +98,33 @@ input {
   font: inherit;
   cursor: pointer;
 }
+
+.kid-block {
+  border-top: 1px solid var(--line);
+  padding: 0.75rem 0;
+  margin-top: 0.5rem;
+}
+.kid-name { margin: 0 0 0.4rem; color: var(--ink); font-weight: bold; }
+.muted { margin: 0.25rem 0; font-size: 0.9rem; }
+.progress-row { margin: 0.4rem 0 0.6rem; }
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+.progress-bar {
+  height: 6px;
+  background: var(--line);
+  border-radius: 3px;
+  margin-top: 0.25rem;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+.reward-list { margin: 0.35rem 0 0; padding-left: 1.1rem; font-size: 0.9rem; }
+.reward-list li { color: var(--muted); }
+.reward-list li.unlocked, li.unlocked { color: #1a7a3a; font-weight: bold; }
