@@ -3,7 +3,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
-import { createAssignment, createClass, enrollKid } from "./actions";
+import { createAssignment, createClass, enrollKid, removeAssignment } from "./actions";
 
 export default async function TeacherPage() {
   const { userId } = await auth();
@@ -165,6 +165,12 @@ export default async function TeacherPage() {
                       ? "Finish the book"
                       : `Read ${assignment.pages} pages`}
                   </p>
+                  <form action={removeAssignment}>
+                    <input type="hidden" name="assignment_id" value={assignment.id} />
+                    <button type="submit" className="btn secondary">
+                      Remove assignment
+                    </button>
+                  </form>
                   {enrolled.length === 0 ? (
                     <p className="muted">No kids enrolled yet.</p>
                   ) : (
