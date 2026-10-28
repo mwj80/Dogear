@@ -10,7 +10,8 @@ import {
   removeAssignment,
   removeClass,
   removeEnrollment,
-  renameClass
+  renameClass,
+  updateAssignment
 } from "./actions";
 
 export default async function TeacherPage() {
@@ -191,14 +192,46 @@ export default async function TeacherPage() {
 
               {classAssignments.map((assignment) => (
                 <div key={assignment.id} className="kid-block">
-                  <p className="kid-name">
-                    {assignment.title} · {assignment.book_title}
-                  </p>
-                  <p className="muted">
-                    {assignment.criteria_type === "finish_book"
-                      ? "Finish the book"
-                      : `Read ${assignment.pages} pages`}
-                  </p>
+                  <form action={updateAssignment} className="stack">
+                    <input type="hidden" name="assignment_id" value={assignment.id} />
+                    <label>
+                      Title
+                      <input name="title" required maxLength={60} defaultValue={assignment.title} />
+                    </label>
+                    <label>
+                      Book
+                      <select name="book_id" defaultValue={assignment.book_id} required>
+                        {books.map((book) => (
+                          <option key={book.id} value={book.id}>
+                            {book.title}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Goal
+                      <select
+                        name="goal"
+                        defaultValue={assignment.criteria_type === "finish_book" ? "finish" : "pages"}
+                      >
+                        <option value="finish">Finish the book</option>
+                        <option value="pages">Read N pages</option>
+                      </select>
+                    </label>
+                    <label>
+                      Pages, if page goal
+                      <input
+                        name="pages"
+                        type="number"
+                        min="1"
+                        step="1"
+                        defaultValue={assignment.pages ?? 20}
+                      />
+                    </label>
+                    <button type="submit" className="btn">
+                      Save assignment
+                    </button>
+                  </form>
                   <form action={removeAssignment}>
                     <input type="hidden" name="assignment_id" value={assignment.id} />
                     <button type="submit" className="btn secondary">
