@@ -21,6 +21,7 @@ export default async function KidHomePage({
   const rewards = await db`
     SELECT r.face_value, r.status, r.criteria_type, r.scope,
            (r.criteria_json->>'pages')::int AS pages,
+           (r.criteria_json->>'days')::int AS days,
            r.criteria_json->>'mode' AS mode,
            b.title, b.slug
     FROM rewards r
@@ -53,16 +54,21 @@ export default async function KidHomePage({
                 criteria_type: string;
                 scope: string;
                 pages: number | null;
+                days: number | null;
                 mode: string | null;
               };
               const goal =
-                r.scope === "any"
-                  ? `Read ${r.pages ?? 0} pages in any book`
-                  : r.criteria_type === "finish_book"
-                    ? `Finish ${r.title}`
-                    : r.mode === "read"
-                      ? `Read ${r.pages} pages in ${r.title}`
-                      : `Reach page ${r.pages} in ${r.title}`;
+                r.criteria_type === "daily_streak"
+                  ? `Read ${r.pages} pages a day for ${r.days} days${
+                      r.scope === "any" ? " in any book" : ` in ${r.title}`
+                    }`
+                  : r.scope === "any"
+                    ? `Read ${r.pages ?? 0} pages in any book`
+                    : r.criteria_type === "finish_book"
+                      ? `Finish ${r.title}`
+                      : r.mode === "read"
+                        ? `Read ${r.pages} pages in ${r.title}`
+                        : `Reach page ${r.pages} in ${r.title}`;
               return (
                 <li key={`${r.slug ?? "any"}-${i}`}>
                   {goal} → {r.face_value} ({r.status})
