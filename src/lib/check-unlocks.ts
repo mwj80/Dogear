@@ -1,4 +1,5 @@
 import { sql } from "./db";
+import { ensurePageLog } from "./page-log";
 
 type RewardRow = {
   id: string;
@@ -27,6 +28,7 @@ export async function checkUnlocks(
   bookId: string
 ): Promise<{ id: string; face_value: string }[]> {
   const db = sql();
+  await ensurePageLog();
   const progress = await db`
     SELECT max_location, total_locations
     FROM progress
