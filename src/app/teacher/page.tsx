@@ -50,7 +50,8 @@ export default async function TeacherPage() {
   const assignments = (await db`
     SELECT a.id::text AS id, a.class_id::text AS class_id, a.title,
            a.criteria_type, (a.criteria_json->>'pages')::int AS pages,
-           a.book_id::text AS book_id, b.title AS book_title
+           a.book_id::text AS book_id, b.title AS book_title,
+           a.due_date::text AS due_date
     FROM assignments a
     JOIN classes cl ON cl.id = a.class_id
     JOIN books b ON b.id = a.book_id
@@ -64,6 +65,7 @@ export default async function TeacherPage() {
     pages: number | null;
     book_id: string;
     book_title: string;
+    due_date: string | null;
   }[];
   const progress = (await db`
     SELECT p.child_id::text AS child_id, p.book_id::text AS book_id,
@@ -185,6 +187,10 @@ export default async function TeacherPage() {
                   Pages, if page goal
                   <input name="pages" type="number" min="1" step="1" defaultValue="20" />
                 </label>
+                <label>
+                  Due date
+                  <input name="due_date" type="date" />
+                </label>
                 <button type="submit" className="btn">
                   Assign
                 </button>
@@ -228,6 +234,10 @@ export default async function TeacherPage() {
                         defaultValue={assignment.pages ?? 20}
                       />
                     </label>
+                    <label>
+                      Due date
+                      <input name="due_date" type="date" defaultValue={assignment.due_date ?? ""} />
+                    </label>
                     <button type="submit" className="btn">
                       Save assignment
                     </button>
@@ -258,7 +268,10 @@ export default async function TeacherPage() {
                       return (
                         <div key={kid.child_id} className="progress-row">
                           <div className="progress-meta">
-                            <span className={done ? "unlocked" : ""}>{kid.display_name}</span>
+                            <span className={done ? "unlocked" : ""}>
+                              {kid.display_name}
+                              {assignment.due_date ? ` · due ${assignment.due_date}` : ""}
+                            </span>
                             <span>{done ? "done" : shown}</span>
                           </div>
                         </div>
