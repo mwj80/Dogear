@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
-import { currentUser } from "@clerk/nextjs/server";
 import { ensurePageLog } from "@/lib/page-log";
 import { streakEndingToday } from "@/lib/check-unlocks";
+import { setDailyGoal } from "../actions";
 
 const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
@@ -133,7 +133,17 @@ export default async function KidProgressPage({
         <Link href={`/kid/${kid.id}`}>Open kid view</Link>
       </header>
       <h1>{kid.display_name}</h1>
-      <p>Goal: {goal} pages a day. Colored days met the goal.</p>
+      <form action={setDailyGoal} className="inline-form">
+        <input type="hidden" name="child_id" value={kid.id} />
+        <label>
+          Pages a day
+          <input name="pages" type="number" min="1" step="1" defaultValue={goal} />
+        </label>
+        <button type="submit" className="btn">
+          Save goal
+        </button>
+      </form>
+      <p>Colored days met the goal.</p>
 
       <div className="card">
         <h2>{monthLabel}</h2>
