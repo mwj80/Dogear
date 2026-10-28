@@ -194,3 +194,7 @@ input, select {
   margin: 0.5rem 0 0.25rem;
   font-size: 0.92rem;
 }
+.reward-item { margin: 0.85rem 0; padding-bottom: 0.75rem; border-bottom: 1px solid var(--line); }
+.reward-item:last-child { border-bottom: 0; }
+.reward-actions { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
+.reward-edit .stack { margin-top: 0.6rem; }
