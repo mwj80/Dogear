@@ -147,7 +147,10 @@ export default async function ParentPage() {
     <main>
       <header className="top">
         <Link href="/">DogEar</Link>
-        <UserButton />
+        <span>
+          <Link href="/admin">Rates</Link>
+          <UserButton />
+        </span>
       </header>
       <h1>Parent dashboard</h1>
       <p>Signed in as {email}.</p>
