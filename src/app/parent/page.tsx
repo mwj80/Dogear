@@ -60,7 +60,7 @@ export default async function ParentPage() {
     household_id: string;
     pot_available_cents: number;
   } | null = null;
-  let kids: { id: string; display_name: string }[] = [];
+  let kids: { id: string; display_name: string; daily_goal_pages: number }[] = [];
   let books: { id: string; title: string }[] = [];
   let rewards: {
     id: string;
@@ -94,11 +94,11 @@ export default async function ParentPage() {
     await recheckHousehold(household.household_id);
     const db = sql();
     kids = (await db`
-      SELECT id, display_name
+      SELECT id, display_name, daily_goal_pages
       FROM children
       WHERE household_id = ${household.household_id}::uuid
       ORDER BY created_at
-    `) as { id: string; display_name: string }[];
+    `) as { id: string; display_name: string; daily_goal_pages: number }[];
     books = (await db`
       SELECT id, title FROM books ORDER BY title
     `) as { id: string; title: string }[];
@@ -209,6 +209,7 @@ export default async function ParentPage() {
                 const kidRewards = rewards.filter((r) => r.child_id === kid.id);
                 const kidLog = log.filter((l) => l.child_id === kid.id);
                 const today = days[days.length - 1];
+                const goal = Number(kid.daily_goal_pages) || 5;
                 const todayPages = kidLog
                   .filter((l) => l.day === today)
                   .reduce((n, l) => n + Number(l.pages), 0);
@@ -219,7 +220,7 @@ export default async function ParentPage() {
                       <Link href={`/parent/kid/${kid.id}`}>Progress</Link>{" "}
                       <Link href={`/kid/${kid.id}`}>Open kid view</Link>
                     </p>
-                    <p className="muted">Today: {todayPages} pages</p>
+                    <p className="muted">Today: {todayPages} pages · goal {goal}</p>
                     <div className="week">
                       {days.map((day) => {
                         const pages = kidLog
@@ -227,7 +228,7 @@ export default async function ParentPage() {
                           .reduce((n, l) => n + Number(l.pages), 0);
                         const label = WEEKDAY[new Date(day + "T12:00:00").getDay()];
                         return (
-                          <div key={day} className={pages > 0 ? "day on" : "day"}>
+                          <div key={day} className={pages >= goal ? "day on" : "day"}>
                             <div className="dot">{pages > 0 ? pages : ""}</div>
                             {label}
                           </div>
