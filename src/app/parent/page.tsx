@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { sql } from "@/lib/db";
-import { createChild, createFinishReward, loadPot } from "./actions";
+import { createChild, createFinishReward, loadPot, resetDemo } from "./actions";
 
 export default async function ParentPage() {
   const { userId } = await auth();
@@ -99,6 +99,12 @@ export default async function ParentPage() {
               <button type="submit" className="btn">
                 Add to pot
               </button>
+            </form>
+            <form action={resetDemo} className="stack">
+              <button type="submit" className="btn secondary">
+                Reset demo
+              </button>
+              <p className="muted">Sets progress to page 5, rewards back to active, pot to $20.</p>
             </form>
           </>
         )}
