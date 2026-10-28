@@ -95,7 +95,7 @@ export default function RewardForm({ kids, books }: { kids: Kid[]; books: Book[]
       </button>
       <p>
         This book can reach a page, read N pages, or finish. Any book can only read N pages
-        (pages add across books). Cost is calculated from admin rates (800 Robux → $6.00).
+        (pages add across books). Cost is taken from the available balance (800 Robux → $6.00).
       </p>
     </form>
   );
