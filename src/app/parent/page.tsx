@@ -21,6 +21,10 @@ function lastSevenDays() {
 
 const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
+function money(cents: number) {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
 function criteriaLabel(
   type: string,
   pages: number | null,
@@ -58,6 +62,7 @@ export default async function ParentPage() {
     reward_type: string;
     status: string;
     cost_cents: number;
+    shortfall_cents: number;
     display_name: string;
     title: string | null;
     child_id: string;
@@ -92,7 +97,7 @@ export default async function ParentPage() {
     `) as { id: string; title: string }[];
     rewards = (await db`
       SELECT r.id, r.face_value, r.reward_type, r.status, r.cost_cents,
-             r.child_id, r.criteria_type, r.scope,
+             r.shortfall_cents, r.child_id, r.criteria_type, r.scope,
              (r.criteria_json->>'pages')::int AS pages,
              r.criteria_json->>'mode' AS mode,
              c.display_name, b.title
@@ -122,9 +127,12 @@ export default async function ParentPage() {
     dbError = err instanceof Error ? err.message : "Database error";
   }
 
-  const potDollars = household
-    ? (household.pot_available_cents / 100).toFixed(2)
-    : "—";
+  const availableCents = household ? Number(household.pot_available_cents) : 0;
+  const allocatedCents = rewards
+    .filter((r) => r.status === "active")
+    .reduce((n, r) => n + Number(r.cost_cents), 0);
+  const remainingCents = availableCents - allocatedCents;
+  const overdrawn = remainingCents < 0;
   const days = lastSevenDays();
 
   return (
@@ -141,21 +149,39 @@ export default async function ParentPage() {
           <p>Could not reach the database: {dbError}</p>
         ) : (
           <>
-            <p>Reward pot: ${potDollars}</p>
+            <div className="balance-strip">
+              <div>
+                <span>Available balance</span>
+                <strong>{money(availableCents)}</strong>
+              </div>
+              <div>
+                <span>Allocated</span>
+                <strong>{money(allocatedCents)}</strong>
+              </div>
+              <div>
+                <span>Remaining</span>
+                <strong>{money(remainingCents)}</strong>
+              </div>
+            </div>
+            {overdrawn && (
+              <div className="warning">
+                Active rewards are allocated {money(Math.abs(remainingCents))} more than the available balance. Add funds, or a reward may unlock short.
+              </div>
+            )}
             <form action={loadPot} className="stack">
               <label>
-                Load dollars
+                Add dollars
                 <input name="dollars" type="number" min="1" step="1" defaultValue="10" />
               </label>
               <button type="submit" className="btn">
-                Add to pot
+                Add to balance
               </button>
             </form>
             <form action={resetDemo} className="stack">
               <button type="submit" className="btn secondary">
                 Reset demo
               </button>
-              <p className="muted">Sets progress to page 5, clears pages read, rewards back to active, pot to $20.</p>
+              <p className="muted">Sets progress to page 5, clears pages read, rewards back to active, balance to $20.</p>
             </form>
           </>
         )}
@@ -225,6 +251,7 @@ export default async function ParentPage() {
                         {kidRewards.map((r) => (
                           <li key={r.id} className={r.status === "unlocked" ? "unlocked" : ""}>
                             {r.face_value} for {criteriaLabel(r.criteria_type, r.pages, r.title, r.scope, r.mode)} — {r.status}
+                            {Number(r.shortfall_cents) > 0 ? ` (short ${money(Number(r.shortfall_cents))})` : ""}
                           </li>
                         ))}
                       </ul>
@@ -258,8 +285,11 @@ export default async function ParentPage() {
                 {rewards.map((reward) => (
                   <li key={reward.id} className={reward.status === "unlocked" ? "unlocked" : ""}>
                     {reward.display_name}: {reward.face_value} for{" "}
-                    {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope, reward.mode)} — {reward.status} ($
-                    {(Number(reward.cost_cents) / 100).toFixed(2)})
+                    {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope, reward.mode)} — {reward.status} (
+                    {money(Number(reward.cost_cents))} from balance)
+                    {Number(reward.shortfall_cents) > 0
+                      ? ` — short ${money(Number(reward.shortfall_cents))}`
+                      : ""}
                   </li>
                 ))}
               </ul>
