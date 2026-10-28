@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { ensurePageLog } from "@/lib/page-log";
+import { costCents } from "@/lib/rates";
 
 export async function createChild(formData: FormData) {
   const { userId } = await auth();
@@ -106,7 +107,6 @@ export async function createFinishReward(formData: FormData) {
     custom_default_dollars: string;
   };
   if (!rates) throw new Error("Admin rates are not configured");
-  const { costCents } = await import("@/lib/rates");
   const cost = costCents({
     rewardType,
     faceValue,
@@ -167,7 +167,7 @@ export async function createFinishReward(formData: FormData) {
   revalidatePath("/parent");
 }
 
-/** Resets this household to a mid-book test state. */
+/** Resets this household to a mid-book test state with a representative reward set. */
 export async function resetDemo() {
   const { userId } = await auth();
   if (!userId) throw new Error("Not signed in");
@@ -209,17 +209,123 @@ export async function resetDemo() {
     WHERE c.household_id = ${hid}::uuid
   `;
 
-  await db`
-    UPDATE rewards
-    SET status = 'active',
-        unlocked_at = NULL,
-        shortfall_cents = 0
-    WHERE household_id = ${hid}::uuid
-  `;
+  await db`DELETE FROM ledger WHERE household_id = ${hid}::uuid`;
+  await db`DELETE FROM rewards WHERE household_id = ${hid}::uuid`;
+
+  const ratesRows = await db`SELECT * FROM admin_rates LIMIT 1`;
+  const rates = ratesRows[0] as {
+    robux_dollars_per_100: string;
+    gift_multiplier: string;
+    pizza_fixed_dollars: string;
+    custom_default_dollars: string;
+  } | undefined;
+  const kids = (await db`
+    SELECT id FROM children WHERE household_id = ${hid}::uuid ORDER BY created_at
+  `) as { id: string }[];
+  const books = (await db`SELECT id FROM books ORDER BY title LIMIT 1`) as {
+    id: string;
+  }[];
+  const bookId = books[0]?.id;
+
+  if (rates && bookId) {
+    const robuxPer100 = Number(rates.robux_dollars_per_100);
+    const giftMultiplier = Number(rates.gift_multiplier);
+    const pizzaFixed = Number(rates.pizza_fixed_dollars);
+    const customDefault = Number(rates.custom_default_dollars);
+    const samples = [
+      {
+        type: "robux" as const,
+        face: "400 Robux",
+        scope: "book",
+        criteria: "total_pages",
+        json: JSON.stringify({ pages: 20, mode: "reach" })
+      },
+      {
+        type: "gift_card" as const,
+        face: "$5",
+        scope: "book",
+        criteria: "total_pages",
+        json: JSON.stringify({ pages: 15, mode: "read" })
+      },
+      {
+        type: "pizza" as const,
+        face: "Personal pan pizza",
+        scope: "book",
+        criteria: "finish_book",
+        json: "{}"
+      },
+      {
+        type: "robux" as const,
+        face: "800 Robux",
+        scope: "any",
+        criteria: "total_pages",
+        json: JSON.stringify({ pages: 25, mode: "read" })
+      },
+      {
+        type: "gift_card" as const,
+        face: "$10",
+        scope: "any",
+        criteria: "daily_streak",
+        json: JSON.stringify({ pages: 5, days: 3 })
+      }
+    ];
+
+    for (const kid of kids) {
+      for (const sample of samples) {
+        const cost = costCents({
+          rewardType: sample.type,
+          faceValue: sample.face,
+          robuxPer100,
+          giftMultiplier,
+          pizzaFixed,
+          customDefault
+        });
+        if (sample.scope === "any") {
+          await db`
+            INSERT INTO rewards (
+              household_id, child_id, reward_type, face_value, cost_cents,
+              scope, book_id, criteria_type, criteria_json, status
+            )
+            VALUES (
+              ${hid}::uuid,
+              ${kid.id}::uuid,
+              ${sample.type},
+              ${sample.face},
+              ${cost},
+              'any',
+              NULL,
+              ${sample.criteria},
+              ${sample.json}::jsonb,
+              'active'
+            )
+          `;
+        } else {
+          await db`
+            INSERT INTO rewards (
+              household_id, child_id, reward_type, face_value, cost_cents,
+              scope, book_id, criteria_type, criteria_json, status
+            )
+            VALUES (
+              ${hid}::uuid,
+              ${kid.id}::uuid,
+              ${sample.type},
+              ${sample.face},
+              ${cost},
+              'book',
+              ${bookId}::uuid,
+              ${sample.criteria},
+              ${sample.json}::jsonb,
+              'active'
+            )
+          `;
+        }
+      }
+    }
+  }
 
   await db`
     UPDATE households
-    SET pot_available_cents = 2000
+    SET pot_available_cents = 4000
     WHERE id = ${hid}::uuid
   `;
 
