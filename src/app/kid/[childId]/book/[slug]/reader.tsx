@@ -11,6 +11,9 @@ type RewardInfo = {
   scope?: string;
   mode?: string | null;
   pages?: number | null;
+  days?: number | null;
+  streak?: number;
+  todayPages?: number;
 };
 
 type Props = {
@@ -72,6 +75,10 @@ function isRead(reward: RewardInfo) {
 }
 
 function goalLabel(reward: RewardInfo) {
+  if (reward.criteria_type === "daily_streak") {
+    const where = reward.scope === "any" ? " in any book" : "";
+    return `Read ${reward.pages} pages a day for ${reward.days} days${where}`;
+  }
   if (reward.scope === "any") {
     return `Read ${reward.pages ?? 0} pages in any book`;
   }
@@ -81,8 +88,18 @@ function goalLabel(reward: RewardInfo) {
 }
 
 function targetOf(reward: RewardInfo, bookTotal: number) {
+  if (reward.criteria_type === "daily_streak") return reward.days || 0;
   if (reward.criteria_type === "total_pages" && reward.pages) return reward.pages;
   return bookTotal || 0;
+}
+
+function streakNow(reward: RewardInfo, readDelta: number) {
+  const perDay = reward.pages || 0;
+  const already = (reward.todayPages ?? 0) >= perDay;
+  const todayNow = (reward.todayPages ?? 0) + readDelta;
+  const base = reward.streak ?? 0;
+  if (already || perDay < 1) return base;
+  return todayNow >= perDay ? base + 1 : base;
 }
 
 export default function Reader({
@@ -222,11 +239,12 @@ export default function Reader({
         <div className="banner">
           {active.map((r) => {
             const target = targetOf(r, total);
-            const raw = isRead(r)
-              ? (r.scope === "any" ? readAcross : readThis) + readDelta
-              : r.criteria_type === "finish_book"
-                ? highest
-                : highest;
+            const raw =
+              r.criteria_type === "daily_streak"
+                ? streakNow(r, readDelta)
+                : isRead(r)
+                  ? (r.scope === "any" ? readAcross : readThis) + readDelta
+                  : highest;
             const current = target > 0 ? Math.min(Math.max(raw, 0), target) : 0;
             const fill = target > 0 ? Math.round((current / target) * 100) : 0;
             return (
@@ -239,6 +257,7 @@ export default function Reader({
                     <div className="progress-meta">
                       <span>
                         {current} / {target}
+                        {r.criteria_type === "daily_streak" ? " days" : ""}
                       </span>
                       <span>{fill}%</span>
                     </div>
