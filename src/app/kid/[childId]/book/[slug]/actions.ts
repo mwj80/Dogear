@@ -24,5 +24,5 @@ export async function saveProgress(input: {
       total_locations = EXCLUDED.total_locations,
       updated_at = now()
   `;
-  await checkFinishBookUnlocks(input.childId, input.bookId);
+  return checkFinishBookUnlocks(input.childId, input.bookId);
 }

@@ -3,11 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { saveProgress } from "./actions";
 
+type RewardInfo = { id: string; face_value: string; status: string };
+
 type Props = {
   childId: string;
   bookId: string;
   epubPath: string;
   startLocation: number;
+  rewards: RewardInfo[];
 };
 
 declare global {
@@ -58,7 +61,8 @@ export default function Reader({
   childId,
   bookId,
   epubPath,
-  startLocation
+  startLocation,
+  rewards
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const renditionRef = useRef<EpubRendition | null>(null);
@@ -66,7 +70,21 @@ export default function Reader({
   const [page, setPage] = useState(startLocation + 1);
   const [total, setTotal] = useState(0);
   const [status, setStatus] = useState("Loading book…");
+  const [items, setItems] = useState(rewards);
+  const [justUnlocked, setJustUnlocked] = useState<string[]>([]);
   const maxRef = useRef(startLocation);
+
+  function applyUnlocks(unlocked: { id: string; face_value: string }[]) {
+    if (!unlocked?.length) return;
+    setItems((prev) =>
+      prev.map((item) =>
+        unlocked.some((u) => u.id === item.id)
+          ? { ...item, status: "unlocked" }
+          : item
+      )
+    );
+    setJustUnlocked(unlocked.map((u) => u.face_value));
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -117,12 +135,13 @@ export default function Reader({
         setPage(start + 1);
         setStatus("");
 
-        await saveProgress({
+        const unlocked = await saveProgress({
           childId,
           bookId,
           maxLocation: Math.max(start, maxRef.current),
           totalLocations: length
         });
+        applyUnlocks(unlocked ?? []);
       } catch (err) {
         setStatus(err instanceof Error ? err.message : "Could not open book");
       }
@@ -154,14 +173,33 @@ export default function Reader({
         bookId,
         maxLocation: safe,
         totalLocations: length
-      });
+      }).then((unlocked) => applyUnlocks(unlocked ?? []));
     }
   }
 
   const pct = total ? Math.round(((maxRef.current + 1) / total) * 100) : 0;
 
+  const active = items.filter((r) => r.status === "active");
+  const unlocked = items.filter((r) => r.status === "unlocked");
+
   return (
     <div>
+      {active.length > 0 && (
+        <div className="banner">
+          {active.map((r) => (
+            <p key={r.id}>
+              Finish this book → <strong>{r.face_value}</strong>
+            </p>
+          ))}
+        </div>
+      )}
+      {unlocked.length > 0 && active.length === 0 && (
+        <div className="banner done">
+          {unlocked.map((r) => (
+            <p key={r.id}>Unlocked: {r.face_value}</p>
+          ))}
+        </div>
+      )}
       <p>
         Page {page}
         {total ? ` of ${total}` : ""} · Highest reached {pct}%
@@ -176,6 +214,19 @@ export default function Reader({
           Next
         </button>
       </div>
+      {justUnlocked.length > 0 && (
+        <div className="modal" onClick={() => setJustUnlocked([])}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h2>Reward unlocked!</h2>
+            {justUnlocked.map((value) => (
+              <p key={value}>{value}</p>
+            ))}
+            <button type="button" className="btn" onClick={() => setJustUnlocked([])}>
+              Keep reading
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

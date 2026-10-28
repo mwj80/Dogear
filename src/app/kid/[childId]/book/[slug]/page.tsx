@@ -37,6 +37,15 @@ export default async function BookPage({
     ? Number((progress[0] as { max_location: number }).max_location)
     : 0;
 
+  const rewards = (await db`
+    SELECT id, face_value, status
+    FROM rewards
+    WHERE child_id = ${kid.id}::uuid
+      AND book_id = ${book.id}::uuid
+      AND criteria_type = 'finish_book'
+    ORDER BY created_at
+  `) as { id: string; face_value: string; status: string }[];
+
   return (
     <main>
       <header className="top">
@@ -51,6 +60,7 @@ export default async function BookPage({
         bookId={book.id}
         epubPath={book.epub_path}
         startLocation={startLocation}
+        rewards={rewards}
       />
     </main>
   );
