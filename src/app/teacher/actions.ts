@@ -14,6 +14,11 @@ async function teacherOfUser() {
   return ensureHousehold({ clerkUserId: userId, email });
 }
 
+function dueDate(formData: FormData) {
+  const value = String(formData.get("due_date") ?? "").trim();
+  return value || null;
+}
+
 export async function createClass(formData: FormData) {
   const teacher = await teacherOfUser();
   const name = String(formData.get("name") ?? "").trim();
@@ -110,6 +115,7 @@ export async function createAssignment(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const goal = String(formData.get("goal") ?? "finish");
   const pages = Number(formData.get("pages") ?? 0);
+  const due = dueDate(formData);
   if (!classId || !bookId || !title) throw new Error("Class, book, and title are required");
   if (goal === "pages" && (!pages || pages < 1)) throw new Error("Enter a page count");
   const db = sql();
@@ -122,13 +128,14 @@ export async function createAssignment(formData: FormData) {
   const type = goal === "pages" ? "total_pages" : "finish_book";
   const criteria = goal === "pages" ? JSON.stringify({ pages }) : "{}";
   await db`
-    INSERT INTO assignments (class_id, title, book_id, criteria_type, criteria_json)
+    INSERT INTO assignments (class_id, title, book_id, criteria_type, criteria_json, due_date)
     VALUES (
       ${classId}::uuid,
       ${title},
       ${bookId}::uuid,
       ${type},
-      ${criteria}::jsonb
+      ${criteria}::jsonb,
+      ${due}::date
     )
   `;
   revalidatePath("/teacher");
@@ -142,6 +149,7 @@ export async function updateAssignment(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const goal = String(formData.get("goal") ?? "finish");
   const pages = Number(formData.get("pages") ?? 0);
+  const due = dueDate(formData);
   if (!assignmentId || !bookId || !title) throw new Error("Assignment, book, and title are required");
   if (goal === "pages" && (!pages || pages < 1)) throw new Error("Enter a page count");
   const db = sql();
@@ -152,7 +160,8 @@ export async function updateAssignment(formData: FormData) {
     SET title = ${title},
         book_id = ${bookId}::uuid,
         criteria_type = ${type},
-        criteria_json = ${criteria}::jsonb
+        criteria_json = ${criteria}::jsonb,
+        due_date = ${due}::date
     FROM classes cl
     WHERE a.id = ${assignmentId}::uuid
       AND a.class_id = cl.id
