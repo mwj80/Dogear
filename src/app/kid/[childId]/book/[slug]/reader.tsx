@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { saveProgress } from "./actions";
 
-type RewardInfo = { id: string; face_value: string; status: string };
+type RewardInfo = {
+  id: string;
+  face_value: string;
+  status: string;
+  criteria_type?: string;
+  pages?: number | null;
+};
 
 type Props = {
   childId: string;
@@ -55,6 +61,13 @@ function loadScript(src: string) {
     s.onerror = () => reject(new Error(`Failed to load ${src}`));
     document.body.appendChild(s);
   });
+}
+
+function goalLabel(reward: RewardInfo) {
+  if (reward.criteria_type === "total_pages" && reward.pages) {
+    return `Reach page ${reward.pages}`;
+  }
+  return "Finish this book";
 }
 
 export default function Reader({
@@ -188,7 +201,7 @@ export default function Reader({
         <div className="banner">
           {active.map((r) => (
             <p key={r.id}>
-              Finish this book → <strong>{r.face_value}</strong>
+              {goalLabel(r)} → <strong>{r.face_value}</strong>
             </p>
           ))}
         </div>
