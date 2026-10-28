@@ -93,6 +93,7 @@ export default async function ParentPage() {
     book_title: string;
     criteria_type: string;
     pages: number | null;
+    due_date: string | null;
     max_location: number;
     total_locations: number;
   }[] = [];
@@ -145,6 +146,7 @@ export default async function ParentPage() {
       SELECT e.child_id::text AS child_id, cl.name AS class_name, a.title,
              b.title AS book_title, a.criteria_type,
              (a.criteria_json->>'pages')::int AS pages,
+             a.due_date::text AS due_date,
              COALESCE(p.max_location, 0) AS max_location,
              COALESCE(p.total_locations, 0) AS total_locations
       FROM enrollments e
@@ -267,7 +269,8 @@ export default async function ParentPage() {
                               : `${Math.min(max, target)} / ${target}`;
                           return (
                             <li key={`${item.class_name}-${item.title}`} className={done ? "unlocked" : ""}>
-                              {item.class_name}: {item.title} · {item.book_title} — {done ? "done" : shown}
+                              {item.class_name}: {item.title} · {item.book_title}
+                              {item.due_date ? ` · due ${item.due_date}` : ""} — {done ? "done" : shown}
                             </li>
                           );
                         })}
