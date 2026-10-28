@@ -15,6 +15,23 @@ async function householdOfUser() {
   return ensureHousehold({ clerkUserId: userId, email });
 }
 
+export async function renameKid(formData: FormData) {
+  const household = await householdOfUser();
+  const childId = String(formData.get("child_id") ?? "");
+  const name = String(formData.get("display_name") ?? "").trim();
+  if (!childId || !name) throw new Error("Name is required");
+  const db = sql();
+  await db`
+    UPDATE children
+    SET display_name = ${name}
+    WHERE id = ${childId}::uuid AND household_id = ${household.household_id}::uuid
+  `;
+  revalidatePath("/parent");
+  revalidatePath("/teacher");
+  revalidatePath(`/parent/kid/${childId}`);
+  revalidatePath(`/kid/${childId}`);
+}
+
 export async function setDailyGoal(formData: FormData) {
   const { userId } = await auth();
   if (!userId) throw new Error("Not signed in");
