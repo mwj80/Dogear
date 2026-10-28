@@ -42,7 +42,7 @@ export default async function BookPage({
     FROM rewards
     WHERE child_id = ${kid.id}::uuid
       AND book_id = ${book.id}::uuid
-      AND criteria_type IN ('finish_book', 'page_threshold')
+      AND criteria_type IN ('finish_book', 'total_pages')
     ORDER BY created_at
   `) as { id: string; face_value: string; status: string }[];
 
