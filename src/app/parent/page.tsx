@@ -97,6 +97,7 @@ export default async function ParentPage() {
     max_location: number;
     total_locations: number;
   }[] = [];
+  let dueToday = new Date().toISOString().slice(0, 10);
   let dbError: string | null = null;
 
   try {
@@ -104,6 +105,8 @@ export default async function ParentPage() {
     await ensurePageLog();
     await recheckHousehold(household.household_id);
     const db = sql();
+    const todayRow = await db`SELECT CURRENT_DATE::text AS today`;
+    dueToday = String((todayRow[0] as { today: string }).today);
     kids = (await db`
       SELECT id, display_name, daily_goal_pages
       FROM children
@@ -263,14 +266,19 @@ export default async function ParentPage() {
                             item.criteria_type === "finish_book"
                               ? total > 0 && max >= total - 1
                               : max >= target;
+                          const overdue = !done && !!item.due_date && item.due_date < dueToday;
                           const shown =
                             item.criteria_type === "finish_book"
                               ? `${max} / ${total || "?"}`
                               : `${Math.min(max, target)} / ${target}`;
                           return (
-                            <li key={`${item.class_name}-${item.title}`} className={done ? "unlocked" : ""}>
+                            <li
+                              key={`${item.class_name}-${item.title}`}
+                              className={done ? "unlocked" : overdue ? "overdue" : ""}
+                            >
                               {item.class_name}: {item.title} · {item.book_title}
-                              {item.due_date ? ` · due ${item.due_date}` : ""} — {done ? "done" : shown}
+                              {item.due_date ? ` · due ${item.due_date}` : ""}
+                              {overdue ? " · overdue" : ""} — {done ? "done" : shown}
                             </li>
                           );
                         })}
