@@ -196,19 +196,6 @@ export async function resetDemo() {
       AND c.household_id = ${hid}::uuid
   `;
 
-  await db`
-    INSERT INTO page_log (child_id, book_id, day, pages)
-    SELECT p.child_id, p.book_id, CURRENT_DATE - 2, 5
-    FROM progress p
-    JOIN children c ON c.id = p.child_id
-    WHERE c.household_id = ${hid}::uuid
-    UNION ALL
-    SELECT p.child_id, p.book_id, CURRENT_DATE - 1, 5
-    FROM progress p
-    JOIN children c ON c.id = p.child_id
-    WHERE c.household_id = ${hid}::uuid
-  `;
-
   await db`DELETE FROM ledger WHERE household_id = ${hid}::uuid`;
   await db`DELETE FROM rewards WHERE household_id = ${hid}::uuid`;
 
@@ -226,6 +213,19 @@ export async function resetDemo() {
     id: string;
   }[];
   const bookId = books[0]?.id;
+
+  if (bookId) {
+    await db`
+      INSERT INTO page_log (child_id, book_id, day, pages)
+      SELECT c.id, ${bookId}::uuid, CURRENT_DATE - 2, 5
+      FROM children c
+      WHERE c.household_id = ${hid}::uuid
+      UNION ALL
+      SELECT c.id, ${bookId}::uuid, CURRENT_DATE - 1, 5
+      FROM children c
+      WHERE c.household_id = ${hid}::uuid
+    `;
+  }
 
   if (rates && bookId) {
     const robuxPer100 = Number(rates.robux_dollars_per_100);
