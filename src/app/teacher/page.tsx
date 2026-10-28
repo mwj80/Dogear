@@ -23,6 +23,9 @@ export default async function TeacherPage() {
   const teacher = await ensureHousehold({ clerkUserId: userId, email });
   const db = sql();
 
+  const todayRow = await db`SELECT CURRENT_DATE::text AS today`;
+  const today = String((todayRow[0] as { today: string }).today);
+
   const kids = (await db`
     SELECT id, display_name
     FROM children
@@ -261,6 +264,7 @@ export default async function TeacherPage() {
                         assignment.criteria_type === "finish_book"
                           ? total > 0 && max >= total - 1
                           : max >= Number(assignment.pages ?? 0);
+                      const overdue = !done && !!assignment.due_date && assignment.due_date < today;
                       const shown =
                         assignment.criteria_type === "finish_book"
                           ? `${max} / ${total || "?"}`
@@ -268,9 +272,10 @@ export default async function TeacherPage() {
                       return (
                         <div key={kid.child_id} className="progress-row">
                           <div className="progress-meta">
-                            <span className={done ? "unlocked" : ""}>
+                            <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
                               {kid.display_name}
                               {assignment.due_date ? ` · due ${assignment.due_date}` : ""}
+                              {overdue ? " · overdue" : ""}
                             </span>
                             <span>{done ? "done" : shown}</span>
                           </div>
