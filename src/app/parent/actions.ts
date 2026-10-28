@@ -72,7 +72,7 @@ export async function createFinishReward(formData: FormData) {
   if (!childId || !bookId || !faceValue) {
     throw new Error("Kid, book, and reward value are required");
   }
-  if (criteriaType === "page_threshold" && (!pages || pages < 1)) {
+  if (criteriaType === "total_pages" && (!pages || pages < 1)) {
     throw new Error("Enter a page count of at least 1");
   }
 
@@ -95,6 +95,7 @@ export async function createFinishReward(formData: FormData) {
     pizza_fixed_dollars: string;
     custom_default_dollars: string;
   };
+  if (!rates) throw new Error("Admin rates are not configured");
   const { costCents } = await import("@/lib/rates");
   const cost = costCents({
     rewardType,
@@ -105,9 +106,9 @@ export async function createFinishReward(formData: FormData) {
     customDefault: Number(rates.custom_default_dollars)
   });
 
-  const type = criteriaType === "page_threshold" ? "page_threshold" : "finish_book";
+  const type = criteriaType === "total_pages" ? "total_pages" : "finish_book";
   const criteriaJson =
-    type === "page_threshold" ? JSON.stringify({ pages }) : "{}";
+    type === "total_pages" ? JSON.stringify({ pages }) : "{}";
 
   await db`
     INSERT INTO rewards (
