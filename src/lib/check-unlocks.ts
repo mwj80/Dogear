@@ -26,7 +26,7 @@ export async function checkUnlocks(
     WHERE child_id = ${childId}::uuid
       AND status = 'active'
       AND book_id = ${bookId}::uuid
-      AND criteria_type IN ('finish_book', 'page_threshold')
+      AND criteria_type IN ('finish_book', 'total_pages')
   `;
 
   const unlocked: { id: string; face_value: string }[] = [];
@@ -37,13 +37,17 @@ export async function checkUnlocks(
     cost_cents: number;
     face_value: string;
     criteria_type: string;
-    criteria_json: { pages?: number } | null;
+    criteria_json: { pages?: number } | string | null;
   }[]) {
     let met = false;
     if (reward.criteria_type === "finish_book") {
       met = finished;
-    } else if (reward.criteria_type === "page_threshold") {
-      const need = Number(reward.criteria_json?.pages ?? 0);
+    } else if (reward.criteria_type === "total_pages") {
+      const json =
+        typeof reward.criteria_json === "string"
+          ? (JSON.parse(reward.criteria_json) as { pages?: number })
+          : reward.criteria_json;
+      const need = Number(json?.pages ?? 0);
       met = need > 0 && maxLoc >= need;
     }
     if (!met) continue;
@@ -61,7 +65,7 @@ export async function checkUnlocks(
     const shortfall = Math.max(0, cost - available);
     const spend = Math.min(available, cost);
     const note =
-      reward.criteria_type === "page_threshold"
+      reward.criteria_type === "total_pages"
         ? "Page-threshold unlock"
         : "Finish-book unlock";
 
