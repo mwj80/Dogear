@@ -26,6 +26,22 @@ function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+function daysUntil(due: string, today: string) {
+  return Math.round(
+    (Date.parse(`${due}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000
+  );
+}
+
+function dueLabel(due: string | null, today: string, done: boolean) {
+  if (!due) return "";
+  const days = daysUntil(due, today);
+  if (done) return `due ${due}`;
+  if (days < 0) return `due ${due} · overdue`;
+  if (days === 0) return "due today";
+  if (days === 1) return "due tomorrow · 1 day left";
+  return `due ${due} · ${days} days left`;
+}
+
 function criteriaLabel(
   type: string,
   pages: number | null,
@@ -271,14 +287,14 @@ export default async function ParentPage() {
                             item.criteria_type === "finish_book"
                               ? `${max} / ${total || "?"}`
                               : `${Math.min(max, target)} / ${target}`;
+                          const due = dueLabel(item.due_date, dueToday, done);
                           return (
                             <li
                               key={`${item.class_name}-${item.title}`}
                               className={done ? "unlocked" : overdue ? "overdue" : ""}
                             >
                               {item.class_name}: {item.title} · {item.book_title}
-                              {item.due_date ? ` · due ${item.due_date}` : ""}
-                              {overdue ? " · overdue" : ""} — {done ? "done" : shown}
+                              {due ? ` · ${due}` : ""} — {done ? "done" : shown}
                             </li>
                           );
                         })}
