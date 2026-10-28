@@ -4,7 +4,20 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { sql } from "@/lib/db";
+import { ensurePageLog } from "@/lib/page-log";
 import { createChild, createFinishReward, loadPot, resetDemo } from "./actions";
+
+function lastSevenDays() {
+  const days: string[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().slice(0, 10));
+  }
+  return days;
+}
+
+const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 export default async function ParentPage() {
   const { userId } = await auth();
@@ -37,10 +50,12 @@ export default async function ParentPage() {
     total_locations: number;
     updated_at: string;
   }[] = [];
+  let log: { child_id: string; day: string; pages: number }[] = [];
   let dbError: string | null = null;
 
   try {
     household = await ensureHousehold({ clerkUserId: userId, email });
+    await ensurePageLog();
     const db = sql();
     kids = (await db`
       SELECT id, display_name
@@ -68,6 +83,14 @@ export default async function ParentPage() {
       WHERE c.household_id = ${household.household_id}::uuid
       ORDER BY p.updated_at DESC
     `) as typeof progress;
+    log = (await db`
+      SELECT pl.child_id, pl.day::text AS day, SUM(pl.pages)::int AS pages
+      FROM page_log pl
+      JOIN children c ON c.id = pl.child_id
+      WHERE c.household_id = ${household.household_id}::uuid
+        AND pl.day >= CURRENT_DATE - INTERVAL '6 days'
+      GROUP BY pl.child_id, pl.day
+    `) as typeof log;
   } catch (err) {
     dbError = err instanceof Error ? err.message : "Database error";
   }
@@ -75,6 +98,7 @@ export default async function ParentPage() {
   const potDollars = household
     ? (household.pot_available_cents / 100).toFixed(2)
     : "—";
+  const days = lastSevenDays();
 
   return (
     <main>
@@ -120,12 +144,32 @@ export default async function ParentPage() {
               kids.map((kid) => {
                 const kidProgress = progress.filter((p) => p.child_id === kid.id);
                 const kidRewards = rewards.filter((r) => r.child_id === kid.id);
+                const kidLog = log.filter((l) => l.child_id === kid.id);
+                const today = days[days.length - 1];
+                const todayPages = kidLog
+                  .filter((l) => l.day === today)
+                  .reduce((n, l) => n + Number(l.pages), 0);
                 return (
                   <div key={kid.id} className="kid-block">
                     <p className="kid-name">
                       {kid.display_name}{" "}
                       <Link href={`/kid/${kid.id}`}>Open kid view</Link>
                     </p>
+                    <p className="muted">Today: {todayPages} pages</p>
+                    <div className="week">
+                      {days.map((day) => {
+                        const pages = kidLog
+                          .filter((l) => l.day === day)
+                          .reduce((n, l) => n + Number(l.pages), 0);
+                        const label = WEEKDAY[new Date(day + "T12:00:00").getDay()];
+                        return (
+                          <div key={day} className={pages > 0 ? "day on" : "day"}>
+                            <div className="dot">{pages > 0 ? pages : ""}</div>
+                            {label}
+                          </div>
+                        );
+                      })}
+                    </div>
                     {kidProgress.length === 0 ? (
                       <p className="muted">No reading yet.</p>
                     ) : (
