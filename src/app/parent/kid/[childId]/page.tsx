@@ -5,7 +5,7 @@ import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { ensurePageLog } from "@/lib/page-log";
 import { streakEndingToday } from "@/lib/check-unlocks";
-import { removeKid, setDailyGoal } from "../actions";
+import { removeKid, renameKid, setDailyGoal } from "../actions";
 
 const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
@@ -133,6 +133,16 @@ export default async function KidProgressPage({
         <Link href={`/kid/${kid.id}`}>Open kid view</Link>
       </header>
       <h1>{kid.display_name}</h1>
+      <form action={renameKid} className="inline-form">
+        <input type="hidden" name="child_id" value={kid.id} />
+        <label>
+          Name
+          <input name="display_name" required maxLength={40} defaultValue={kid.display_name} />
+        </label>
+        <button type="submit" className="btn">
+          Rename
+        </button>
+      </form>
       <form action={setDailyGoal} className="inline-form">
         <input type="hidden" name="child_id" value={kid.id} />
         <label>
