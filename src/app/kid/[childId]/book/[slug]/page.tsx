@@ -87,6 +87,20 @@ export default async function BookPage({
     mode: string | null;
   }[];
 
+  const assignments = (await db`
+    SELECT a.id::text AS id, a.title, a.criteria_type,
+           (a.criteria_json->>'pages')::int AS pages
+    FROM enrollments e
+    JOIN assignments a ON a.class_id = e.class_id
+    WHERE e.child_id = ${kid.id}::uuid AND a.book_id = ${book.id}::uuid
+    ORDER BY a.created_at
+  `) as {
+    id: string;
+    title: string;
+    criteria_type: string;
+    pages: number | null;
+  }[];
+
   const withStreak = rewards.map((reward) => {
     if (reward.criteria_type !== "daily_streak" || !reward.pages) {
       return { ...reward, streak: 0, todayPages: 0 };
@@ -116,6 +130,7 @@ export default async function BookPage({
         readThis={readThis}
         readAcross={readAcross}
         rewards={withStreak}
+        assignments={assignments}
       />
     </main>
   );
