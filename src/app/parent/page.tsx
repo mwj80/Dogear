@@ -86,6 +86,16 @@ export default async function ParentPage() {
     updated_at: string;
   }[] = [];
   let log: { child_id: string; day: string; pages: number }[] = [];
+  let classes: {
+    child_id: string;
+    class_name: string;
+    title: string;
+    book_title: string;
+    criteria_type: string;
+    pages: number | null;
+    max_location: number;
+    total_locations: number;
+  }[] = [];
   let dbError: string | null = null;
 
   try {
@@ -131,6 +141,21 @@ export default async function ParentPage() {
         AND pl.day >= CURRENT_DATE - INTERVAL '6 days'
       GROUP BY pl.child_id, pl.day
     `) as typeof log;
+    classes = (await db`
+      SELECT e.child_id::text AS child_id, cl.name AS class_name, a.title,
+             b.title AS book_title, a.criteria_type,
+             (a.criteria_json->>'pages')::int AS pages,
+             COALESCE(p.max_location, 0) AS max_location,
+             COALESCE(p.total_locations, 0) AS total_locations
+      FROM enrollments e
+      JOIN classes cl ON cl.id = e.class_id
+      JOIN children c ON c.id = e.child_id
+      JOIN assignments a ON a.class_id = cl.id
+      JOIN books b ON b.id = a.book_id
+      LEFT JOIN progress p ON p.child_id = e.child_id AND p.book_id = a.book_id
+      WHERE c.household_id = ${household.household_id}::uuid
+      ORDER BY a.created_at
+    `) as typeof classes;
   } catch (err) {
     dbError = err instanceof Error ? err.message : "Database error";
   }
@@ -212,6 +237,7 @@ export default async function ParentPage() {
                 const kidProgress = progress.filter((p) => p.child_id === kid.id);
                 const kidRewards = rewards.filter((r) => r.child_id === kid.id);
                 const kidLog = log.filter((l) => l.child_id === kid.id);
+                const kidClasses = classes.filter((c) => c.child_id === kid.id);
                 const today = days[days.length - 1];
                 const goal = Number(kid.daily_goal_pages) || 5;
                 const todayPages = kidLog
@@ -225,6 +251,28 @@ export default async function ParentPage() {
                       <Link href={`/kid/${kid.id}`}>Open kid view</Link>
                     </p>
                     <p className="muted">Today: {todayPages} pages · goal {goal}</p>
+                    {kidClasses.length > 0 && (
+                      <ul className="reward-list">
+                        {kidClasses.map((item) => {
+                          const max = Number(item.max_location);
+                          const total = Number(item.total_locations);
+                          const target = Number(item.pages ?? 0);
+                          const done =
+                            item.criteria_type === "finish_book"
+                              ? total > 0 && max >= total - 1
+                              : max >= target;
+                          const shown =
+                            item.criteria_type === "finish_book"
+                              ? `${max} / ${total || "?"}`
+                              : `${Math.min(max, target)} / ${target}`;
+                          return (
+                            <li key={`${item.class_name}-${item.title}`} className={done ? "unlocked" : ""}>
+                              {item.class_name}: {item.title} · {item.book_title} — {done ? "done" : shown}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
                     <div className="week">
                       {days.map((day) => {
                         const pages = kidLog
