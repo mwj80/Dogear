@@ -67,8 +67,13 @@ export async function createFinishReward(formData: FormData) {
     | "pizza"
     | "custom";
   const faceValue = String(formData.get("face_value") ?? "").trim();
+  const criteriaType = String(formData.get("criteria_type") ?? "finish_book");
+  const pages = Number(formData.get("pages") ?? 0);
   if (!childId || !bookId || !faceValue) {
     throw new Error("Kid, book, and reward value are required");
+  }
+  if (criteriaType === "page_threshold" && (!pages || pages < 1)) {
+    throw new Error("Enter a page count of at least 1");
   }
 
   const user = await currentUser();
@@ -100,6 +105,10 @@ export async function createFinishReward(formData: FormData) {
     customDefault: Number(rates.custom_default_dollars)
   });
 
+  const type = criteriaType === "page_threshold" ? "page_threshold" : "finish_book";
+  const criteriaJson =
+    type === "page_threshold" ? JSON.stringify({ pages }) : "{}";
+
   await db`
     INSERT INTO rewards (
       household_id, child_id, reward_type, face_value, cost_cents,
@@ -113,8 +122,8 @@ export async function createFinishReward(formData: FormData) {
       ${cost},
       'book',
       ${bookId}::uuid,
-      'finish_book',
-      '{}'::jsonb,
+      ${type},
+      ${criteriaJson}::jsonb,
       'active'
     )
   `;
