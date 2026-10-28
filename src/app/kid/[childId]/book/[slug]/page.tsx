@@ -94,7 +94,7 @@ export default async function BookPage({
     FROM enrollments e
     JOIN assignments a ON a.class_id = e.class_id
     WHERE e.child_id = ${kid.id}::uuid AND a.book_id = ${book.id}::uuid
-    ORDER BY a.created_at
+    ORDER BY a.due_date NULLS LAST, a.created_at
   `) as {
     id: string;
     title: string;
