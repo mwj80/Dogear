@@ -5,7 +5,8 @@ import Link from "next/link";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { sql } from "@/lib/db";
 import { ensurePageLog } from "@/lib/page-log";
-import { createChild, createFinishReward, loadPot, resetDemo } from "./actions";
+import { createChild, loadPot, resetDemo } from "./actions";
+import RewardForm from "./reward-form";
 
 function lastSevenDays() {
   const days: string[] = [];
@@ -23,17 +24,16 @@ function criteriaLabel(
   type: string,
   pages: number | null,
   title: string | null,
-  scope: string
+  scope: string,
+  mode: string | null
 ) {
+  const read = mode === "read" || scope === "any";
   if (scope === "any") {
-    if (type === "total_pages" && pages) {
-      return `reaching ${pages} pages in any book`;
-    }
-    return "finishing any book";
+    return pages ? `reading ${pages} pages in any book` : "reading pages in any book";
   }
-  if (type === "total_pages" && pages) {
-    return `reaching page ${pages} in ${title}`;
-  }
+  if (type === "finish_book") return `finishing ${title}`;
+  if (read && pages) return `reading ${pages} pages in ${title}`;
+  if (pages) return `reaching page ${pages} in ${title}`;
   return `finishing ${title}`;
 }
 
@@ -63,6 +63,7 @@ export default async function ParentPage() {
     criteria_type: string;
     scope: string;
     pages: number | null;
+    mode: string | null;
   }[] = [];
   let progress: {
     child_id: string;
@@ -91,6 +92,7 @@ export default async function ParentPage() {
       SELECT r.id, r.face_value, r.reward_type, r.status, r.cost_cents,
              r.child_id, r.criteria_type, r.scope,
              (r.criteria_json->>'pages')::int AS pages,
+             r.criteria_json->>'mode' AS mode,
              c.display_name, b.title
       FROM rewards r
       JOIN children c ON c.id = r.child_id
@@ -151,7 +153,7 @@ export default async function ParentPage() {
               <button type="submit" className="btn secondary">
                 Reset demo
               </button>
-              <p className="muted">Sets progress to page 5, rewards back to active, pot to $20.</p>
+              <p className="muted">Sets progress to page 5, clears pages read, rewards back to active, pot to $20.</p>
             </form>
           </>
         )}
@@ -220,7 +222,7 @@ export default async function ParentPage() {
                       <ul className="reward-list">
                         {kidRewards.map((r) => (
                           <li key={r.id} className={r.status === "unlocked" ? "unlocked" : ""}>
-                            {r.face_value} for {criteriaLabel(r.criteria_type, r.pages, r.title, r.scope)} — {r.status}
+                            {r.face_value} for {criteriaLabel(r.criteria_type, r.pages, r.title, r.scope, r.mode)} — {r.status}
                           </li>
                         ))}
                       </ul>
@@ -242,66 +244,7 @@ export default async function ParentPage() {
 
           <div className="card">
             <h2>Reward</h2>
-            <form action={createFinishReward} className="stack">
-              <label>
-                Kid
-                <select name="child_id" required>
-                  {kids.map((kid) => (
-                    <option key={kid.id} value={kid.id}>
-                      {kid.display_name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Counts for
-                <select name="scope" defaultValue="book">
-                  <option value="book">This book</option>
-                  <option value="any">Any book</option>
-                </select>
-              </label>
-              <label>
-                Book (if this book)
-                <select name="book_id">
-                  {books.map((book) => (
-                    <option key={book.id} value={book.id}>
-                      {book.title}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                When
-                <select name="criteria_type" defaultValue="total_pages">
-                  <option value="total_pages">Reach a page count</option>
-                  <option value="finish_book">Finish the book</option>
-                </select>
-              </label>
-              <label>
-                Pages (if reaching a page count)
-                <input name="pages" type="number" min="1" step="1" defaultValue="10" />
-              </label>
-              <label>
-                Type
-                <select name="reward_type" defaultValue="robux">
-                  <option value="robux">Roblox Robux</option>
-                  <option value="gift_card">Gift card</option>
-                  <option value="pizza">Pizza coupon</option>
-                  <option value="custom">Custom</option>
-                </select>
-              </label>
-              <label>
-                Value the kid sees
-                <input name="face_value" required placeholder="800 Robux" />
-              </label>
-              <button type="submit" className="btn">
-                Save reward
-              </button>
-            </form>
-            <p>
-              Any book adds the highest page in each book the kid has opened.
-              Cost is calculated from admin rates (800 Robux → $6.00).
-            </p>
+            <RewardForm kids={kids} books={books} />
           </div>
 
           <div className="card">
@@ -313,7 +256,7 @@ export default async function ParentPage() {
                 {rewards.map((reward) => (
                   <li key={reward.id} className={reward.status === "unlocked" ? "unlocked" : ""}>
                     {reward.display_name}: {reward.face_value} for{" "}
-                    {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope)} — {reward.status} ($
+                    {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope, reward.mode)} — {reward.status} ($
                     {(Number(reward.cost_cents) / 100).toFixed(2)})
                   </li>
                 ))}
