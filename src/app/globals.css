@@ -162,3 +162,35 @@ input, select {
 .day.on .dot {
   background: var(--accent);
 }
+
+.balance-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.balance-strip div {
+  background: #fff8f2;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+}
+.balance-strip span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.balance-strip strong {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 1.05rem;
+}
+.warning {
+  background: #fff1f0;
+  border: 1px solid #e8b4ae;
+  color: #8a2b22;
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+  margin: 0.5rem 0 0.25rem;
+  font-size: 0.92rem;
+}
