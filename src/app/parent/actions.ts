@@ -7,6 +7,15 @@ import { ensureHousehold } from "@/lib/ensure-household";
 import { ensurePageLog } from "@/lib/page-log";
 import { costCents } from "@/lib/rates";
 
+async function householdOfUser() {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Not signed in");
+  const user = await currentUser();
+  const email =
+    user?.primaryEmailAddress?.emailAddress ?? `${userId}@users.invalid`;
+  return ensureHousehold({ clerkUserId: userId, email });
+}
+
 export async function createChild(formData: FormData) {
   const { userId } = await auth();
   if (!userId) {
@@ -165,6 +174,92 @@ export async function createFinishReward(formData: FormData) {
     `;
   }
   revalidatePath("/parent");
+}
+
+export async function removeReward(formData: FormData) {
+  const household = await householdOfUser();
+  const rewardId = String(formData.get("reward_id") ?? "");
+  if (!rewardId) throw new Error("Missing reward");
+  const db = sql();
+  await db`
+    DELETE FROM rewards
+    WHERE id = ${rewardId}::uuid
+      AND household_id = ${household.household_id}::uuid
+      AND status = 'active'
+  `;
+  revalidatePath("/parent");
+  revalidatePath("/kid");
+}
+
+export async function updateReward(formData: FormData) {
+  const household = await householdOfUser();
+  const rewardId = String(formData.get("reward_id") ?? "");
+  const faceValue = String(formData.get("face_value") ?? "").trim();
+  const pages = Number(formData.get("pages") ?? 0);
+  const days = Number(formData.get("days") ?? 0);
+  if (!rewardId || !faceValue) throw new Error("Reward and value are required");
+
+  const db = sql();
+  const rows = await db`
+    SELECT reward_type, scope, criteria_type
+    FROM rewards
+    WHERE id = ${rewardId}::uuid
+      AND household_id = ${household.household_id}::uuid
+      AND status = 'active'
+    LIMIT 1
+  `;
+  const current = rows[0] as
+    | { reward_type: "robux" | "gift_card" | "pizza" | "custom"; scope: string; criteria_type: string }
+    | undefined;
+  if (!current) throw new Error("Active reward not found");
+
+  let goal = String(formData.get("goal") ?? "reach");
+  if (current.scope === "any" && (goal === "reach" || goal === "finish")) goal = "read";
+  if (goal !== "finish" && (!pages || pages < 1)) {
+    throw new Error("Enter a page count of at least 1");
+  }
+  if (goal === "streak" && (!days || days < 1)) {
+    throw new Error("Enter at least 1 day for a streak");
+  }
+
+  const ratesRows = await db`SELECT * FROM admin_rates LIMIT 1`;
+  const rates = ratesRows[0] as {
+    robux_dollars_per_100: string;
+    gift_multiplier: string;
+    pizza_fixed_dollars: string;
+    custom_default_dollars: string;
+  };
+  if (!rates) throw new Error("Admin rates are not configured");
+  const cost = costCents({
+    rewardType: current.reward_type,
+    faceValue,
+    robuxPer100: Number(rates.robux_dollars_per_100),
+    giftMultiplier: Number(rates.gift_multiplier),
+    pizzaFixed: Number(rates.pizza_fixed_dollars),
+    customDefault: Number(rates.custom_default_dollars)
+  });
+
+  const type =
+    goal === "finish" ? "finish_book" : goal === "streak" ? "daily_streak" : "total_pages";
+  const criteriaJson =
+    goal === "finish"
+      ? "{}"
+      : goal === "streak"
+        ? JSON.stringify({ pages, days })
+        : JSON.stringify({ pages, mode: goal });
+
+  await db`
+    UPDATE rewards
+    SET face_value = ${faceValue},
+        cost_cents = ${cost},
+        criteria_type = ${type},
+        criteria_json = ${criteriaJson}::jsonb
+    WHERE id = ${rewardId}::uuid
+      AND household_id = ${household.household_id}::uuid
+      AND status = 'active'
+  `;
+  revalidatePath("/parent");
+  revalidatePath("/kid");
 }
 
 /** Resets this household to a mid-book test state with a representative reward set. */
