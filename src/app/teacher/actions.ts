@@ -82,4 +82,21 @@ export async function createAssignment(formData: FormData) {
     )
   `;
   revalidatePath("/teacher");
+  revalidatePath("/kid");
+}
+
+export async function removeAssignment(formData: FormData) {
+  const teacher = await teacherOfUser();
+  const assignmentId = String(formData.get("assignment_id") ?? "");
+  if (!assignmentId) throw new Error("Missing assignment");
+  const db = sql();
+  await db`
+    DELETE FROM assignments a
+    USING classes cl
+    WHERE a.id = ${assignmentId}::uuid
+      AND a.class_id = cl.id
+      AND cl.teacher_user_id = ${teacher.user_id}::uuid
+  `;
+  revalidatePath("/teacher");
+  revalidatePath("/kid");
 }
