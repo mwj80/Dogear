@@ -1,7 +1,7 @@
 "use server";
 
 import { sql } from "@/lib/db";
-import { checkFinishBookUnlocks } from "@/lib/check-unlocks";
+import { checkUnlocks } from "@/lib/check-unlocks";
 import { recordPages } from "@/lib/page-log";
 
 export async function saveProgress(input: {
@@ -52,5 +52,5 @@ export async function saveProgress(input: {
     newMax
   });
 
-  return checkFinishBookUnlocks(input.childId, input.bookId);
+  return checkUnlocks(input.childId, input.bookId);
 }
