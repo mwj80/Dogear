@@ -98,6 +98,12 @@ input, select {
   font: inherit;
   cursor: pointer;
 }
+.btn.secondary {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  width: fit-content;
+}
 
 .kid-block {
   border-top: 1px solid var(--line);
