@@ -3,7 +3,13 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
-import { createAssignment, createClass, enrollKid, removeAssignment } from "./actions";
+import {
+  createAssignment,
+  createClass,
+  enrollKid,
+  removeAssignment,
+  removeEnrollment
+} from "./actions";
 
 export default async function TeacherPage() {
   const { userId } = await auth();
@@ -104,6 +110,16 @@ export default async function TeacherPage() {
             <div key={klass.id} className="card">
               <h2>{klass.name}</h2>
               <p className="muted">{enrolled.length} kids</p>
+              {enrolled.map((kid) => (
+                <form key={kid.child_id} action={removeEnrollment} className="inline-form">
+                  <input type="hidden" name="class_id" value={klass.id} />
+                  <input type="hidden" name="child_id" value={kid.child_id} />
+                  <span>{kid.display_name}</span>
+                  <button type="submit" className="btn secondary">
+                    Remove
+                  </button>
+                </form>
+              ))}
               {available.length > 0 && (
                 <form action={enrollKid} className="inline-form">
                   <input type="hidden" name="class_id" value={klass.id} />
