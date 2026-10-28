@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
 import { ensurePageLog } from "@/lib/page-log";
+import { streakEndingToday } from "@/lib/check-unlocks";
 import Reader from "./reader";
 
 export default async function BookPage({
@@ -49,13 +50,30 @@ export default async function BookPage({
   const readThis = Number((read[0] as { this_book: number } | undefined)?.this_book ?? 0);
   const readAcross = Number((read[0] as { across: number } | undefined)?.across ?? 0);
 
+  const todayRow = await db`SELECT CURRENT_DATE::text AS today`;
+  const today = String((todayRow[0] as { today: string }).today);
+  const dayRows = await db`
+    SELECT day::text AS day, book_id::text AS book_id, SUM(pages)::int AS pages
+    FROM page_log
+    WHERE child_id = ${kid.id}::uuid
+    GROUP BY day, book_id
+  `;
+  const thisByDay = new Map<string, number>();
+  const anyByDay = new Map<string, number>();
+  for (const entry of dayRows as { day: string; book_id: string; pages: number }[]) {
+    const pages = Number(entry.pages);
+    anyByDay.set(entry.day, (anyByDay.get(entry.day) ?? 0) + pages);
+    if (entry.book_id === book.id) thisByDay.set(entry.day, pages);
+  }
+
   const rewards = (await db`
     SELECT id, face_value, status, criteria_type, scope,
            (criteria_json->>'pages')::int AS pages,
+           (criteria_json->>'days')::int AS days,
            criteria_json->>'mode' AS mode
     FROM rewards
     WHERE child_id = ${kid.id}::uuid
-      AND criteria_type IN ('finish_book', 'total_pages')
+      AND criteria_type IN ('finish_book', 'total_pages', 'daily_streak')
       AND (book_id = ${book.id}::uuid OR scope = 'any')
     ORDER BY created_at
   `) as {
@@ -65,8 +83,21 @@ export default async function BookPage({
     criteria_type: string;
     scope: string;
     pages: number | null;
+    days: number | null;
     mode: string | null;
   }[];
+
+  const withStreak = rewards.map((reward) => {
+    if (reward.criteria_type !== "daily_streak" || !reward.pages) {
+      return { ...reward, streak: 0, todayPages: 0 };
+    }
+    const source = reward.scope === "any" ? anyByDay : thisByDay;
+    return {
+      ...reward,
+      streak: streakEndingToday(source, today, reward.pages),
+      todayPages: source.get(today) ?? 0
+    };
+  });
 
   return (
     <main>
@@ -84,7 +115,7 @@ export default async function BookPage({
         startLocation={startLocation}
         readThis={readThis}
         readAcross={readAcross}
-        rewards={rewards}
+        rewards={withStreak}
       />
     </main>
   );
