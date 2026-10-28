@@ -9,7 +9,8 @@ import {
   enrollKid,
   removeAssignment,
   removeClass,
-  removeEnrollment
+  removeEnrollment,
+  renameClass
 } from "./actions";
 
 export default async function TeacherPage() {
@@ -110,6 +111,16 @@ export default async function TeacherPage() {
           return (
             <div key={klass.id} className="card">
               <h2>{klass.name}</h2>
+              <form action={renameClass} className="inline-form">
+                <input type="hidden" name="class_id" value={klass.id} />
+                <label>
+                  Name
+                  <input name="name" required maxLength={40} defaultValue={klass.name} />
+                </label>
+                <button type="submit" className="btn">
+                  Rename
+                </button>
+              </form>
               <form action={removeClass}>
                 <input type="hidden" name="class_id" value={klass.id} />
                 <button type="submit" className="btn secondary">
