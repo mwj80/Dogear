@@ -28,6 +28,14 @@ export default async function ParentPage() {
     cost_cents: number;
     display_name: string;
     title: string;
+    child_id: string;
+  }[] = [];
+  let progress: {
+    child_id: string;
+    title: string;
+    max_location: number;
+    total_locations: number;
+    updated_at: string;
   }[] = [];
   let dbError: string | null = null;
 
@@ -45,13 +53,21 @@ export default async function ParentPage() {
     `) as { id: string; title: string }[];
     rewards = (await db`
       SELECT r.id, r.face_value, r.reward_type, r.status, r.cost_cents,
-             c.display_name, b.title
+             r.child_id, c.display_name, b.title
       FROM rewards r
       JOIN children c ON c.id = r.child_id
       JOIN books b ON b.id = r.book_id
       WHERE r.household_id = ${household.household_id}::uuid
       ORDER BY r.created_at DESC
     `) as typeof rewards;
+    progress = (await db`
+      SELECT p.child_id, b.title, p.max_location, p.total_locations, p.updated_at
+      FROM progress p
+      JOIN children c ON c.id = p.child_id
+      JOIN books b ON b.id = p.book_id
+      WHERE c.household_id = ${household.household_id}::uuid
+      ORDER BY p.updated_at DESC
+    `) as typeof progress;
   } catch (err) {
     dbError = err instanceof Error ? err.message : "Database error";
   }
@@ -95,14 +111,50 @@ export default async function ParentPage() {
             {kids.length === 0 ? (
               <p>No kids yet.</p>
             ) : (
-              <ul>
-                {kids.map((kid) => (
-                  <li key={kid.id}>
-                    {kid.display_name}{" "}
-                    <Link href={`/kid/${kid.id}`}>Open kid view</Link>
-                  </li>
-                ))}
-              </ul>
+              kids.map((kid) => {
+                const kidProgress = progress.filter((p) => p.child_id === kid.id);
+                const kidRewards = rewards.filter((r) => r.child_id === kid.id);
+                return (
+                  <div key={kid.id} className="kid-block">
+                    <p className="kid-name">
+                      {kid.display_name}{" "}
+                      <Link href={`/kid/${kid.id}`}>Open kid view</Link>
+                    </p>
+                    {kidProgress.length === 0 ? (
+                      <p className="muted">No reading yet.</p>
+                    ) : (
+                      kidProgress.map((p) => {
+                        const pct =
+                          p.total_locations > 0
+                            ? Math.min(100, Math.round((p.max_location / p.total_locations) * 100))
+                            : 0;
+                        return (
+                          <div key={p.title} className="progress-row">
+                            <div className="progress-meta">
+                              <span>{p.title}</span>
+                              <span>
+                                {p.max_location} / {p.total_locations || "?"} · {pct}%
+                              </span>
+                            </div>
+                            <div className="progress-bar">
+                              <div className="progress-fill" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                    {kidRewards.length > 0 && (
+                      <ul className="reward-list">
+                        {kidRewards.map((r) => (
+                          <li key={r.id} className={r.status === "unlocked" ? "unlocked" : ""}>
+                            {r.face_value} for finishing {r.title} — {r.status}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })
             )}
             <form action={createChild} className="stack">
               <label>
@@ -159,13 +211,13 @@ export default async function ParentPage() {
           </div>
 
           <div className="card">
-            <h2>Rewards</h2>
+            <h2>All rewards</h2>
             {rewards.length === 0 ? (
               <p>None yet.</p>
             ) : (
               <ul>
                 {rewards.map((reward) => (
-                  <li key={reward.id}>
+                  <li key={reward.id} className={reward.status === "unlocked" ? "unlocked" : ""}>
                     {reward.display_name}: {reward.face_value} for finishing{" "}
                     {reward.title} — {reward.status} ($
                     {(Number(reward.cost_cents) / 100).toFixed(2)})
