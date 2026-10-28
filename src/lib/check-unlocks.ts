@@ -9,26 +9,44 @@ type RewardRow = {
   criteria_type: string;
   scope: string;
   book_id: string | null;
-  criteria_json: { pages?: number; mode?: string } | string | null;
+  criteria_json: { pages?: number; days?: number; mode?: string } | string | null;
 };
 
 function criteriaOf(reward: RewardRow) {
   const json =
     typeof reward.criteria_json === "string"
-      ? (JSON.parse(reward.criteria_json) as { pages?: number; mode?: string })
+      ? (JSON.parse(reward.criteria_json) as {
+          pages?: number;
+          days?: number;
+          mode?: string;
+        })
       : reward.criteria_json;
   const mode =
     reward.scope === "any" || json?.mode === "read" ? "read" : "reach";
   return {
     pages: Number(json?.pages ?? 0),
+    days: Number(json?.days ?? 0),
     mode
   };
 }
 
-async function spendAndUnlock(
-  reward: RewardRow,
-  note: string
+export function streakEndingToday(
+  byDay: Map<string, number>,
+  today: string,
+  perDay: number
 ) {
+  let streak = 0;
+  const cursor = new Date(`${today}T00:00:00Z`);
+  while (true) {
+    const key = cursor.toISOString().slice(0, 10);
+    if ((byDay.get(key) ?? 0) < perDay) break;
+    streak += 1;
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+  return streak;
+}
+
+async function spendAndUnlock(reward: RewardRow, note: string) {
   const db = sql();
   const house = await db`
     SELECT pot_available_cents
@@ -88,6 +106,9 @@ export async function checkUnlocks(
   const total = Number(row.total_locations);
   const finished = total > 0 && maxLoc >= total - 1;
 
+  const todayRow = await db`SELECT CURRENT_DATE::text AS today`;
+  const today = String((todayRow[0] as { today: string }).today);
+
   const readRows = await db`
     SELECT book_id::text AS book_id, COALESCE(SUM(pages), 0)::int AS pages
     FROM page_log
@@ -103,12 +124,26 @@ export async function checkUnlocks(
   }
   const readThis = readByBook.get(bookId) ?? 0;
 
+  const dayRows = await db`
+    SELECT day::text AS day, book_id::text AS book_id, SUM(pages)::int AS pages
+    FROM page_log
+    WHERE child_id = ${childId}::uuid
+    GROUP BY day, book_id
+  `;
+  const thisByDay = new Map<string, number>();
+  const anyByDay = new Map<string, number>();
+  for (const entry of dayRows as { day: string; book_id: string; pages: number }[]) {
+    const pages = Number(entry.pages);
+    anyByDay.set(entry.day, (anyByDay.get(entry.day) ?? 0) + pages);
+    if (entry.book_id === bookId) thisByDay.set(entry.day, pages);
+  }
+
   const rewards = await db`
     SELECT id, household_id, cost_cents, face_value, criteria_type, scope, book_id, criteria_json
     FROM rewards
     WHERE child_id = ${childId}::uuid
       AND status = 'active'
-      AND criteria_type IN ('finish_book', 'total_pages')
+      AND criteria_type IN ('finish_book', 'total_pages', 'daily_streak')
       AND (book_id = ${bookId}::uuid OR scope = 'any')
     ORDER BY (criteria_json->>'pages')::int NULLS LAST, created_at
   `;
@@ -116,9 +151,12 @@ export async function checkUnlocks(
   const unlocked: { id: string; face_value: string }[] = [];
 
   for (const reward of rewards as RewardRow[]) {
-    const { pages, mode } = criteriaOf(reward);
+    const { pages, days, mode } = criteriaOf(reward);
     let met = false;
-    if (reward.scope === "any") {
+    if (reward.criteria_type === "daily_streak") {
+      const source = reward.scope === "any" ? anyByDay : thisByDay;
+      met = pages > 0 && days > 0 && streakEndingToday(source, today, pages) >= days;
+    } else if (reward.scope === "any") {
       met = pages > 0 && readAcross >= pages;
     } else if (reward.criteria_type === "finish_book") {
       met = finished;
@@ -130,13 +168,15 @@ export async function checkUnlocks(
     if (!met) continue;
 
     const note =
-      reward.scope === "any"
-        ? "Read-any-book unlock"
-        : reward.criteria_type === "finish_book"
-          ? "Finish-book unlock"
-          : mode === "read"
-            ? "Read-pages unlock"
-            : "Reach-page unlock";
+      reward.criteria_type === "daily_streak"
+        ? "Daily-streak unlock"
+        : reward.scope === "any"
+          ? "Read-any-book unlock"
+          : reward.criteria_type === "finish_book"
+            ? "Finish-book unlock"
+            : mode === "read"
+              ? "Read-pages unlock"
+              : "Reach-page unlock";
     await spendAndUnlock(reward, note);
     unlocked.push({ id: reward.id, face_value: reward.face_value });
   }
