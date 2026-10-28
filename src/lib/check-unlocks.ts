@@ -17,10 +17,54 @@ function criteriaOf(reward: RewardRow) {
     typeof reward.criteria_json === "string"
       ? (JSON.parse(reward.criteria_json) as { pages?: number; mode?: string })
       : reward.criteria_json;
+  const mode =
+    reward.scope === "any" || json?.mode === "read" ? "read" : "reach";
   return {
     pages: Number(json?.pages ?? 0),
-    mode: json?.mode === "read" ? "read" : "reach"
+    mode
   };
+}
+
+async function spendAndUnlock(
+  reward: RewardRow,
+  note: string
+) {
+  const db = sql();
+  const house = await db`
+    SELECT pot_available_cents
+    FROM households
+    WHERE id = ${reward.household_id}::uuid
+  `;
+  const available = Number(
+    (house[0] as { pot_available_cents: number } | undefined)
+      ?.pot_available_cents ?? 0
+  );
+  const cost = Number(reward.cost_cents);
+  const shortfall = Math.max(0, cost - available);
+  const spend = Math.min(available, cost);
+
+  await db`
+    UPDATE households
+    SET pot_available_cents = pot_available_cents - ${spend}
+    WHERE id = ${reward.household_id}::uuid
+  `;
+  await db`
+    INSERT INTO ledger (household_id, kind, amount_cents, reward_id, note)
+    VALUES (
+      ${reward.household_id}::uuid,
+      'spend',
+      ${spend},
+      ${reward.id}::uuid,
+      ${note}
+    )
+  `;
+  await db`
+    UPDATE rewards
+    SET status = 'unlocked',
+        unlocked_at = now(),
+        shortfall_cents = ${shortfall}
+    WHERE id = ${reward.id}::uuid AND status = 'active'
+  `;
 }
 
 export async function checkUnlocks(
@@ -45,7 +89,7 @@ export async function checkUnlocks(
   const finished = total > 0 && maxLoc >= total - 1;
 
   const readRows = await db`
-    SELECT book_id, COALESCE(SUM(pages), 0)::int AS pages
+    SELECT book_id::text AS book_id, COALESCE(SUM(pages), 0)::int AS pages
     FROM page_log
     WHERE child_id = ${childId}::uuid
     GROUP BY book_id
@@ -66,6 +110,7 @@ export async function checkUnlocks(
       AND status = 'active'
       AND criteria_type IN ('finish_book', 'total_pages')
       AND (book_id = ${bookId}::uuid OR scope = 'any')
+    ORDER BY (criteria_json->>'pages')::int NULLS LAST, created_at
   `;
 
   const unlocked: { id: string; face_value: string }[] = [];
@@ -74,7 +119,7 @@ export async function checkUnlocks(
     const { pages, mode } = criteriaOf(reward);
     let met = false;
     if (reward.scope === "any") {
-      met = mode === "read" && pages > 0 && readAcross >= pages;
+      met = pages > 0 && readAcross >= pages;
     } else if (reward.criteria_type === "finish_book") {
       met = finished;
     } else if (mode === "read") {
@@ -84,18 +129,6 @@ export async function checkUnlocks(
     }
     if (!met) continue;
 
-    const house = await db`
-      SELECT pot_available_cents
-      FROM households
-      WHERE id = ${reward.household_id}::uuid
-    `;
-    const available = Number(
-      (house[0] as { pot_available_cents: number } | undefined)
-        ?.pot_available_cents ?? 0
-    );
-    const cost = Number(reward.cost_cents);
-    const shortfall = Math.max(0, cost - available);
-    const spend = Math.min(available, cost);
     const note =
       reward.scope === "any"
         ? "Read-any-book unlock"
@@ -104,32 +137,26 @@ export async function checkUnlocks(
           : mode === "read"
             ? "Read-pages unlock"
             : "Reach-page unlock";
-
-    await db`
-      UPDATE households
-      SET pot_available_cents = pot_available_cents - ${spend}
-      WHERE id = ${reward.household_id}::uuid
-    `;
-    await db`
-      INSERT INTO ledger (household_id, kind, amount_cents, reward_id, note)
-      VALUES (
-        ${reward.household_id}::uuid,
-        'spend',
-        ${spend},
-        ${reward.id}::uuid,
-        ${note}
-      )
-    `;
-    await db`
-      UPDATE rewards
-      SET status = 'unlocked',
-          unlocked_at = now(),
-          shortfall_cents = ${shortfall}
-      WHERE id = ${reward.id}::uuid
-    `;
+    await spendAndUnlock(reward, note);
     unlocked.push({ id: reward.id, face_value: reward.face_value });
   }
   return unlocked;
+}
+
+/** Recheck every active reward for a household. Heals rewards that already met their goal. */
+export async function recheckHousehold(householdId: string) {
+  const db = sql();
+  const kids = await db`
+    SELECT id FROM children WHERE household_id = ${householdId}::uuid
+  `;
+  for (const kid of kids as { id: string }[]) {
+    const books = await db`
+      SELECT book_id FROM progress WHERE child_id = ${kid.id}::uuid
+    `;
+    for (const book of books as { book_id: string }[]) {
+      await checkUnlocks(kid.id, book.book_id);
+    }
+  }
 }
 
 /** @deprecated use checkUnlocks */
