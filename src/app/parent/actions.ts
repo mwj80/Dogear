@@ -71,15 +71,19 @@ export async function createFinishReward(formData: FormData) {
   const scope = String(formData.get("scope") ?? "book") === "any" ? "any" : "book";
   let goal = String(formData.get("goal") ?? "reach");
   const pages = Number(formData.get("pages") ?? 0);
+  const days = Number(formData.get("days") ?? 0);
   if (!childId || !faceValue) {
     throw new Error("Kid and reward value are required");
   }
-  if (scope === "any") goal = "read";
+  if (scope === "any" && (goal === "reach" || goal === "finish")) goal = "read";
   if (scope === "book" && !bookId) {
     throw new Error("Pick a book for a this-book reward");
   }
   if (goal !== "finish" && (!pages || pages < 1)) {
     throw new Error("Enter a page count of at least 1");
+  }
+  if (goal === "streak" && (!days || days < 1)) {
+    throw new Error("Enter at least 1 day for a streak");
   }
 
   const user = await currentUser();
@@ -112,9 +116,14 @@ export async function createFinishReward(formData: FormData) {
     customDefault: Number(rates.custom_default_dollars)
   });
 
-  const type = goal === "finish" ? "finish_book" : "total_pages";
+  const type =
+    goal === "finish" ? "finish_book" : goal === "streak" ? "daily_streak" : "total_pages";
   const criteriaJson =
-    goal === "finish" ? "{}" : JSON.stringify({ pages, mode: goal });
+    goal === "finish"
+      ? "{}"
+      : goal === "streak"
+        ? JSON.stringify({ pages, days })
+        : JSON.stringify({ pages, mode: goal });
 
   if (scope === "any") {
     await db`
@@ -185,6 +194,19 @@ export async function resetDemo() {
     USING children c
     WHERE pl.child_id = c.id
       AND c.household_id = ${hid}::uuid
+  `;
+
+  await db`
+    INSERT INTO page_log (child_id, book_id, day, pages)
+    SELECT p.child_id, p.book_id, CURRENT_DATE - 2, 5
+    FROM progress p
+    JOIN children c ON c.id = p.child_id
+    WHERE c.household_id = ${hid}::uuid
+    UNION ALL
+    SELECT p.child_id, p.book_id, CURRENT_DATE - 1, 5
+    FROM progress p
+    JOIN children c ON c.id = p.child_id
+    WHERE c.household_id = ${hid}::uuid
   `;
 
   await db`
