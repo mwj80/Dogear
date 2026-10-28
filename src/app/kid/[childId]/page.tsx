@@ -29,6 +29,26 @@ export default async function KidHomePage({
     WHERE r.child_id = ${childId}::uuid
     ORDER BY r.created_at DESC
   `;
+  const assignments = (await db`
+    SELECT a.title, a.criteria_type, (a.criteria_json->>'pages')::int AS pages,
+           b.title AS book_title, b.slug,
+           COALESCE(p.max_location, 0) AS max_location,
+           COALESCE(p.total_locations, 0) AS total_locations
+    FROM enrollments e
+    JOIN assignments a ON a.class_id = e.class_id
+    JOIN books b ON b.id = a.book_id
+    LEFT JOIN progress p ON p.child_id = e.child_id AND p.book_id = a.book_id
+    WHERE e.child_id = ${childId}::uuid
+    ORDER BY a.created_at
+  `) as {
+    title: string;
+    criteria_type: string;
+    pages: number | null;
+    book_title: string;
+    slug: string;
+    max_location: number;
+    total_locations: number;
+  }[];
 
   const kid = kids[0] as { id: string; display_name: string };
 
@@ -39,6 +59,39 @@ export default async function KidHomePage({
       </header>
       <h1>Hi, {kid.display_name}</h1>
       <p>Pick a book and earn your rewards.</p>
+      {assignments.length > 0 && (
+        <div className="card">
+          <h2>Assigned</h2>
+          {assignments.map((assignment) => {
+            const max = Number(assignment.max_location);
+            const total = Number(assignment.total_locations);
+            const target = Number(assignment.pages ?? 0);
+            const done =
+              assignment.criteria_type === "finish_book"
+                ? total > 0 && max >= total - 1
+                : max >= target;
+            const shown =
+              assignment.criteria_type === "finish_book"
+                ? `${max} / ${total || "?"}`
+                : `${Math.min(max, target)} / ${target}`;
+            const goal =
+              assignment.criteria_type === "finish_book"
+                ? `Finish ${assignment.book_title}`
+                : `Read ${target} pages in ${assignment.book_title}`;
+            return (
+              <div key={`${assignment.slug}-${assignment.title}`} className="progress-row">
+                <div className="progress-meta">
+                  <span>
+                    <Link href={`/kid/${kid.id}/book/${assignment.slug}`}>{assignment.title}</Link>
+                    {" "}· {goal}
+                  </span>
+                  <span className={done ? "unlocked" : ""}>{done ? "done" : shown}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
       <div className="card">
         <h2>Rewards</h2>
         {rewards.length === 0 ? (
