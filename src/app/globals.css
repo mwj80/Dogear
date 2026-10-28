@@ -51,6 +51,32 @@ input {
   border: 1px solid var(--line);
   border-radius: 8px;
 }
+.banner {
+  background: #fff4e8;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+}
+.banner.done { background: #e8f6ee; }
+.banner p { margin: 0.2rem 0; color: var(--ink); }
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 25, 22, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 20;
+}
+.modal-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  max-width: 22rem;
+  text-align: center;
+}
 .reader {
   background: #fff;
   border: 1px solid var(--line);
