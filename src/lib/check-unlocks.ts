@@ -35,8 +35,11 @@ export function streakEndingToday(
   today: string,
   perDay: number
 ) {
-  let streak = 0;
   const cursor = new Date(`${today}T00:00:00Z`);
+  if ((byDay.get(today) ?? 0) < perDay) {
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+  let streak = 0;
   while (true) {
     const key = cursor.toISOString().slice(0, 10);
     if ((byDay.get(key) ?? 0) < perDay) break;
