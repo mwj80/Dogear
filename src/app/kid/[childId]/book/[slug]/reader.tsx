@@ -112,6 +112,22 @@ function streakNow(reward: RewardInfo, readDelta: number) {
   return todayNow >= perDay ? base + 1 : base;
 }
 
+function daysUntil(due: string, today: string) {
+  return Math.round(
+    (Date.parse(`${due}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000
+  );
+}
+
+function dueLabel(due: string | null, today: string, done: boolean) {
+  if (!due) return "";
+  const days = daysUntil(due, today);
+  if (done) return `due ${due}`;
+  if (days < 0) return `due ${due} · overdue`;
+  if (days === 0) return "due today";
+  if (days === 1) return "due tomorrow · 1 day left";
+  return `due ${due} · ${days} days left`;
+}
+
 export default function Reader({
   childId,
   bookId,
@@ -262,12 +278,12 @@ export default function Reader({
               assignment.criteria_type === "finish_book"
                 ? "Finish this book"
                 : `Read ${assignment.pages} pages`;
+            const due = dueLabel(assignment.due_date, today, done);
             return (
               <div key={assignment.id} className="reward-track">
                 <p className={done ? "unlocked" : overdue ? "overdue" : ""}>
                   Assigned: {assignment.title} · {goal}
-                  {assignment.due_date ? ` · due ${assignment.due_date}` : ""}
-                  {overdue ? " · overdue" : ""}
+                  {due ? ` · ${due}` : ""}
                 </p>
                 <div className="progress-meta">
                   <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
