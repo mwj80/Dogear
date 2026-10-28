@@ -89,7 +89,8 @@ export default async function BookPage({
 
   const assignments = (await db`
     SELECT a.id::text AS id, a.title, a.criteria_type,
-           (a.criteria_json->>'pages')::int AS pages
+           (a.criteria_json->>'pages')::int AS pages,
+           a.due_date::text AS due_date
     FROM enrollments e
     JOIN assignments a ON a.class_id = e.class_id
     WHERE e.child_id = ${kid.id}::uuid AND a.book_id = ${book.id}::uuid
@@ -99,6 +100,7 @@ export default async function BookPage({
     title: string;
     criteria_type: string;
     pages: number | null;
+    due_date: string | null;
   }[];
 
   const withStreak = rewards.map((reward) => {
@@ -131,6 +133,7 @@ export default async function BookPage({
         readAcross={readAcross}
         rewards={withStreak}
         assignments={assignments}
+        today={today}
       />
     </main>
   );
