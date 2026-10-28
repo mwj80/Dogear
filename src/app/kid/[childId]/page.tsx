@@ -19,11 +19,11 @@ export default async function KidHomePage({
     SELECT slug, title, author FROM books ORDER BY title
   `;
   const rewards = await db`
-    SELECT r.face_value, r.status, r.criteria_type,
+    SELECT r.face_value, r.status, r.criteria_type, r.scope,
            (r.criteria_json->>'pages')::int AS pages,
            b.title, b.slug
     FROM rewards r
-    JOIN books b ON b.id = r.book_id
+    LEFT JOIN books b ON b.id = r.book_id
     WHERE r.child_id = ${childId}::uuid
     ORDER BY r.created_at DESC
   `;
@@ -47,17 +47,22 @@ export default async function KidHomePage({
               const r = reward as {
                 face_value: string;
                 status: string;
-                title: string;
-                slug: string;
+                title: string | null;
+                slug: string | null;
                 criteria_type: string;
+                scope: string;
                 pages: number | null;
               };
               const goal =
-                r.criteria_type === "total_pages" && r.pages
-                  ? `Reach page ${r.pages} in ${r.title}`
-                  : `Finish ${r.title}`;
+                r.scope === "any"
+                  ? r.criteria_type === "total_pages" && r.pages
+                    ? `Reach ${r.pages} pages in any book`
+                    : "Finish any book"
+                  : r.criteria_type === "total_pages" && r.pages
+                    ? `Reach page ${r.pages} in ${r.title}`
+                    : `Finish ${r.title}`;
               return (
-                <li key={`${r.slug}-${i}`}>
+                <li key={`${r.slug ?? "any"}-${i}`}>
                   {goal} → {r.face_value} ({r.status})
                 </li>
               );
