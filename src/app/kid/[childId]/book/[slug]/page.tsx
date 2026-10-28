@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
+import { ensurePageLog } from "@/lib/page-log";
 import Reader from "./reader";
 
 export default async function BookPage({
@@ -10,6 +11,7 @@ export default async function BookPage({
 }) {
   const { childId, slug } = await params;
   const db = sql();
+  await ensurePageLog();
 
   const kids = await db`
     SELECT id, display_name FROM children WHERE id = ${childId}::uuid LIMIT 1
@@ -37,18 +39,20 @@ export default async function BookPage({
     ? Number((progress[0] as { max_location: number }).max_location)
     : 0;
 
-  const across = await db`
-    SELECT COALESCE(SUM(max_location), 0)::int AS pages
-    FROM progress
+  const read = await db`
+    SELECT
+      COALESCE(SUM(pages) FILTER (WHERE book_id = ${book.id}::uuid), 0)::int AS this_book,
+      COALESCE(SUM(pages), 0)::int AS across
+    FROM page_log
     WHERE child_id = ${kid.id}::uuid
   `;
-  const acrossPages = Number(
-    (across[0] as { pages: number } | undefined)?.pages ?? 0
-  );
+  const readThis = Number((read[0] as { this_book: number } | undefined)?.this_book ?? 0);
+  const readAcross = Number((read[0] as { across: number } | undefined)?.across ?? 0);
 
   const rewards = (await db`
     SELECT id, face_value, status, criteria_type, scope,
-           (criteria_json->>'pages')::int AS pages
+           (criteria_json->>'pages')::int AS pages,
+           criteria_json->>'mode' AS mode
     FROM rewards
     WHERE child_id = ${kid.id}::uuid
       AND criteria_type IN ('finish_book', 'total_pages')
@@ -61,6 +65,7 @@ export default async function BookPage({
     criteria_type: string;
     scope: string;
     pages: number | null;
+    mode: string | null;
   }[];
 
   return (
@@ -77,7 +82,8 @@ export default async function BookPage({
         bookId={book.id}
         epubPath={book.epub_path}
         startLocation={startLocation}
-        acrossPages={acrossPages}
+        readThis={readThis}
+        readAcross={readAcross}
         rewards={rewards}
       />
     </main>
