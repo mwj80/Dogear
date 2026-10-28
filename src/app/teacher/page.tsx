@@ -59,7 +59,7 @@ export default async function TeacherPage() {
     JOIN classes cl ON cl.id = a.class_id
     JOIN books b ON b.id = a.book_id
     WHERE cl.teacher_user_id = ${teacher.user_id}::uuid
-    ORDER BY a.created_at
+    ORDER BY a.due_date NULLS LAST, a.created_at
   `) as {
     id: string;
     class_id: string;
