@@ -51,6 +51,27 @@ export async function enrollKid(formData: FormData) {
     ON CONFLICT DO NOTHING
   `;
   revalidatePath("/teacher");
+  revalidatePath("/parent");
+  revalidatePath("/kid");
+}
+
+export async function removeEnrollment(formData: FormData) {
+  const teacher = await teacherOfUser();
+  const classId = String(formData.get("class_id") ?? "");
+  const childId = String(formData.get("child_id") ?? "");
+  if (!classId || !childId) throw new Error("Class and kid are required");
+  const db = sql();
+  await db`
+    DELETE FROM enrollments e
+    USING classes cl
+    WHERE e.class_id = ${classId}::uuid
+      AND e.child_id = ${childId}::uuid
+      AND e.class_id = cl.id
+      AND cl.teacher_user_id = ${teacher.user_id}::uuid
+  `;
+  revalidatePath("/teacher");
+  revalidatePath("/parent");
+  revalidatePath("/kid");
 }
 
 export async function createAssignment(formData: FormData) {
