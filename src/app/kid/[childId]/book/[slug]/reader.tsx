@@ -9,6 +9,7 @@ type RewardInfo = {
   status: string;
   criteria_type?: string;
   scope?: string;
+  mode?: string | null;
   pages?: number | null;
 };
 
@@ -17,7 +18,8 @@ type Props = {
   bookId: string;
   epubPath: string;
   startLocation: number;
-  acrossPages: number;
+  readThis: number;
+  readAcross: number;
   rewards: RewardInfo[];
 };
 
@@ -65,23 +67,21 @@ function loadScript(src: string) {
   });
 }
 
+function isRead(reward: RewardInfo) {
+  return reward.scope === "any" || reward.mode === "read";
+}
+
 function goalLabel(reward: RewardInfo) {
   if (reward.scope === "any") {
-    if (reward.criteria_type === "total_pages" && reward.pages) {
-      return `Reach ${reward.pages} pages in any book`;
-    }
-    return "Finish any book";
+    return `Read ${reward.pages ?? 0} pages in any book`;
   }
-  if (reward.criteria_type === "total_pages" && reward.pages) {
-    return `Reach page ${reward.pages}`;
-  }
-  return "Finish this book";
+  if (reward.criteria_type === "finish_book") return "Finish this book";
+  if (reward.mode === "read") return `Read ${reward.pages} pages`;
+  return `Reach page ${reward.pages}`;
 }
 
 function targetOf(reward: RewardInfo, bookTotal: number) {
-  if (reward.criteria_type === "total_pages" && reward.pages) {
-    return reward.pages;
-  }
+  if (reward.criteria_type === "total_pages" && reward.pages) return reward.pages;
   return bookTotal || 0;
 }
 
@@ -90,7 +90,8 @@ export default function Reader({
   bookId,
   epubPath,
   startLocation,
-  acrossPages,
+  readThis,
+  readAcross,
   rewards
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -210,8 +211,7 @@ export default function Reader({
   }
 
   const pct = total ? Math.round(((highest + 1) / total) * 100) : 0;
-  const reached = highest;
-  const acrossNow = acrossPages - startLocation + reached;
+  const readDelta = Math.max(0, highest - startLocation);
 
   const active = items.filter((r) => r.status === "active");
   const unlocked = items.filter((r) => r.status === "unlocked");
@@ -222,7 +222,11 @@ export default function Reader({
         <div className="banner">
           {active.map((r) => {
             const target = targetOf(r, total);
-            const raw = r.scope === "any" ? acrossNow : reached;
+            const raw = isRead(r)
+              ? (r.scope === "any" ? readAcross : readThis) + readDelta
+              : r.criteria_type === "finish_book"
+                ? highest
+                : highest;
             const current = target > 0 ? Math.min(Math.max(raw, 0), target) : 0;
             const fill = target > 0 ? Math.round((current / target) * 100) : 0;
             return (
