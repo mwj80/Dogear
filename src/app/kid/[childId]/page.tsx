@@ -31,6 +31,7 @@ export default async function KidHomePage({
   `;
   const assignments = (await db`
     SELECT a.title, a.criteria_type, (a.criteria_json->>'pages')::int AS pages,
+           a.due_date::text AS due_date,
            b.title AS book_title, b.slug,
            COALESCE(p.max_location, 0) AS max_location,
            COALESCE(p.total_locations, 0) AS total_locations
@@ -44,6 +45,7 @@ export default async function KidHomePage({
     title: string;
     criteria_type: string;
     pages: number | null;
+    due_date: string | null;
     book_title: string;
     slug: string;
     max_location: number;
@@ -84,6 +86,7 @@ export default async function KidHomePage({
                   <span>
                     <Link href={`/kid/${kid.id}/book/${assignment.slug}`}>{assignment.title}</Link>
                     {" "}· {goal}
+                    {assignment.due_date ? ` · due ${assignment.due_date}` : ""}
                   </span>
                   <span className={done ? "unlocked" : ""}>{done ? "done" : shown}</span>
                 </div>
