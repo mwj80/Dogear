@@ -68,9 +68,13 @@ export async function createFinishReward(formData: FormData) {
     | "custom";
   const faceValue = String(formData.get("face_value") ?? "").trim();
   const criteriaType = String(formData.get("criteria_type") ?? "finish_book");
+  const scope = String(formData.get("scope") ?? "book") === "any" ? "any" : "book";
   const pages = Number(formData.get("pages") ?? 0);
-  if (!childId || !bookId || !faceValue) {
-    throw new Error("Kid, book, and reward value are required");
+  if (!childId || !faceValue) {
+    throw new Error("Kid and reward value are required");
+  }
+  if (scope === "book" && !bookId) {
+    throw new Error("Pick a book for a this-book reward");
   }
   if (criteriaType === "total_pages" && (!pages || pages < 1)) {
     throw new Error("Enter a page count of at least 1");
@@ -110,24 +114,45 @@ export async function createFinishReward(formData: FormData) {
   const criteriaJson =
     type === "total_pages" ? JSON.stringify({ pages }) : "{}";
 
-  await db`
-    INSERT INTO rewards (
-      household_id, child_id, reward_type, face_value, cost_cents,
-      scope, book_id, criteria_type, criteria_json, status
-    )
-    VALUES (
-      ${household.household_id}::uuid,
-      ${childId}::uuid,
-      ${rewardType},
-      ${faceValue},
-      ${cost},
-      'book',
-      ${bookId}::uuid,
-      ${type},
-      ${criteriaJson}::jsonb,
-      'active'
-    )
-  `;
+  if (scope === "any") {
+    await db`
+      INSERT INTO rewards (
+        household_id, child_id, reward_type, face_value, cost_cents,
+        scope, book_id, criteria_type, criteria_json, status
+      )
+      VALUES (
+        ${household.household_id}::uuid,
+        ${childId}::uuid,
+        ${rewardType},
+        ${faceValue},
+        ${cost},
+        'any',
+        NULL,
+        ${type},
+        ${criteriaJson}::jsonb,
+        'active'
+      )
+    `;
+  } else {
+    await db`
+      INSERT INTO rewards (
+        household_id, child_id, reward_type, face_value, cost_cents,
+        scope, book_id, criteria_type, criteria_json, status
+      )
+      VALUES (
+        ${household.household_id}::uuid,
+        ${childId}::uuid,
+        ${rewardType},
+        ${faceValue},
+        ${cost},
+        'book',
+        ${bookId}::uuid,
+        ${type},
+        ${criteriaJson}::jsonb,
+        'active'
+      )
+    `;
+  }
   revalidatePath("/parent");
 }
 
