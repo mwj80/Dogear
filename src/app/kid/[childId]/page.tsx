@@ -43,7 +43,7 @@ export default async function KidHomePage({
     JOIN books b ON b.id = a.book_id
     LEFT JOIN progress p ON p.child_id = e.child_id AND p.book_id = a.book_id
     WHERE e.child_id = ${childId}::uuid
-    ORDER BY a.created_at
+    ORDER BY a.due_date NULLS LAST, a.created_at
   `) as {
     title: string;
     criteria_type: string;
