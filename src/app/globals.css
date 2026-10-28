@@ -134,3 +134,29 @@ input, select {
 .reward-list { margin: 0.35rem 0 0; padding-left: 1.1rem; font-size: 0.9rem; }
 .reward-list li { color: var(--muted); }
 .reward-list li.unlocked, li.unlocked { color: #1a7a3a; font-weight: bold; }
+
+.week {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0.35rem 0 0.5rem;
+}
+.day {
+  flex: 1;
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.day .dot {
+  height: 22px;
+  border-radius: 4px;
+  background: var(--line);
+  margin-bottom: 0.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.65rem;
+}
+.day.on .dot {
+  background: var(--accent);
+}
