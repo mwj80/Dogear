@@ -159,7 +159,7 @@ export default async function ParentPage() {
       JOIN books b ON b.id = a.book_id
       LEFT JOIN progress p ON p.child_id = e.child_id AND p.book_id = a.book_id
       WHERE c.household_id = ${household.household_id}::uuid
-      ORDER BY a.created_at
+      ORDER BY a.due_date NULLS LAST, a.created_at
     `) as typeof classes;
   } catch (err) {
     dbError = err instanceof Error ? err.message : "Database error";
