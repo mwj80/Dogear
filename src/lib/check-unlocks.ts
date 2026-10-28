@@ -7,15 +7,19 @@ type RewardRow = {
   face_value: string;
   criteria_type: string;
   scope: string;
-  criteria_json: { pages?: number } | string | null;
+  book_id: string | null;
+  criteria_json: { pages?: number; mode?: string } | string | null;
 };
 
-function pagesNeeded(reward: RewardRow) {
+function criteriaOf(reward: RewardRow) {
   const json =
     typeof reward.criteria_json === "string"
-      ? (JSON.parse(reward.criteria_json) as { pages?: number })
+      ? (JSON.parse(reward.criteria_json) as { pages?: number; mode?: string })
       : reward.criteria_json;
-  return Number(json?.pages ?? 0);
+  return {
+    pages: Number(json?.pages ?? 0),
+    mode: json?.mode === "read" ? "read" : "reach"
+  };
 }
 
 export async function checkUnlocks(
@@ -38,24 +42,23 @@ export async function checkUnlocks(
   const total = Number(row.total_locations);
   const finished = total > 0 && maxLoc >= total - 1;
 
-  const allProgress = await db`
-    SELECT max_location, total_locations
-    FROM progress
+  const readRows = await db`
+    SELECT book_id, COALESCE(SUM(pages), 0)::int AS pages
+    FROM page_log
     WHERE child_id = ${childId}::uuid
+    GROUP BY book_id
   `;
-  const totals = allProgress as {
-    max_location: number;
-    total_locations: number;
-  }[];
-  const acrossPages = totals.reduce((n, p) => n + Number(p.max_location), 0);
-  const anyFinished = totals.some(
-    (p) =>
-      Number(p.total_locations) > 0 &&
-      Number(p.max_location) >= Number(p.total_locations) - 1
-  );
+  const readByBook = new Map<string, number>();
+  let readAcross = 0;
+  for (const entry of readRows as { book_id: string; pages: number }[]) {
+    const pages = Number(entry.pages);
+    readByBook.set(entry.book_id, pages);
+    readAcross += pages;
+  }
+  const readThis = readByBook.get(bookId) ?? 0;
 
   const rewards = await db`
-    SELECT id, household_id, cost_cents, face_value, criteria_type, scope, criteria_json
+    SELECT id, household_id, cost_cents, face_value, criteria_type, scope, book_id, criteria_json
     FROM rewards
     WHERE child_id = ${childId}::uuid
       AND status = 'active'
@@ -66,19 +69,16 @@ export async function checkUnlocks(
   const unlocked: { id: string; face_value: string }[] = [];
 
   for (const reward of rewards as RewardRow[]) {
+    const { pages, mode } = criteriaOf(reward);
     let met = false;
     if (reward.scope === "any") {
-      if (reward.criteria_type === "finish_book") {
-        met = anyFinished;
-      } else if (reward.criteria_type === "total_pages") {
-        const need = pagesNeeded(reward);
-        met = need > 0 && acrossPages >= need;
-      }
+      met = mode === "read" && pages > 0 && readAcross >= pages;
     } else if (reward.criteria_type === "finish_book") {
       met = finished;
-    } else if (reward.criteria_type === "total_pages") {
-      const need = pagesNeeded(reward);
-      met = need > 0 && maxLoc >= need;
+    } else if (mode === "read") {
+      met = pages > 0 && readThis >= pages;
+    } else {
+      met = pages > 0 && maxLoc >= pages;
     }
     if (!met) continue;
 
@@ -96,10 +96,12 @@ export async function checkUnlocks(
     const spend = Math.min(available, cost);
     const note =
       reward.scope === "any"
-        ? "Any-book unlock"
-        : reward.criteria_type === "total_pages"
-          ? "Page-threshold unlock"
-          : "Finish-book unlock";
+        ? "Read-any-book unlock"
+        : reward.criteria_type === "finish_book"
+          ? "Finish-book unlock"
+          : mode === "read"
+            ? "Read-pages unlock"
+            : "Reach-page unlock";
 
     await db`
       UPDATE households
