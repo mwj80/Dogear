@@ -19,6 +19,13 @@ function lastSevenDays() {
 
 const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
+function criteriaLabel(type: string, pages: number | null, title: string) {
+  if (type === "page_threshold" && pages) {
+    return `reaching page ${pages} in ${title}`;
+  }
+  return `finishing ${title}`;
+}
+
 export default async function ParentPage() {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
@@ -42,6 +49,8 @@ export default async function ParentPage() {
     display_name: string;
     title: string;
     child_id: string;
+    criteria_type: string;
+    pages: number | null;
   }[] = [];
   let progress: {
     child_id: string;
@@ -68,7 +77,9 @@ export default async function ParentPage() {
     `) as { id: string; title: string }[];
     rewards = (await db`
       SELECT r.id, r.face_value, r.reward_type, r.status, r.cost_cents,
-             r.child_id, c.display_name, b.title
+             r.child_id, r.criteria_type,
+             (r.criteria_json->>'pages')::int AS pages,
+             c.display_name, b.title
       FROM rewards r
       JOIN children c ON c.id = r.child_id
       JOIN books b ON b.id = r.book_id
@@ -197,7 +208,7 @@ export default async function ParentPage() {
                       <ul className="reward-list">
                         {kidRewards.map((r) => (
                           <li key={r.id} className={r.status === "unlocked" ? "unlocked" : ""}>
-                            {r.face_value} for finishing {r.title} — {r.status}
+                            {r.face_value} for {criteriaLabel(r.criteria_type, r.pages, r.title)} — {r.status}
                           </li>
                         ))}
                       </ul>
@@ -218,7 +229,7 @@ export default async function ParentPage() {
           </div>
 
           <div className="card">
-            <h2>Finish-book reward</h2>
+            <h2>Reward</h2>
             <form action={createFinishReward} className="stack">
               <label>
                 Kid
@@ -239,6 +250,17 @@ export default async function ParentPage() {
                     </option>
                   ))}
                 </select>
+              </label>
+              <label>
+                When
+                <select name="criteria_type" defaultValue="page_threshold">
+                  <option value="page_threshold">Reach a page</option>
+                  <option value="finish_book">Finish the book</option>
+                </select>
+              </label>
+              <label>
+                Page (if reaching a page)
+                <input name="pages" type="number" min="1" step="1" defaultValue="10" />
               </label>
               <label>
                 Type
@@ -268,8 +290,8 @@ export default async function ParentPage() {
               <ul>
                 {rewards.map((reward) => (
                   <li key={reward.id} className={reward.status === "unlocked" ? "unlocked" : ""}>
-                    {reward.display_name}: {reward.face_value} for finishing{" "}
-                    {reward.title} — {reward.status} ($
+                    {reward.display_name}: {reward.face_value} for{" "}
+                    {criteriaLabel(reward.criteria_type, reward.pages, reward.title)} — {reward.status} ($
                     {(Number(reward.cost_cents) / 100).toFixed(2)})
                   </li>
                 ))}
