@@ -8,6 +8,7 @@ type RewardInfo = {
   face_value: string;
   status: string;
   criteria_type?: string;
+  scope?: string;
   pages?: number | null;
 };
 
@@ -16,6 +17,7 @@ type Props = {
   bookId: string;
   epubPath: string;
   startLocation: number;
+  acrossPages: number;
   rewards: RewardInfo[];
 };
 
@@ -64,6 +66,12 @@ function loadScript(src: string) {
 }
 
 function goalLabel(reward: RewardInfo) {
+  if (reward.scope === "any") {
+    if (reward.criteria_type === "total_pages" && reward.pages) {
+      return `Reach ${reward.pages} pages in any book`;
+    }
+    return "Finish any book";
+  }
   if (reward.criteria_type === "total_pages" && reward.pages) {
     return `Reach page ${reward.pages}`;
   }
@@ -82,6 +90,7 @@ export default function Reader({
   bookId,
   epubPath,
   startLocation,
+  acrossPages,
   rewards
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -202,6 +211,7 @@ export default function Reader({
 
   const pct = total ? Math.round(((highest + 1) / total) * 100) : 0;
   const reached = highest;
+  const acrossNow = acrossPages - startLocation + reached;
 
   const active = items.filter((r) => r.status === "active");
   const unlocked = items.filter((r) => r.status === "unlocked");
@@ -212,7 +222,8 @@ export default function Reader({
         <div className="banner">
           {active.map((r) => {
             const target = targetOf(r, total);
-            const current = target > 0 ? Math.min(reached, target) : 0;
+            const raw = r.scope === "any" ? acrossNow : reached;
+            const current = target > 0 ? Math.min(Math.max(raw, 0), target) : 0;
             const fill = target > 0 ? Math.round((current / target) * 100) : 0;
             return (
               <div key={r.id} className="reward-track">
