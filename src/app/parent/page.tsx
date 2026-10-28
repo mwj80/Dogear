@@ -8,6 +8,7 @@ import { ensurePageLog } from "@/lib/page-log";
 import { recheckHousehold } from "@/lib/check-unlocks";
 import { createChild, loadPot, resetDemo } from "./actions";
 import RewardForm from "./reward-form";
+import RewardEditor from "./reward-editor";
 
 function lastSevenDays() {
   const days: string[] = [];
@@ -290,18 +291,19 @@ export default async function ParentPage() {
             {rewards.length === 0 ? (
               <p>None yet.</p>
             ) : (
-              <ul>
-                {rewards.map((reward) => (
-                  <li key={reward.id} className={reward.status === "unlocked" ? "unlocked" : ""}>
+              rewards.map((reward) => (
+                <div key={reward.id} className="reward-item">
+                  <div className={reward.status === "unlocked" ? "unlocked" : ""}>
                     {reward.display_name}: {reward.face_value} for{" "}
                     {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope, reward.mode, reward.days)} — {reward.status} (
                     {money(Number(reward.cost_cents))} from balance)
                     {Number(reward.shortfall_cents) > 0
                       ? ` — short ${money(Number(reward.shortfall_cents))}`
                       : ""}
-                  </li>
-                ))}
-              </ul>
+                  </div>
+                  <RewardEditor reward={reward} />
+                </div>
+              ))
             )}
           </div>
         </>
