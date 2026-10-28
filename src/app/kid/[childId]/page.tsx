@@ -15,6 +15,9 @@ export default async function KidHomePage({
   `;
   if (!kids[0]) notFound();
 
+  const todayRow = await db`SELECT CURRENT_DATE::text AS today`;
+  const today = String((todayRow[0] as { today: string }).today);
+
   const books = await db`
     SELECT slug, title, author FROM books ORDER BY title
   `;
@@ -72,6 +75,7 @@ export default async function KidHomePage({
               assignment.criteria_type === "finish_book"
                 ? total > 0 && max >= total - 1
                 : max >= target;
+            const overdue = !done && !!assignment.due_date && assignment.due_date < today;
             const shown =
               assignment.criteria_type === "finish_book"
                 ? `${max} / ${total || "?"}`
@@ -83,12 +87,15 @@ export default async function KidHomePage({
             return (
               <div key={`${assignment.slug}-${assignment.title}`} className="progress-row">
                 <div className="progress-meta">
-                  <span>
+                  <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
                     <Link href={`/kid/${kid.id}/book/${assignment.slug}`}>{assignment.title}</Link>
                     {" "}· {goal}
                     {assignment.due_date ? ` · due ${assignment.due_date}` : ""}
+                    {overdue ? " · overdue" : ""}
                   </span>
-                  <span className={done ? "unlocked" : ""}>{done ? "done" : shown}</span>
+                  <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
+                    {done ? "done" : shown}
+                  </span>
                 </div>
               </div>
             );
