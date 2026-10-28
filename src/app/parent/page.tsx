@@ -188,7 +188,9 @@ export default async function ParentPage() {
               <button type="submit" className="btn secondary">
                 Reset demo
               </button>
-              <p className="muted">Sets progress to page 5, seeds 5 pages on the last two days, rewards back to active, balance to $20.</p>
+              <p className="muted">
+                Clears test rewards and loads one of each type per kid. Progress to page 5, 5 pages on the last two days, balance to $40.
+              </p>
             </form>
           </>
         )}
