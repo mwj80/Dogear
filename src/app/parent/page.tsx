@@ -19,7 +19,18 @@ function lastSevenDays() {
 
 const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-function criteriaLabel(type: string, pages: number | null, title: string) {
+function criteriaLabel(
+  type: string,
+  pages: number | null,
+  title: string | null,
+  scope: string
+) {
+  if (scope === "any") {
+    if (type === "total_pages" && pages) {
+      return `reaching ${pages} pages in any book`;
+    }
+    return "finishing any book";
+  }
   if (type === "total_pages" && pages) {
     return `reaching page ${pages} in ${title}`;
   }
@@ -47,9 +58,10 @@ export default async function ParentPage() {
     status: string;
     cost_cents: number;
     display_name: string;
-    title: string;
+    title: string | null;
     child_id: string;
     criteria_type: string;
+    scope: string;
     pages: number | null;
   }[] = [];
   let progress: {
@@ -77,12 +89,12 @@ export default async function ParentPage() {
     `) as { id: string; title: string }[];
     rewards = (await db`
       SELECT r.id, r.face_value, r.reward_type, r.status, r.cost_cents,
-             r.child_id, r.criteria_type,
+             r.child_id, r.criteria_type, r.scope,
              (r.criteria_json->>'pages')::int AS pages,
              c.display_name, b.title
       FROM rewards r
       JOIN children c ON c.id = r.child_id
-      JOIN books b ON b.id = r.book_id
+      LEFT JOIN books b ON b.id = r.book_id
       WHERE r.household_id = ${household.household_id}::uuid
       ORDER BY r.created_at DESC
     `) as typeof rewards;
@@ -208,7 +220,7 @@ export default async function ParentPage() {
                       <ul className="reward-list">
                         {kidRewards.map((r) => (
                           <li key={r.id} className={r.status === "unlocked" ? "unlocked" : ""}>
-                            {r.face_value} for {criteriaLabel(r.criteria_type, r.pages, r.title)} — {r.status}
+                            {r.face_value} for {criteriaLabel(r.criteria_type, r.pages, r.title, r.scope)} — {r.status}
                           </li>
                         ))}
                       </ul>
@@ -242,8 +254,15 @@ export default async function ParentPage() {
                 </select>
               </label>
               <label>
-                Book
-                <select name="book_id" required>
+                Counts for
+                <select name="scope" defaultValue="book">
+                  <option value="book">This book</option>
+                  <option value="any">Any book</option>
+                </select>
+              </label>
+              <label>
+                Book (if this book)
+                <select name="book_id">
                   {books.map((book) => (
                     <option key={book.id} value={book.id}>
                       {book.title}
@@ -254,12 +273,12 @@ export default async function ParentPage() {
               <label>
                 When
                 <select name="criteria_type" defaultValue="total_pages">
-                  <option value="total_pages">Reach a page</option>
+                  <option value="total_pages">Reach a page count</option>
                   <option value="finish_book">Finish the book</option>
                 </select>
               </label>
               <label>
-                Page (if reaching a page)
+                Pages (if reaching a page count)
                 <input name="pages" type="number" min="1" step="1" defaultValue="10" />
               </label>
               <label>
@@ -279,7 +298,10 @@ export default async function ParentPage() {
                 Save reward
               </button>
             </form>
-            <p>Cost is calculated from admin rates (800 Robux → $6.00).</p>
+            <p>
+              Any book adds the highest page in each book the kid has opened.
+              Cost is calculated from admin rates (800 Robux → $6.00).
+            </p>
           </div>
 
           <div className="card">
@@ -291,7 +313,7 @@ export default async function ParentPage() {
                 {rewards.map((reward) => (
                   <li key={reward.id} className={reward.status === "unlocked" ? "unlocked" : ""}>
                     {reward.display_name}: {reward.face_value} for{" "}
-                    {criteriaLabel(reward.criteria_type, reward.pages, reward.title)} — {reward.status} ($
+                    {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope)} — {reward.status} ($
                     {(Number(reward.cost_cents) / 100).toFixed(2)})
                   </li>
                 ))}
