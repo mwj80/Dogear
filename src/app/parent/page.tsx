@@ -216,6 +216,7 @@ export default async function ParentPage() {
                   <div key={kid.id} className="kid-block">
                     <p className="kid-name">
                       {kid.display_name}{" "}
+                      <Link href={`/parent/kid/${kid.id}`}>Progress</Link>{" "}
                       <Link href={`/kid/${kid.id}`}>Open kid view</Link>
                     </p>
                     <p className="muted">Today: {todayPages} pages</p>
