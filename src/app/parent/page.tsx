@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { sql } from "@/lib/db";
 import { ensurePageLog } from "@/lib/page-log";
+import { recheckHousehold } from "@/lib/check-unlocks";
 import { createChild, loadPot, resetDemo } from "./actions";
 import RewardForm from "./reward-form";
 
@@ -78,6 +79,7 @@ export default async function ParentPage() {
   try {
     household = await ensureHousehold({ clerkUserId: userId, email });
     await ensurePageLog();
+    await recheckHousehold(household.household_id);
     const db = sql();
     kids = (await db`
       SELECT id, display_name
