@@ -21,6 +21,7 @@ type AssignmentInfo = {
   title: string;
   criteria_type: string;
   pages: number | null;
+  due_date: string | null;
 };
 
 type Props = {
@@ -32,6 +33,7 @@ type Props = {
   readAcross: number;
   rewards: RewardInfo[];
   assignments: AssignmentInfo[];
+  today: string;
 };
 
 declare global {
@@ -118,7 +120,8 @@ export default function Reader({
   readThis,
   readAcross,
   rewards,
-  assignments
+  assignments,
+  today
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const renditionRef = useRef<EpubRendition | null>(null);
@@ -253,6 +256,7 @@ export default function Reader({
                 : Number(assignment.pages ?? 0);
             const current = target > 0 ? Math.min(highest, target) : highest;
             const done = target > 0 && highest >= target - (assignment.criteria_type === "finish_book" ? 1 : 0);
+            const overdue = !done && !!assignment.due_date && assignment.due_date < today;
             const fill = target > 0 ? Math.round((current / target) * 100) : 0;
             const goal =
               assignment.criteria_type === "finish_book"
@@ -260,11 +264,13 @@ export default function Reader({
                 : `Read ${assignment.pages} pages`;
             return (
               <div key={assignment.id} className="reward-track">
-                <p>
+                <p className={done ? "unlocked" : overdue ? "overdue" : ""}>
                   Assigned: {assignment.title} · {goal}
+                  {assignment.due_date ? ` · due ${assignment.due_date}` : ""}
+                  {overdue ? " · overdue" : ""}
                 </p>
                 <div className="progress-meta">
-                  <span className={done ? "unlocked" : ""}>
+                  <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
                     {done ? "done" : `${current} / ${target || "?"}`}
                   </span>
                   {!done && target > 0 && <span>{fill}%</span>}
