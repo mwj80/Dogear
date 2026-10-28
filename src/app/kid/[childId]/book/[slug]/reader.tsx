@@ -70,6 +70,13 @@ function goalLabel(reward: RewardInfo) {
   return "Finish this book";
 }
 
+function targetOf(reward: RewardInfo, bookTotal: number) {
+  if (reward.criteria_type === "total_pages" && reward.pages) {
+    return reward.pages;
+  }
+  return bookTotal || 0;
+}
+
 export default function Reader({
   childId,
   bookId,
@@ -85,6 +92,7 @@ export default function Reader({
   const [status, setStatus] = useState("Loading book…");
   const [items, setItems] = useState(rewards);
   const [justUnlocked, setJustUnlocked] = useState<string[]>([]);
+  const [highest, setHighest] = useState(startLocation);
   const maxRef = useRef(startLocation);
 
   function applyUnlocks(unlocked: { id: string; face_value: string }[]) {
@@ -146,6 +154,7 @@ export default function Reader({
         const cfi = book.locations.cfiFromLocation(start);
         await rendition.display(cfi);
         setPage(start + 1);
+        setHighest(Math.max(start, maxRef.current));
         setStatus("");
 
         const unlocked = await saveProgress({
@@ -180,6 +189,7 @@ export default function Reader({
     setPage(safe + 1);
     if (safe > maxRef.current) {
       maxRef.current = safe;
+      setHighest(safe);
       const length = book.locations.length() || total;
       void saveProgress({
         childId,
@@ -190,7 +200,8 @@ export default function Reader({
     }
   }
 
-  const pct = total ? Math.round(((maxRef.current + 1) / total) * 100) : 0;
+  const pct = total ? Math.round(((highest + 1) / total) * 100) : 0;
+  const reached = highest;
 
   const active = items.filter((r) => r.status === "active");
   const unlocked = items.filter((r) => r.status === "unlocked");
@@ -199,11 +210,31 @@ export default function Reader({
     <div>
       {active.length > 0 && (
         <div className="banner">
-          {active.map((r) => (
-            <p key={r.id}>
-              {goalLabel(r)} → <strong>{r.face_value}</strong>
-            </p>
-          ))}
+          {active.map((r) => {
+            const target = targetOf(r, total);
+            const current = target > 0 ? Math.min(reached, target) : 0;
+            const fill = target > 0 ? Math.round((current / target) * 100) : 0;
+            return (
+              <div key={r.id} className="reward-track">
+                <p>
+                  {goalLabel(r)} → <strong>{r.face_value}</strong>
+                </p>
+                {target > 0 && (
+                  <>
+                    <div className="progress-meta">
+                      <span>
+                        {current} / {target}
+                      </span>
+                      <span>{fill}%</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{ width: `${fill}%` }} />
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
       {unlocked.length > 0 && active.length === 0 && (
