@@ -16,6 +16,13 @@ type RewardInfo = {
   todayPages?: number;
 };
 
+type AssignmentInfo = {
+  id: string;
+  title: string;
+  criteria_type: string;
+  pages: number | null;
+};
+
 type Props = {
   childId: string;
   bookId: string;
@@ -24,6 +31,7 @@ type Props = {
   readThis: number;
   readAcross: number;
   rewards: RewardInfo[];
+  assignments: AssignmentInfo[];
 };
 
 declare global {
@@ -109,7 +117,8 @@ export default function Reader({
   startLocation,
   readThis,
   readAcross,
-  rewards
+  rewards,
+  assignments
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const renditionRef = useRef<EpubRendition | null>(null);
@@ -235,6 +244,41 @@ export default function Reader({
 
   return (
     <div>
+      {assignments.length > 0 && (
+        <div className="banner">
+          {assignments.map((assignment) => {
+            const target =
+              assignment.criteria_type === "finish_book"
+                ? total
+                : Number(assignment.pages ?? 0);
+            const current = target > 0 ? Math.min(highest, target) : highest;
+            const done = target > 0 && highest >= target - (assignment.criteria_type === "finish_book" ? 1 : 0);
+            const fill = target > 0 ? Math.round((current / target) * 100) : 0;
+            const goal =
+              assignment.criteria_type === "finish_book"
+                ? "Finish this book"
+                : `Read ${assignment.pages} pages`;
+            return (
+              <div key={assignment.id} className="reward-track">
+                <p>
+                  Assigned: {assignment.title} · {goal}
+                </p>
+                <div className="progress-meta">
+                  <span className={done ? "unlocked" : ""}>
+                    {done ? "done" : `${current} / ${target || "?"}`}
+                  </span>
+                  {!done && target > 0 && <span>{fill}%</span>}
+                </div>
+                {!done && target > 0 && (
+                  <div className="progress-bar">
+                    <div className="progress-fill" style={{ width: `${fill}%` }} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
       {active.length > 0 && (
         <div className="banner">
           {active.map((r) => {
