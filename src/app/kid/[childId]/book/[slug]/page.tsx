@@ -38,13 +38,20 @@ export default async function BookPage({
     : 0;
 
   const rewards = (await db`
-    SELECT id, face_value, status
+    SELECT id, face_value, status, criteria_type,
+           (criteria_json->>'pages')::int AS pages
     FROM rewards
     WHERE child_id = ${kid.id}::uuid
       AND book_id = ${book.id}::uuid
       AND criteria_type IN ('finish_book', 'total_pages')
     ORDER BY created_at
-  `) as { id: string; face_value: string; status: string }[];
+  `) as {
+    id: string;
+    face_value: string;
+    status: string;
+    criteria_type: string;
+    pages: number | null;
+  }[];
 
   return (
     <main>
