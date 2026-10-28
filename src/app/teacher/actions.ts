@@ -27,6 +27,21 @@ export async function createClass(formData: FormData) {
   revalidatePath("/teacher");
 }
 
+export async function renameClass(formData: FormData) {
+  const teacher = await teacherOfUser();
+  const classId = String(formData.get("class_id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (!classId || !name) throw new Error("Class and name are required");
+  const db = sql();
+  await db`
+    UPDATE classes
+    SET name = ${name}
+    WHERE id = ${classId}::uuid AND teacher_user_id = ${teacher.user_id}::uuid
+  `;
+  revalidatePath("/teacher");
+  revalidatePath("/parent");
+}
+
 export async function removeClass(formData: FormData) {
   const teacher = await teacherOfUser();
   const classId = String(formData.get("class_id") ?? "");
