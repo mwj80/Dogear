@@ -136,6 +136,7 @@ input, select {
 .reward-list { margin: 0.35rem 0 0; padding-left: 1.1rem; font-size: 0.9rem; }
 .reward-list li { color: var(--muted); }
 .reward-list li.unlocked, li.unlocked { color: #1a7a3a; font-weight: bold; }
+.reward-list li.overdue, .overdue { color: #b42318; font-weight: bold; }
 
 .week {
   display: flex;
