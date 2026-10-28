@@ -19,7 +19,9 @@ export default async function KidHomePage({
     SELECT slug, title, author FROM books ORDER BY title
   `;
   const rewards = await db`
-    SELECT r.face_value, r.status, b.title, b.slug
+    SELECT r.face_value, r.status, r.criteria_type,
+           (r.criteria_json->>'pages')::int AS pages,
+           b.title, b.slug
     FROM rewards r
     JOIN books b ON b.id = r.book_id
     WHERE r.child_id = ${childId}::uuid
@@ -47,10 +49,16 @@ export default async function KidHomePage({
                 status: string;
                 title: string;
                 slug: string;
+                criteria_type: string;
+                pages: number | null;
               };
+              const goal =
+                r.criteria_type === "total_pages" && r.pages
+                  ? `Reach page ${r.pages} in ${r.title}`
+                  : `Finish ${r.title}`;
               return (
                 <li key={`${r.slug}-${i}`}>
-                  Finish {r.title} → {r.face_value} ({r.status})
+                  {goal} → {r.face_value} ({r.status})
                 </li>
               );
             })}
