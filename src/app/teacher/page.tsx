@@ -14,6 +14,22 @@ import {
   updateAssignment
 } from "./actions";
 
+function daysUntil(due: string, today: string) {
+  return Math.round(
+    (Date.parse(`${due}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000
+  );
+}
+
+function dueLabel(due: string | null, today: string, done: boolean) {
+  if (!due) return "";
+  const days = daysUntil(due, today);
+  if (done) return `due ${due}`;
+  if (days < 0) return `due ${due} · overdue`;
+  if (days === 0) return "due today";
+  if (days === 1) return "due tomorrow · 1 day left";
+  return `due ${due} · ${days} days left`;
+}
+
 export default async function TeacherPage() {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
@@ -269,13 +285,13 @@ export default async function TeacherPage() {
                         assignment.criteria_type === "finish_book"
                           ? `${max} / ${total || "?"}`
                           : `${Math.min(max, Number(assignment.pages ?? 0))} / ${assignment.pages}`;
+                      const due = dueLabel(assignment.due_date, today, done);
                       return (
                         <div key={kid.child_id} className="progress-row">
                           <div className="progress-meta">
                             <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
                               {kid.display_name}
-                              {assignment.due_date ? ` · due ${assignment.due_date}` : ""}
-                              {overdue ? " · overdue" : ""}
+                              {due ? ` · ${due}` : ""}
                             </span>
                             <span>{done ? "done" : shown}</span>
                           </div>
