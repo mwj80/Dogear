@@ -1,6 +1,9 @@
 import { sql } from "./db";
 
-export async function checkFinishBookUnlocks(childId: string, bookId: string) {
+export async function checkFinishBookUnlocks(
+  childId: string,
+  bookId: string
+): Promise<{ id: string; face_value: string }[]> {
   const db = sql();
   const progress = await db`
     SELECT max_location, total_locations
@@ -11,13 +14,13 @@ export async function checkFinishBookUnlocks(childId: string, bookId: string) {
   const row = progress[0] as
     | { max_location: number; total_locations: number }
     | undefined;
-  if (!row || !row.total_locations) return;
+  if (!row || !row.total_locations) return [];
 
   const done = Number(row.max_location) >= Number(row.total_locations) - 1;
-  if (!done) return;
+  if (!done) return [];
 
   const rewards = await db`
-    SELECT id, household_id, cost_cents
+    SELECT id, household_id, cost_cents, face_value
     FROM rewards
     WHERE child_id = ${childId}::uuid
       AND status = 'active'
@@ -26,10 +29,13 @@ export async function checkFinishBookUnlocks(childId: string, bookId: string) {
       AND book_id = ${bookId}::uuid
   `;
 
+  const unlocked: { id: string; face_value: string }[] = [];
+
   for (const reward of rewards as {
     id: string;
     household_id: string;
     cost_cents: number;
+    face_value: string;
   }[]) {
     const house = await db`
       SELECT pot_available_cents
@@ -66,5 +72,7 @@ export async function checkFinishBookUnlocks(childId: string, bookId: string) {
           shortfall_cents = ${shortfall}
       WHERE id = ${reward.id}::uuid
     `;
+    unlocked.push({ id: reward.id, face_value: reward.face_value });
   }
+  return unlocked;
 }
