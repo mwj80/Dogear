@@ -130,9 +130,30 @@ export default async function TeacherPage() {
           const enrolledIds = new Set(enrolled.map((e) => e.child_id));
           const available = kids.filter((kid) => !enrolledIds.has(kid.id));
           const classAssignments = assignments.filter((a) => a.class_id === klass.id);
+          let overdueCount = 0;
+          for (const assignment of classAssignments) {
+            for (const kid of enrolled) {
+              const row = progress.find(
+                (p) => p.child_id === kid.child_id && p.book_id === assignment.book_id
+              );
+              const max = Number(row?.max_location ?? 0);
+              const total = Number(row?.total_locations ?? 0);
+              const done =
+                assignment.criteria_type === "finish_book"
+                  ? total > 0 && max >= total - 1
+                  : max >= Number(assignment.pages ?? 0);
+              if (!done && assignment.due_date && assignment.due_date < today) overdueCount += 1;
+            }
+          }
           return (
             <div key={klass.id} className="card">
               <h2>{klass.name}</h2>
+              <p className="muted">
+                {enrolled.length} kids · {classAssignments.length} assignments
+                {overdueCount > 0 && (
+                  <span className="overdue"> · {overdueCount} overdue</span>
+                )}
+              </p>
               <form action={renameClass} className="inline-form">
                 <input type="hidden" name="class_id" value={klass.id} />
                 <label>
