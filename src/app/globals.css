@@ -60,6 +60,8 @@ input, select {
 }
 .banner.done { background: #e8f6ee; }
 .banner p { margin: 0.2rem 0; color: var(--ink); }
+.reward-track { margin: 0.4rem 0 0.7rem; }
+.reward-track:last-child { margin-bottom: 0.15rem; }
 .modal {
   position: fixed;
   inset: 0;
