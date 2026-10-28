@@ -13,21 +13,28 @@ export default function RewardForm({ kids, books }: { kids: Kid[]; books: Book[]
   const goals = useMemo(
     () =>
       scope === "any"
-        ? [{ value: "read", label: "Read N pages" }]
+        ? [
+            { value: "read", label: "Read N pages" },
+            { value: "streak", label: "Daily streak" }
+          ]
         : [
             { value: "reach", label: "Reach a page" },
             { value: "read", label: "Read N pages" },
-            { value: "finish", label: "Finish the book" }
+            { value: "finish", label: "Finish the book" },
+            { value: "streak", label: "Daily streak" }
           ],
     [scope]
   );
 
   function onScope(next: string) {
     setScope(next);
-    if (next === "any") setGoal("read");
+    if (next === "any" && (goal === "reach" || goal === "finish")) {
+      setGoal("read");
+    }
   }
 
   const showPages = goal !== "finish";
+  const showDays = goal === "streak";
   const showBook = scope === "book";
 
   return (
@@ -73,8 +80,18 @@ export default function RewardForm({ kids, books }: { kids: Kid[]; books: Book[]
       </label>
       {showPages && (
         <label>
-          {goal === "reach" ? "Page to reach" : "Pages to read"}
+          {goal === "reach"
+            ? "Page to reach"
+            : goal === "streak"
+              ? "Pages per day"
+              : "Pages to read"}
           <input name="pages" type="number" min="1" step="1" defaultValue="10" required />
+        </label>
+      )}
+      {showDays && (
+        <label>
+          Days in a row
+          <input name="days" type="number" min="1" step="1" defaultValue="3" required />
         </label>
       )}
       <label>
@@ -94,8 +111,7 @@ export default function RewardForm({ kids, books }: { kids: Kid[]; books: Book[]
         Save reward
       </button>
       <p>
-        This book can reach a page, read N pages, or finish. Any book can only read N pages
-        (pages add across books). Cost is taken from the available balance (800 Robux → $6.00).
+        This book can reach a page, read N pages, finish, or keep a streak. Any book can read N pages or keep a streak (pages add across books). Cost is taken from the available balance (800 Robux → $6.00).
       </p>
     </form>
   );
