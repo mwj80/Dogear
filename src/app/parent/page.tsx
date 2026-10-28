@@ -20,7 +20,7 @@ function lastSevenDays() {
 const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 function criteriaLabel(type: string, pages: number | null, title: string) {
-  if (type === "page_threshold" && pages) {
+  if (type === "total_pages" && pages) {
     return `reaching page ${pages} in ${title}`;
   }
   return `finishing ${title}`;
@@ -253,8 +253,8 @@ export default async function ParentPage() {
               </label>
               <label>
                 When
-                <select name="criteria_type" defaultValue="page_threshold">
-                  <option value="page_threshold">Reach a page</option>
+                <select name="criteria_type" defaultValue="total_pages">
+                  <option value="total_pages">Reach a page</option>
                   <option value="finish_book">Finish the book</option>
                 </select>
               </label>
