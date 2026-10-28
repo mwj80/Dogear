@@ -120,3 +120,42 @@ export async function createFinishReward(formData: FormData) {
   `;
   revalidatePath("/parent");
 }
+
+/** Resets this household to a mid-book test state. */
+export async function resetDemo() {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Not signed in");
+
+  const user = await currentUser();
+  const email =
+    user?.primaryEmailAddress?.emailAddress ?? `${userId}@users.invalid`;
+  const household = await ensureHousehold({ clerkUserId: userId, email });
+  const db = sql();
+  const hid = household.household_id;
+
+  await db`
+    UPDATE progress p
+    SET max_location = LEAST(5, GREATEST(COALESCE(p.total_locations, 1) - 1, 0)),
+        updated_at = now()
+    FROM children c
+    WHERE p.child_id = c.id
+      AND c.household_id = ${hid}::uuid
+  `;
+
+  await db`
+    UPDATE rewards
+    SET status = 'active',
+        unlocked_at = NULL,
+        shortfall_cents = 0
+    WHERE household_id = ${hid}::uuid
+  `;
+
+  await db`
+    UPDATE households
+    SET pot_available_cents = 2000
+    WHERE id = ${hid}::uuid
+  `;
+
+  revalidatePath("/parent");
+  revalidatePath("/kid");
+}
