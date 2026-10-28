@@ -37,19 +37,29 @@ export default async function BookPage({
     ? Number((progress[0] as { max_location: number }).max_location)
     : 0;
 
+  const across = await db`
+    SELECT COALESCE(SUM(max_location), 0)::int AS pages
+    FROM progress
+    WHERE child_id = ${kid.id}::uuid
+  `;
+  const acrossPages = Number(
+    (across[0] as { pages: number } | undefined)?.pages ?? 0
+  );
+
   const rewards = (await db`
-    SELECT id, face_value, status, criteria_type,
+    SELECT id, face_value, status, criteria_type, scope,
            (criteria_json->>'pages')::int AS pages
     FROM rewards
     WHERE child_id = ${kid.id}::uuid
-      AND book_id = ${book.id}::uuid
       AND criteria_type IN ('finish_book', 'total_pages')
+      AND (book_id = ${book.id}::uuid OR scope = 'any')
     ORDER BY created_at
   `) as {
     id: string;
     face_value: string;
     status: string;
     criteria_type: string;
+    scope: string;
     pages: number | null;
   }[];
 
@@ -67,6 +77,7 @@ export default async function BookPage({
         bookId={book.id}
         epubPath={book.epub_path}
         startLocation={startLocation}
+        acrossPages={acrossPages}
         rewards={rewards}
       />
     </main>
