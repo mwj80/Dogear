@@ -4,6 +4,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
+import { ensurePageLog } from "@/lib/page-log";
 
 export async function createChild(formData: FormData) {
   const { userId } = await auth();
@@ -168,6 +169,7 @@ export async function resetDemo() {
   const household = await ensureHousehold({ clerkUserId: userId, email });
   const db = sql();
   const hid = household.household_id;
+  await ensurePageLog();
 
   await db`
     UPDATE progress p
@@ -175,6 +177,13 @@ export async function resetDemo() {
         updated_at = now()
     FROM children c
     WHERE p.child_id = c.id
+      AND c.household_id = ${hid}::uuid
+  `;
+
+  await db`
+    DELETE FROM page_log pl
+    USING children c
+    WHERE pl.child_id = c.id
       AND c.household_id = ${hid}::uuid
   `;
 
