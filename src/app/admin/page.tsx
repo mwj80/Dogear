@@ -9,14 +9,21 @@ type Rates = {
   gift_multiplier: string;
   pizza_fixed_dollars: string;
   custom_default_dollars: string;
-  updated_at: string | null;
+  updated_at: string | Date | null;
 };
+
+function updatedLabel(value: string | Date | null) {
+  if (!value) return null;
+  const iso = value instanceof Date ? value.toISOString() : String(value);
+  return iso.slice(0, 16).replace("T", " ");
+}
 
 export default async function AdminPage() {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
 
-  const rows = await sql()`SELECT * FROM admin_rates LIMIT 1`;
+  const db = sql();
+  const rows = await db`SELECT * FROM admin_rates LIMIT 1`;
   const rates = (rows[0] as Rates | undefined) ?? {
     robux_dollars_per_100: "0.75",
     gift_multiplier: "1.10",
@@ -24,6 +31,7 @@ export default async function AdminPage() {
     custom_default_dollars: "5.00",
     updated_at: null
   };
+  const updated = updatedLabel(rates.updated_at);
 
   return (
     <main>
@@ -82,9 +90,7 @@ export default async function AdminPage() {
           <button type="submit" className="btn">
             Save rates
           </button>
-          {rates.updated_at && (
-            <p className="muted">Last updated {rates.updated_at.slice(0, 16).replace("T", " ")}</p>
-          )}
+          {updated && <p className="muted">Last updated {updated}</p>}
         </form>
       </div>
     </main>
