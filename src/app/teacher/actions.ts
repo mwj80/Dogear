@@ -27,6 +27,20 @@ export async function createClass(formData: FormData) {
   revalidatePath("/teacher");
 }
 
+export async function removeClass(formData: FormData) {
+  const teacher = await teacherOfUser();
+  const classId = String(formData.get("class_id") ?? "");
+  if (!classId) throw new Error("Missing class");
+  const db = sql();
+  await db`
+    DELETE FROM classes
+    WHERE id = ${classId}::uuid AND teacher_user_id = ${teacher.user_id}::uuid
+  `;
+  revalidatePath("/teacher");
+  revalidatePath("/parent");
+  revalidatePath("/kid");
+}
+
 export async function enrollKid(formData: FormData) {
   const teacher = await teacherOfUser();
   const classId = String(formData.get("class_id") ?? "");
