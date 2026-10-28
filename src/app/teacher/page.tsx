@@ -8,6 +8,7 @@ import {
   createClass,
   enrollKid,
   removeAssignment,
+  removeClass,
   removeEnrollment
 } from "./actions";
 
@@ -109,6 +110,12 @@ export default async function TeacherPage() {
           return (
             <div key={klass.id} className="card">
               <h2>{klass.name}</h2>
+              <form action={removeClass}>
+                <input type="hidden" name="class_id" value={klass.id} />
+                <button type="submit" className="btn secondary">
+                  Remove class
+                </button>
+              </form>
               <p className="muted">{enrolled.length} kids</p>
               {enrolled.map((kid) => (
                 <form key={kid.child_id} action={removeEnrollment} className="inline-form">
