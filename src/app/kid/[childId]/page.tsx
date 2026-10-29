@@ -108,6 +108,7 @@ export default async function KidHomePage({
               <div key={`${assignment.slug}-${assignment.title}`} className="progress-row">
                 <div className="progress-meta">
                   <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
+                    {assignment.class_name}:{" "}
                     <Link href={`/kid/${kid.id}/book/${assignment.slug}`}>{assignment.title}</Link>
                     {" "}· {goal}
                     {due ? ` · ${due}` : ""}
