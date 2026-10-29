@@ -18,6 +18,7 @@ type RewardInfo = {
 
 type AssignmentInfo = {
   id: string;
+  class_name: string;
   title: string;
   criteria_type: string;
   pages: number | null;
@@ -282,7 +283,7 @@ export default function Reader({
             return (
               <div key={assignment.id} className="reward-track">
                 <p className={done ? "unlocked" : overdue ? "overdue" : ""}>
-                  Assigned: {assignment.title} · {goal}
+                  {assignment.class_name}: {assignment.title} · {goal}
                   {due ? ` · ${due}` : ""}
                 </p>
                 <div className="progress-meta">
