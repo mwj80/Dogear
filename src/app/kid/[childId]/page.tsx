@@ -49,18 +49,21 @@ export default async function KidHomePage({
     ORDER BY r.created_at DESC
   `;
   const assignments = (await db`
-    SELECT a.title, a.criteria_type, (a.criteria_json->>'pages')::int AS pages,
+    SELECT cl.name AS class_name, a.title, a.criteria_type,
+           (a.criteria_json->>'pages')::int AS pages,
            a.due_date::text AS due_date,
            b.title AS book_title, b.slug,
            COALESCE(p.max_location, 0) AS max_location,
            COALESCE(p.total_locations, 0) AS total_locations
     FROM enrollments e
+    JOIN classes cl ON cl.id = e.class_id
     JOIN assignments a ON a.class_id = e.class_id
     JOIN books b ON b.id = a.book_id
     LEFT JOIN progress p ON p.child_id = e.child_id AND p.book_id = a.book_id
     WHERE e.child_id = ${childId}::uuid
     ORDER BY a.due_date NULLS LAST, a.created_at
   `) as {
+    class_name: string;
     title: string;
     criteria_type: string;
     pages: number | null;
@@ -162,12 +165,39 @@ export default async function KidHomePage({
         <ul>
           {books.map((book) => {
             const b = book as { slug: string; title: string; author: string };
+            const bookAssignments = assignments.filter((a) => a.slug === b.slug);
             return (
               <li key={b.slug}>
                 <Link href={`/kid/${kid.id}/book/${b.slug}`}>
                   {b.title}
                 </Link>
                 <span> — {b.author}</span>
+                {bookAssignments.length > 0 && (
+                  <span>
+                    {" — "}
+                    {bookAssignments.map((assignment, i) => {
+                      const max = Number(assignment.max_location);
+                      const total = Number(assignment.total_locations);
+                      const target = Number(assignment.pages ?? 0);
+                      const done =
+                        assignment.criteria_type === "finish_book"
+                          ? total > 0 && max >= total - 1
+                          : max >= target;
+                      const overdue = !done && !!assignment.due_date && assignment.due_date < today;
+                      const due = dueLabel(assignment.due_date, today, done);
+                      return (
+                        <span
+                          key={`${assignment.class_name}-${assignment.title}`}
+                          className={done ? "unlocked" : overdue ? "overdue" : ""}
+                        >
+                          {i > 0 ? ", " : ""}
+                          {assignment.class_name}
+                          {due ? ` · ${due}` : ""}
+                        </span>
+                      );
+                    })}
+                  </span>
+                )}
               </li>
             );
           })}
