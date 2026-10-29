@@ -167,6 +167,20 @@ export default async function KidProgressPage({
     cells.push({ day, pages: byDay.get(day) ?? 0 });
   }
   const monthLabel = start.toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+  const dueByDay = new Map<string, { overdue: boolean }>();
+  for (const assignment of assignments) {
+    if (!assignment.due_date) continue;
+    const max = Number(assignment.max_location);
+    const total = Number(assignment.total_locations);
+    const target = Number(assignment.pages ?? 0);
+    const done =
+      assignment.criteria_type === "finish_book"
+        ? total > 0 && max >= total - 1
+        : max >= target;
+    const overdue = !done && assignment.due_date < today;
+    const existing = dueByDay.get(assignment.due_date);
+    dueByDay.set(assignment.due_date, { overdue: (existing?.overdue ?? false) || overdue });
+  }
 
   return (
     <main>
@@ -195,7 +209,7 @@ export default async function KidProgressPage({
           Save goal
         </button>
       </form>
-      <p>Colored days met the goal.</p>
+      <p>Colored days met the goal. A dot is a due day. A red dot is overdue.</p>
 
       {assignments.length > 0 && (
         <div className="card">
@@ -237,19 +251,25 @@ export default async function KidProgressPage({
           ))}
         </div>
         <div className="cal">
-          {cells.map((cell, i) => (
-            <div
-              key={cell.day ?? `pad-${i}`}
-              className={cell.day && cell.pages >= goal ? "cal-day on" : "cal-day"}
-            >
-              {cell.day ? (
-                <>
-                  <span>{Number(cell.day.slice(8))}</span>
-                  <small>{cell.pages || ""}</small>
-                </>
-              ) : null}
-            </div>
-          ))}
+          {cells.map((cell, i) => {
+            const due = cell.day ? dueByDay.get(cell.day) : undefined;
+            return (
+              <div
+                key={cell.day ?? `pad-${i}`}
+                className={cell.day && cell.pages >= goal ? "cal-day on" : "cal-day"}
+              >
+                {cell.day ? (
+                  <>
+                    <span>{Number(cell.day.slice(8))}</span>
+                    <small>{cell.pages || ""}</small>
+                    {due && (
+                      <small className={due.overdue ? "overdue" : ""}>•</small>
+                    )}
+                  </>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </div>
 
