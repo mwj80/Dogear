@@ -96,6 +96,7 @@ export default async function ParentPage() {
   }[] = [];
   let progress: {
     child_id: string;
+    book_id: string;
     title: string;
     max_location: number;
     total_locations: number;
@@ -106,6 +107,7 @@ export default async function ParentPage() {
     child_id: string;
     class_name: string;
     title: string;
+    book_id: string;
     book_title: string;
     criteria_type: string;
     pages: number | null;
@@ -146,7 +148,8 @@ export default async function ParentPage() {
       ORDER BY r.created_at DESC
     `) as typeof rewards;
     progress = (await db`
-      SELECT p.child_id, b.title, p.max_location, p.total_locations, p.updated_at
+      SELECT p.child_id, p.book_id::text AS book_id, b.title,
+             p.max_location, p.total_locations, p.updated_at
       FROM progress p
       JOIN children c ON c.id = p.child_id
       JOIN books b ON b.id = p.book_id
@@ -163,6 +166,7 @@ export default async function ParentPage() {
     `) as typeof log;
     classes = (await db`
       SELECT e.child_id::text AS child_id, cl.name AS class_name, a.title,
+             a.book_id::text AS book_id,
              b.title AS book_title, a.criteria_type,
              (a.criteria_json->>'pages')::int AS pages,
              a.due_date::text AS due_date,
@@ -362,6 +366,7 @@ export default async function ParentPage() {
                           p.total_locations > 0
                             ? Math.min(100, Math.round((p.max_location / p.total_locations) * 100))
                             : 0;
+                        const bookAssignments = kidClasses.filter((a) => a.book_id === p.book_id);
                         return (
                           <div key={p.title} className="progress-row">
                             <div className="progress-meta">
@@ -370,6 +375,31 @@ export default async function ParentPage() {
                                 {p.max_location} / {p.total_locations || "?"} · {pct}%
                               </span>
                             </div>
+                            {bookAssignments.length > 0 && (
+                              <div className="progress-meta">
+                                {bookAssignments.map((assignment) => {
+                                  const max = Number(assignment.max_location);
+                                  const total = Number(assignment.total_locations);
+                                  const target = Number(assignment.pages ?? 0);
+                                  const done =
+                                    assignment.criteria_type === "finish_book"
+                                      ? total > 0 && max >= total - 1
+                                      : max >= target;
+                                  const overdue =
+                                    !done && !!assignment.due_date && assignment.due_date < dueToday;
+                                  const due = dueLabel(assignment.due_date, dueToday, done);
+                                  return (
+                                    <span
+                                      key={`${assignment.class_name}-${assignment.title}`}
+                                      className={done ? "unlocked" : overdue ? "overdue" : ""}
+                                    >
+                                      {assignment.class_name}
+                                      {due ? ` · ${due}` : ""}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
                             <div className="progress-bar">
                               <div className="progress-fill" style={{ width: `${pct}%` }} />
                             </div>
