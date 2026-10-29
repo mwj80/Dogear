@@ -9,6 +9,22 @@ import { removeKid, renameKid, setDailyGoal } from "../actions";
 
 const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
+function daysUntil(due: string, today: string) {
+  return Math.round(
+    (Date.parse(`${due}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000
+  );
+}
+
+function dueLabel(due: string | null, today: string, done: boolean) {
+  if (!due) return "";
+  const days = daysUntil(due, today);
+  if (done) return `due ${due}`;
+  if (days < 0) return `due ${due} · overdue`;
+  if (days === 0) return "due today";
+  if (days === 1) return "due tomorrow · 1 day left";
+  return `due ${due} · ${days} days left`;
+}
+
 function criteriaLabel(
   type: string,
   pages: number | null,
@@ -90,6 +106,32 @@ export default async function KidProgressPage({
   }[];
   const progressByBook = new Map(progress.map((p) => [p.book_id, p]));
 
+  const assignments = (await db`
+    SELECT cl.name AS class_name, a.title, a.criteria_type,
+           (a.criteria_json->>'pages')::int AS pages,
+           a.due_date::text AS due_date,
+           a.book_id::text AS book_id, b.title AS book_title,
+           COALESCE(p.max_location, 0) AS max_location,
+           COALESCE(p.total_locations, 0) AS total_locations
+    FROM enrollments e
+    JOIN classes cl ON cl.id = e.class_id
+    JOIN assignments a ON a.class_id = cl.id
+    JOIN books b ON b.id = a.book_id
+    LEFT JOIN progress p ON p.child_id = e.child_id AND p.book_id = a.book_id
+    WHERE e.child_id = ${kid.id}::uuid
+    ORDER BY a.due_date NULLS LAST, a.created_at
+  `) as {
+    class_name: string;
+    title: string;
+    criteria_type: string;
+    pages: number | null;
+    due_date: string | null;
+    book_id: string;
+    book_title: string;
+    max_location: number;
+    total_locations: number;
+  }[];
+
   const rewards = (await db`
     SELECT r.id, r.face_value, r.status, r.criteria_type, r.scope,
            r.book_id::text AS book_id,
@@ -154,6 +196,38 @@ export default async function KidProgressPage({
         </button>
       </form>
       <p>Colored days met the goal.</p>
+
+      {assignments.length > 0 && (
+        <div className="card">
+          <h2>Class</h2>
+          {assignments.map((assignment) => {
+            const max = Number(assignment.max_location);
+            const total = Number(assignment.total_locations);
+            const target = Number(assignment.pages ?? 0);
+            const done =
+              assignment.criteria_type === "finish_book"
+                ? total > 0 && max >= total - 1
+                : max >= target;
+            const overdue = !done && !!assignment.due_date && assignment.due_date < today;
+            const shown =
+              assignment.criteria_type === "finish_book"
+                ? `${max} / ${total || "?"}`
+                : `${Math.min(max, target)} / ${target}`;
+            const due = dueLabel(assignment.due_date, today, done);
+            return (
+              <div key={`${assignment.class_name}-${assignment.title}`} className="progress-row">
+                <div className="progress-meta">
+                  <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
+                    {assignment.class_name}: {assignment.title} · {assignment.book_title}
+                    {due ? ` · ${due}` : ""}
+                  </span>
+                  <span>{done ? "done" : shown}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="card">
         <h2>{monthLabel}</h2>
