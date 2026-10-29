@@ -88,15 +88,17 @@ export default async function BookPage({
   }[];
 
   const assignments = (await db`
-    SELECT a.id::text AS id, a.title, a.criteria_type,
+    SELECT a.id::text AS id, cl.name AS class_name, a.title, a.criteria_type,
            (a.criteria_json->>'pages')::int AS pages,
            a.due_date::text AS due_date
     FROM enrollments e
+    JOIN classes cl ON cl.id = e.class_id
     JOIN assignments a ON a.class_id = e.class_id
     WHERE e.child_id = ${kid.id}::uuid AND a.book_id = ${book.id}::uuid
     ORDER BY a.due_date NULLS LAST, a.created_at
   `) as {
     id: string;
+    class_name: string;
     title: string;
     criteria_type: string;
     pages: number | null;
