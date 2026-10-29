@@ -236,92 +236,99 @@ export default async function TeacherPage() {
                 </button>
               </form>
 
-              {classAssignments.map((assignment) => (
-                <div key={assignment.id} className="kid-block">
-                  <form action={updateAssignment} className="stack">
-                    <input type="hidden" name="assignment_id" value={assignment.id} />
-                    <label>
-                      Title
-                      <input name="title" required maxLength={60} defaultValue={assignment.title} />
-                    </label>
-                    <label>
-                      Book
-                      <select name="book_id" defaultValue={assignment.book_id} required>
-                        {books.map((book) => (
-                          <option key={book.id} value={book.id}>
-                            {book.title}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Goal
-                      <select
-                        name="goal"
-                        defaultValue={assignment.criteria_type === "finish_book" ? "finish" : "pages"}
-                      >
-                        <option value="finish">Finish the book</option>
-                        <option value="pages">Read N pages</option>
-                      </select>
-                    </label>
-                    <label>
-                      Pages, if page goal
-                      <input
-                        name="pages"
-                        type="number"
-                        min="1"
-                        step="1"
-                        defaultValue={assignment.pages ?? 20}
-                      />
-                    </label>
-                    <label>
-                      Due date
-                      <input name="due_date" type="date" defaultValue={assignment.due_date ?? ""} />
-                    </label>
-                    <button type="submit" className="btn">
-                      Save assignment
-                    </button>
-                  </form>
-                  <form action={removeAssignment}>
-                    <input type="hidden" name="assignment_id" value={assignment.id} />
-                    <button type="submit" className="btn secondary">
-                      Remove assignment
-                    </button>
-                  </form>
-                  {enrolled.length === 0 ? (
-                    <p className="muted">No kids enrolled yet.</p>
-                  ) : (
-                    enrolled.map((kid) => {
-                      const row = progress.find(
-                        (p) => p.child_id === kid.child_id && p.book_id === assignment.book_id
-                      );
-                      const max = Number(row?.max_location ?? 0);
-                      const total = Number(row?.total_locations ?? 0);
-                      const done =
-                        assignment.criteria_type === "finish_book"
-                          ? total > 0 && max >= total - 1
-                          : max >= Number(assignment.pages ?? 0);
-                      const overdue = !done && !!assignment.due_date && assignment.due_date < today;
-                      const shown =
-                        assignment.criteria_type === "finish_book"
-                          ? `${max} / ${total || "?"}`
-                          : `${Math.min(max, Number(assignment.pages ?? 0))} / ${assignment.pages}`;
-                      const due = dueLabel(assignment.due_date, today, done);
-                      return (
-                        <div key={kid.child_id} className="progress-row">
-                          <div className="progress-meta">
-                            <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
-                              {kid.display_name}
-                              {due ? ` · ${due}` : ""}
-                            </span>
-                            <span>{done ? "done" : shown}</span>
+              {classAssignments.map((assignment) => {
+                const due = dueLabel(assignment.due_date, today, false);
+                return (
+                  <div key={assignment.id} className="kid-block">
+                    <p className="kid-name">
+                      {klass.name}: {assignment.title}
+                      {due ? ` · ${due}` : ""}
+                    </p>
+                    <form action={updateAssignment} className="stack">
+                      <input type="hidden" name="assignment_id" value={assignment.id} />
+                      <label>
+                        Title
+                        <input name="title" required maxLength={60} defaultValue={assignment.title} />
+                      </label>
+                      <label>
+                        Book
+                        <select name="book_id" defaultValue={assignment.book_id} required>
+                          {books.map((book) => (
+                            <option key={book.id} value={book.id}>
+                              {book.title}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Goal
+                        <select
+                          name="goal"
+                          defaultValue={assignment.criteria_type === "finish_book" ? "finish" : "pages"}
+                        >
+                          <option value="finish">Finish the book</option>
+                          <option value="pages">Read N pages</option>
+                        </select>
+                      </label>
+                      <label>
+                        Pages, if page goal
+                        <input
+                          name="pages"
+                          type="number"
+                          min="1"
+                          step="1"
+                          defaultValue={assignment.pages ?? 20}
+                        />
+                      </label>
+                      <label>
+                        Due date
+                        <input name="due_date" type="date" defaultValue={assignment.due_date ?? ""} />
+                      </label>
+                      <button type="submit" className="btn">
+                        Save assignment
+                      </button>
+                    </form>
+                    <form action={removeAssignment}>
+                      <input type="hidden" name="assignment_id" value={assignment.id} />
+                      <button type="submit" className="btn secondary">
+                        Remove assignment
+                      </button>
+                    </form>
+                    {enrolled.length === 0 ? (
+                      <p className="muted">No kids enrolled yet.</p>
+                    ) : (
+                      enrolled.map((kid) => {
+                        const row = progress.find(
+                          (p) => p.child_id === kid.child_id && p.book_id === assignment.book_id
+                        );
+                        const max = Number(row?.max_location ?? 0);
+                        const total = Number(row?.total_locations ?? 0);
+                        const done =
+                          assignment.criteria_type === "finish_book"
+                            ? total > 0 && max >= total - 1
+                            : max >= Number(assignment.pages ?? 0);
+                        const overdue = !done && !!assignment.due_date && assignment.due_date < today;
+                        const shown =
+                          assignment.criteria_type === "finish_book"
+                            ? `${max} / ${total || "?"}`
+                            : `${Math.min(max, Number(assignment.pages ?? 0))} / ${assignment.pages}`;
+                        const kidDue = dueLabel(assignment.due_date, today, done);
+                        return (
+                          <div key={kid.child_id} className="progress-row">
+                            <div className="progress-meta">
+                              <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
+                                {kid.display_name}
+                                {kidDue ? ` · ${kidDue}` : ""}
+                              </span>
+                              <span>{done ? "done" : shown}</span>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              ))}
+                        );
+                      })
+                    )}
+                  </div>
+                );
+              })}
             </div>
           );
         })
