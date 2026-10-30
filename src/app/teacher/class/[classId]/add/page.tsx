@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
-import { enrollKid } from "../../actions";
+import { enrollKid } from "../../../actions";
 
 export default async function AddKidPage({
   params
