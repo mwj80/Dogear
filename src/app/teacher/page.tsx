@@ -202,8 +202,9 @@ export default async function TeacherPage() {
                 {days.map((day) => {
                   const label = WEEKDAY[new Date(day + "T12:00:00").getDay()];
                   const status = dueByDay.get(day);
+                  const isToday = day === today;
                   return (
-                    <div key={day} className="day">
+                    <div key={day} className={`day${isToday ? " today" : ""}`}>
                       {label}
                       {status && (
                         <small className={status === "overdue" ? "overdue" : status === "done" ? "unlocked" : ""}>
