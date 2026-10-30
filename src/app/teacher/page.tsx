@@ -6,7 +6,6 @@ import { ensureHousehold } from "@/lib/ensure-household";
 import {
   createAssignment,
   createClass,
-  enrollKid,
   removeAssignment,
   removeClass,
   removeEnrollment,
@@ -272,22 +271,9 @@ export default async function TeacherPage() {
                 );
               })}
               {available.length > 0 && (
-                <form action={enrollKid} className="inline-form">
-                  <input type="hidden" name="class_id" value={klass.id} />
-                  <label>
-                    Add kid
-                    <select name="child_id" required>
-                      {available.map((kid) => (
-                        <option key={kid.id} value={kid.id}>
-                          {kid.display_name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <button type="submit" className="btn">
-                    Add
-                  </button>
-                </form>
+                <p>
+                  <Link href={`/teacher/class/${klass.id}/add`}>Add kid</Link>
+                </p>
               )}
 
               <form action={createAssignment} className="stack">
