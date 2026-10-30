@@ -14,6 +14,18 @@ import {
   updateAssignment
 } from "./actions";
 
+const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+function lastSevenDays() {
+  const days: string[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().slice(0, 10));
+  }
+  return days;
+}
+
 function daysUntil(due: string, today: string) {
   return Math.round(
     (Date.parse(`${due}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000
@@ -41,6 +53,7 @@ export default async function TeacherPage() {
 
   const todayRow = await db`SELECT CURRENT_DATE::text AS today`;
   const today = String((todayRow[0] as { today: string }).today);
+  const days = lastSevenDays();
 
   const kids = (await db`
     SELECT id, display_name
@@ -131,7 +144,9 @@ export default async function TeacherPage() {
           const available = kids.filter((kid) => !enrolledIds.has(kid.id));
           const classAssignments = assignments.filter((a) => a.class_id === klass.id);
           let overdueCount = 0;
+          const dueByDay = new Map<string, boolean>();
           for (const assignment of classAssignments) {
+            let anyOverdue = false;
             for (const kid of enrolled) {
               const row = progress.find(
                 (p) => p.child_id === kid.child_id && p.book_id === assignment.book_id
@@ -142,7 +157,13 @@ export default async function TeacherPage() {
                 assignment.criteria_type === "finish_book"
                   ? total > 0 && max >= total - 1
                   : max >= Number(assignment.pages ?? 0);
-              if (!done && assignment.due_date && assignment.due_date < today) overdueCount += 1;
+              if (!done && assignment.due_date && assignment.due_date < today) {
+                overdueCount += 1;
+                anyOverdue = true;
+              }
+            }
+            if (assignment.due_date) {
+              dueByDay.set(assignment.due_date, (dueByDay.get(assignment.due_date) ?? false) || anyOverdue);
             }
           }
           return (
@@ -154,6 +175,21 @@ export default async function TeacherPage() {
                   <span className="overdue"> · {overdueCount} overdue</span>
                 )}
               </p>
+              <div className="week">
+                {days.map((day) => {
+                  const label = WEEKDAY[new Date(day + "T12:00:00").getDay()];
+                  const due = dueByDay.has(day);
+                  const overdue = dueByDay.get(day) === true;
+                  return (
+                    <div key={day} className="day">
+                      {label}
+                      {due && (
+                        <small className={overdue ? "overdue" : ""}>•</small>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
               <form action={renameClass} className="inline-form">
                 <input type="hidden" name="class_id" value={klass.id} />
                 <label>
