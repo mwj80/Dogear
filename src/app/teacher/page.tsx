@@ -330,6 +330,9 @@ export default async function TeacherPage() {
                       {klass.name}: {assignment.title}
                       {due ? ` · ${due}` : ""}
                     </p>
+                    <p className={status === "overdue" ? "overdue" : status === "done" ? "unlocked" : ""}>
+                      {assignment.book_title}
+                    </p>
                     <form action={updateAssignment} className="stack">
                       <input type="hidden" name="assignment_id" value={assignment.id} />
                       <label>
