@@ -167,7 +167,7 @@ export default async function KidProgressPage({
     cells.push({ day, pages: byDay.get(day) ?? 0 });
   }
   const monthLabel = start.toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
-  const dueByDay = new Map<string, { overdue: boolean }>();
+  const dueByDay = new Map<string, "overdue" | "done" | "open">();
   for (const assignment of assignments) {
     if (!assignment.due_date) continue;
     const max = Number(assignment.max_location);
@@ -177,9 +177,21 @@ export default async function KidProgressPage({
       assignment.criteria_type === "finish_book"
         ? total > 0 && max >= total - 1
         : max >= target;
-    const overdue = !done && assignment.due_date < today;
+    const status: "overdue" | "done" | "open" = done
+      ? "done"
+      : assignment.due_date < today
+        ? "overdue"
+        : "open";
     const existing = dueByDay.get(assignment.due_date);
-    dueByDay.set(assignment.due_date, { overdue: (existing?.overdue ?? false) || overdue });
+    const next =
+      existing === "overdue" || status === "overdue"
+        ? "overdue"
+        : existing === "done" && status === "done"
+          ? "done"
+          : status === "done" && !existing
+            ? "done"
+            : "open";
+    dueByDay.set(assignment.due_date, next);
   }
 
   return (
@@ -209,7 +221,7 @@ export default async function KidProgressPage({
           Save goal
         </button>
       </form>
-      <p>Colored days met the goal. A dot is a due day. A red dot is overdue.</p>
+      <p>Colored days met the goal. A green dot is finished. A red dot is overdue.</p>
 
       {assignments.length > 0 && (
         <div className="card">
@@ -252,7 +264,7 @@ export default async function KidProgressPage({
         </div>
         <div className="cal">
           {cells.map((cell, i) => {
-            const due = cell.day ? dueByDay.get(cell.day) : undefined;
+            const status = cell.day ? dueByDay.get(cell.day) : undefined;
             return (
               <div
                 key={cell.day ?? `pad-${i}`}
@@ -262,8 +274,10 @@ export default async function KidProgressPage({
                   <>
                     <span>{Number(cell.day.slice(8))}</span>
                     <small>{cell.pages || ""}</small>
-                    {due && (
-                      <small className={due.overdue ? "overdue" : ""}>•</small>
+                    {status && (
+                      <small className={status === "overdue" ? "overdue" : status === "done" ? "unlocked" : ""}>
+                        •
+                      </small>
                     )}
                   </>
                 ) : null}
