@@ -280,14 +280,17 @@ export default function Reader({
                 ? "Finish this book"
                 : `Read ${assignment.pages} pages`;
             const due = dueLabel(assignment.due_date, today, done);
+            const statusClass = done ? "unlocked" : overdue ? "overdue" : "";
             return (
               <div key={assignment.id} className="reward-track">
-                <p className={done ? "unlocked" : overdue ? "overdue" : ""}>
-                  {assignment.class_name}: {assignment.title} · {goal}
+                <p>
+                  <span className={statusClass}>{assignment.class_name}</span>
+                  {": "}
+                  {assignment.title} · {goal}
                   {due ? ` · ${due}` : ""}
                 </p>
                 <div className="progress-meta">
-                  <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
+                  <span className={statusClass}>
                     {done ? "done" : `${current} / ${target || "?"}`}
                   </span>
                   {!done && target > 0 && <span>{fill}%</span>}
