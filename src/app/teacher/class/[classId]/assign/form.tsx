@@ -17,7 +17,7 @@ export function AssignForm({
       <input type="hidden" name="class_id" value={classId} />
       <label>
         Assignment title
-        <input name="title" required maxLength={60} placeholder="Read Alice" />
+        <input name="title" required maxLength={60} />
       </label>
       <label>
         Book
