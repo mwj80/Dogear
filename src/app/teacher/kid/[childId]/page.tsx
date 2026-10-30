@@ -175,14 +175,15 @@ export default async function TeacherKidPage({
                 ? `${max} / ${total || "?"}`
                 : `${Math.min(max, target)} / ${target}`;
             const due = dueLabel(assignment.due_date, today, done);
+            const statusClass = done ? "unlocked" : overdue ? "overdue" : "";
             return (
               <div key={`${assignment.class_name}-${assignment.title}`} className="progress-row">
                 <div className="progress-meta">
-                  <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
+                  <span className={statusClass}>
                     {assignment.class_name}: {assignment.title} · {assignment.book_title}
                     {due ? ` · ${due}` : ""}
                   </span>
-                  <span>{done ? "done" : shown}</span>
+                  <span className={statusClass}>{done ? "done" : shown}</span>
                 </div>
               </div>
             );
