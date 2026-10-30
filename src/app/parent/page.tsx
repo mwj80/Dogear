@@ -296,10 +296,10 @@ export default async function ParentPage() {
                 {summary.name}
               </p>
               <p className="muted">
-                {summary.kids} kids · {summary.assignments} assignments
-                {summary.overdue > 0 && (
-                  <span className="overdue"> · {summary.overdue} overdue</span>
-                )}
+                {summary.kids} kids · {summary.assignments} assignments{" · "}
+                <span className={summary.overdue > 0 ? "overdue" : "unlocked"}>
+                  {summary.overdue} overdue
+                </span>
               </p>
             </div>
           ))}
