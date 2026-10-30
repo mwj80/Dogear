@@ -169,6 +169,7 @@ export default async function KidProgressPage({
   const monthLabel = start.toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
   const dueByDay = new Map<string, "overdue" | "done" | "open">();
   let overdueCount = 0;
+  let allDone = assignments.length > 0;
   for (const assignment of assignments) {
     const max = Number(assignment.max_location);
     const total = Number(assignment.total_locations);
@@ -177,6 +178,7 @@ export default async function KidProgressPage({
       assignment.criteria_type === "finish_book"
         ? total > 0 && max >= total - 1
         : max >= target;
+    if (!done) allDone = false;
     if (!done && assignment.due_date && assignment.due_date < today) overdueCount += 1;
     if (!assignment.due_date) continue;
     const status: "overdue" | "done" | "open" = done
@@ -195,11 +197,16 @@ export default async function KidProgressPage({
             : "open";
     dueByDay.set(assignment.due_date, next);
   }
+  const kidStatus: "overdue" | "done" | "open" = overdueCount > 0
+    ? "overdue"
+    : allDone
+      ? "done"
+      : "open";
   const classNames = [...new Set(assignments.map((a) => a.class_name))];
   const classStatuses = classNames.map((name) => {
     const rows = assignments.filter((a) => a.class_name === name);
     let classOverdue = 0;
-    let allDone = rows.length > 0;
+    let classDone = rows.length > 0;
     for (const assignment of rows) {
       const max = Number(assignment.max_location);
       const total = Number(assignment.total_locations);
@@ -208,12 +215,12 @@ export default async function KidProgressPage({
         assignment.criteria_type === "finish_book"
           ? total > 0 && max >= total - 1
           : max >= target;
-      if (!done) allDone = false;
+      if (!done) classDone = false;
       if (!done && assignment.due_date && assignment.due_date < today) classOverdue += 1;
     }
     const status: "overdue" | "done" | "open" = classOverdue > 0
       ? "overdue"
-      : allDone
+      : classDone
         ? "done"
         : "open";
     return { name, status, overdue: classOverdue, assignments: rows.length };
@@ -225,7 +232,9 @@ export default async function KidProgressPage({
         <Link href="/parent">Back to parent</Link>
         <Link href={`/kid/${kid.id}`}>Open kid view</Link>
       </header>
-      <h1>{kid.display_name}</h1>
+      <h1 className={kidStatus === "overdue" ? "overdue" : kidStatus === "done" ? "unlocked" : ""}>
+        {kid.display_name}
+      </h1>
       <form action={renameKid} className="inline-form">
         <input type="hidden" name="child_id" value={kid.id} />
         <label>
@@ -414,7 +423,7 @@ export default async function KidProgressPage({
                 : 0;
             const bookAssignments = assignments.filter((a) => a.book_id === p.book_id);
             let anyOverdue = false;
-            let allDone = bookAssignments.length > 0;
+            let bookDone = bookAssignments.length > 0;
             for (const assignment of bookAssignments) {
               const max = Number(assignment.max_location);
               const total = Number(assignment.total_locations);
@@ -423,12 +432,12 @@ export default async function KidProgressPage({
                 assignment.criteria_type === "finish_book"
                   ? total > 0 && max >= total - 1
                   : max >= target;
-              if (!done) allDone = false;
+              if (!done) bookDone = false;
               if (!done && assignment.due_date && assignment.due_date < today) anyOverdue = true;
             }
             const bookStatus: "overdue" | "done" | "open" = anyOverdue
               ? "overdue"
-              : allDone
+              : bookDone
                 ? "done"
                 : "open";
             return (
