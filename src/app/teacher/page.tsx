@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import {
-  createAssignment,
   createClass,
   removeAssignment,
   removeClass,
@@ -275,42 +274,9 @@ export default async function TeacherPage() {
                   <Link href={`/teacher/class/${klass.id}/add`}>Add kid</Link>
                 </p>
               )}
-
-              <form action={createAssignment} className="stack">
-                <input type="hidden" name="class_id" value={klass.id} />
-                <label>
-                  Assignment title
-                  <input name="title" required maxLength={60} placeholder="Read Alice" />
-                </label>
-                <label>
-                  Book
-                  <select name="book_id" required>
-                    {books.map((book) => (
-                      <option key={book.id} value={book.id}>
-                        {book.title}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Goal
-                  <select name="goal" defaultValue="finish">
-                    <option value="finish">Finish the book</option>
-                    <option value="pages">Read N pages</option>
-                  </select>
-                </label>
-                <label>
-                  Pages, if page goal
-                  <input name="pages" type="number" min="1" step="1" defaultValue="20" />
-                </label>
-                <label>
-                  Due date
-                  <input name="due_date" type="date" />
-                </label>
-                <button type="submit" className="btn">
-                  Assign
-                </button>
-              </form>
+              <p>
+                <Link href={`/teacher/class/${klass.id}/assign`}>Assign</Link>
+              </p>
 
               {classAssignments.map((assignment) => {
                 let overdueKids = 0;
