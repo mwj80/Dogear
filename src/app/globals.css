@@ -170,6 +170,16 @@ input, select {
   background: var(--accent);
 }
 
+.legend {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 0.35rem 0 0.5rem;
+}
+.legend span { display: flex; align-items: center; gap: 0.25rem; }
+.legend .swatch { font-weight: bold; }
+
 .balance-strip {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
