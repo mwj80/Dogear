@@ -308,6 +308,19 @@ export default async function ParentPage() {
                 const todayPages = kidLog
                   .filter((l) => l.day === today)
                   .reduce((n, l) => n + Number(l.pages), 0);
+                const dueByDay = new Map<string, boolean>();
+                for (const item of kidClasses) {
+                  if (!item.due_date) continue;
+                  const max = Number(item.max_location);
+                  const total = Number(item.total_locations);
+                  const target = Number(item.pages ?? 0);
+                  const done =
+                    item.criteria_type === "finish_book"
+                      ? total > 0 && max >= total - 1
+                      : max >= target;
+                  const overdue = !done && item.due_date < dueToday;
+                  dueByDay.set(item.due_date, (dueByDay.get(item.due_date) ?? false) || overdue);
+                }
                 return (
                   <div key={kid.id} className="kid-block">
                     <p className="kid-name">
@@ -350,10 +363,15 @@ export default async function ParentPage() {
                           .filter((l) => l.day === day)
                           .reduce((n, l) => n + Number(l.pages), 0);
                         const label = WEEKDAY[new Date(day + "T12:00:00").getDay()];
+                        const due = dueByDay.has(day);
+                        const overdue = dueByDay.get(day) === true;
                         return (
                           <div key={day} className={pages >= goal ? "day on" : "day"}>
                             <div className="dot">{pages > 0 ? pages : ""}</div>
                             {label}
+                            {due && (
+                              <small className={overdue ? "overdue" : ""}>•</small>
+                            )}
                           </div>
                         );
                       })}
