@@ -75,6 +75,29 @@ export default async function KidHomePage({
   }[];
 
   const kid = kids[0] as { id: string; display_name: string };
+  const classNames = [...new Set(assignments.map((a) => a.class_name))];
+  const classStatuses = classNames.map((name) => {
+    const rows = assignments.filter((a) => a.class_name === name);
+    let anyOverdue = false;
+    let allDone = rows.length > 0;
+    for (const assignment of rows) {
+      const max = Number(assignment.max_location);
+      const total = Number(assignment.total_locations);
+      const target = Number(assignment.pages ?? 0);
+      const done =
+        assignment.criteria_type === "finish_book"
+          ? total > 0 && max >= total - 1
+          : max >= target;
+      if (!done) allDone = false;
+      if (!done && assignment.due_date && assignment.due_date < today) anyOverdue = true;
+    }
+    const status: "overdue" | "done" | "open" = anyOverdue
+      ? "overdue"
+      : allDone
+        ? "done"
+        : "open";
+    return { name, status };
+  });
 
   return (
     <main>
@@ -86,6 +109,20 @@ export default async function KidHomePage({
       {assignments.length > 0 && (
         <div className="card">
           <h2>Assigned</h2>
+          {classStatuses.map((klass) => (
+            <p
+              key={klass.name}
+              className={
+                klass.status === "overdue"
+                  ? "kid-name overdue"
+                  : klass.status === "done"
+                    ? "kid-name unlocked"
+                    : "kid-name"
+              }
+            >
+              {klass.name}
+            </p>
+          ))}
           {assignments.map((assignment) => {
             const max = Number(assignment.max_location);
             const total = Number(assignment.total_locations);
