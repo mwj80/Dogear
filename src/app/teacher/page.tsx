@@ -263,7 +263,7 @@ export default async function TeacherPage() {
                     <input type="hidden" name="class_id" value={klass.id} />
                     <input type="hidden" name="child_id" value={kid.child_id} />
                     <span className={kidStatus === "overdue" ? "overdue" : kidStatus === "done" ? "unlocked" : ""}>
-                      {kid.display_name}
+                      <Link href={`/teacher/kid/${kid.child_id}`}>{kid.display_name}</Link>
                     </span>
                     <button type="submit" className="btn secondary">
                       Remove
