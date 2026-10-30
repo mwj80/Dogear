@@ -262,10 +262,25 @@ export default function Reader({
   const active = items.filter((r) => r.status === "active");
   const unlocked = items.filter((r) => r.status === "unlocked");
 
+  const overdueCount = assignments.filter((assignment) => {
+    const target =
+      assignment.criteria_type === "finish_book"
+        ? total
+        : Number(assignment.pages ?? 0);
+    const done = target > 0 && highest >= target - (assignment.criteria_type === "finish_book" ? 1 : 0);
+    return !done && !!assignment.due_date && assignment.due_date < today;
+  }).length;
+
   return (
     <div>
       {assignments.length > 0 && (
         <div className="banner">
+          <p className="muted">
+            {assignments.length} assignments{" · "}
+            <span className={overdueCount > 0 ? "overdue" : "unlocked"}>
+              {overdueCount} overdue
+            </span>
+          </p>
           {assignments.map((assignment) => {
             const target =
               assignment.criteria_type === "finish_book"
