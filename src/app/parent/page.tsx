@@ -406,6 +406,11 @@ export default async function ParentPage() {
                         );
                       })}
                     </div>
+                    <div className="legend">
+                      <span><span className="swatch unlocked">•</span> finished</span>
+                      <span><span className="swatch overdue">•</span> overdue</span>
+                      <span><span className="swatch">•</span> open</span>
+                    </div>
                     {kidProgress.length === 0 ? (
                       <p className="muted">No reading yet.</p>
                     ) : (
