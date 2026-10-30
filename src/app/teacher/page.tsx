@@ -144,9 +144,11 @@ export default async function TeacherPage() {
           const available = kids.filter((kid) => !enrolledIds.has(kid.id));
           const classAssignments = assignments.filter((a) => a.class_id === klass.id);
           let overdueCount = 0;
-          const dueByDay = new Map<string, boolean>();
+          const dueByDay = new Map<string, "overdue" | "done" | "open">();
           for (const assignment of classAssignments) {
+            if (!assignment.due_date) continue;
             let anyOverdue = false;
+            let allDone = enrolled.length > 0;
             for (const kid of enrolled) {
               const row = progress.find(
                 (p) => p.child_id === kid.child_id && p.book_id === assignment.book_id
@@ -157,14 +159,27 @@ export default async function TeacherPage() {
                 assignment.criteria_type === "finish_book"
                   ? total > 0 && max >= total - 1
                   : max >= Number(assignment.pages ?? 0);
-              if (!done && assignment.due_date && assignment.due_date < today) {
+              if (!done) allDone = false;
+              if (!done && assignment.due_date < today) {
                 overdueCount += 1;
                 anyOverdue = true;
               }
             }
-            if (assignment.due_date) {
-              dueByDay.set(assignment.due_date, (dueByDay.get(assignment.due_date) ?? false) || anyOverdue);
-            }
+            const status: "overdue" | "done" | "open" = anyOverdue
+              ? "overdue"
+              : allDone
+                ? "done"
+                : "open";
+            const existing = dueByDay.get(assignment.due_date);
+            const next =
+              existing === "overdue" || status === "overdue"
+                ? "overdue"
+                : existing === "done" && status === "done"
+                  ? "done"
+                  : status === "done" && !existing
+                    ? "done"
+                    : "open";
+            dueByDay.set(assignment.due_date, next);
           }
           return (
             <div key={klass.id} className="card">
@@ -178,13 +193,14 @@ export default async function TeacherPage() {
               <div className="week">
                 {days.map((day) => {
                   const label = WEEKDAY[new Date(day + "T12:00:00").getDay()];
-                  const due = dueByDay.has(day);
-                  const overdue = dueByDay.get(day) === true;
+                  const status = dueByDay.get(day);
                   return (
                     <div key={day} className="day">
                       {label}
-                      {due && (
-                        <small className={overdue ? "overdue" : ""}>•</small>
+                      {status && (
+                        <small className={status === "overdue" ? "overdue" : status === "done" ? "unlocked" : ""}>
+                          •
+                        </small>
                       )}
                     </div>
                   );
