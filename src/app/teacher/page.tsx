@@ -144,11 +144,11 @@ export default async function TeacherPage() {
           const available = kids.filter((kid) => !enrolledIds.has(kid.id));
           const classAssignments = assignments.filter((a) => a.class_id === klass.id);
           let overdueCount = 0;
+          let allDone = classAssignments.length > 0 && enrolled.length > 0;
           const dueByDay = new Map<string, "overdue" | "done" | "open">();
           for (const assignment of classAssignments) {
-            if (!assignment.due_date) continue;
             let anyOverdue = false;
-            let allDone = enrolled.length > 0;
+            let assignmentDone = enrolled.length > 0;
             for (const kid of enrolled) {
               const row = progress.find(
                 (p) => p.child_id === kid.child_id && p.book_id === assignment.book_id
@@ -159,15 +159,19 @@ export default async function TeacherPage() {
                 assignment.criteria_type === "finish_book"
                   ? total > 0 && max >= total - 1
                   : max >= Number(assignment.pages ?? 0);
-              if (!done) allDone = false;
-              if (!done && assignment.due_date < today) {
+              if (!done) {
+                assignmentDone = false;
+                allDone = false;
+              }
+              if (!done && assignment.due_date && assignment.due_date < today) {
                 overdueCount += 1;
                 anyOverdue = true;
               }
             }
+            if (!assignment.due_date) continue;
             const status: "overdue" | "done" | "open" = anyOverdue
               ? "overdue"
-              : allDone
+              : assignmentDone
                 ? "done"
                 : "open";
             const existing = dueByDay.get(assignment.due_date);
@@ -181,9 +185,13 @@ export default async function TeacherPage() {
                     : "open";
             dueByDay.set(assignment.due_date, next);
           }
+          const classStatus: "overdue" | "done" | "open" =
+            overdueCount > 0 ? "overdue" : allDone ? "done" : "open";
           return (
             <div key={klass.id} className="card">
-              <h2>{klass.name}</h2>
+              <h2 className={classStatus === "overdue" ? "overdue" : classStatus === "done" ? "unlocked" : ""}>
+                {klass.name}
+              </h2>
               <p className="muted">
                 {enrolled.length} kids · {classAssignments.length} assignments
                 {overdueCount > 0 && (
