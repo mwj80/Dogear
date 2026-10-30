@@ -302,10 +302,12 @@ export default async function KidProgressPage({
         <div className="cal">
           {cells.map((cell, i) => {
             const status = cell.day ? dueByDay.get(cell.day) : undefined;
+            const isToday = cell.day === today;
+            const on = cell.day && cell.pages >= goal;
             return (
               <div
                 key={cell.day ?? `pad-${i}`}
-                className={cell.day && cell.pages >= goal ? "cal-day on" : "cal-day"}
+                className={`cal-day${on ? " on" : ""}${isToday ? " today" : ""}`}
               >
                 {cell.day ? (
                   <>
