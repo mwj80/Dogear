@@ -140,6 +140,7 @@ export async function createAssignment(formData: FormData) {
   `;
   revalidatePath("/teacher");
   revalidatePath("/kid");
+  return title;
 }
 
 export async function updateAssignment(formData: FormData) {
