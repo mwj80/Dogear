@@ -324,8 +324,8 @@ export default async function ParentPage() {
                   .filter((l) => l.day === today)
                   .reduce((n, l) => n + Number(l.pages), 0);
                 const dueByDay = new Map<string, "overdue" | "done" | "open">();
+                let overdueCount = 0;
                 for (const item of kidClasses) {
-                  if (!item.due_date) continue;
                   const max = Number(item.max_location);
                   const total = Number(item.total_locations);
                   const target = Number(item.pages ?? 0);
@@ -333,6 +333,8 @@ export default async function ParentPage() {
                     item.criteria_type === "finish_book"
                       ? total > 0 && max >= total - 1
                       : max >= target;
+                  if (!done && item.due_date && item.due_date < dueToday) overdueCount += 1;
+                  if (!item.due_date) continue;
                   const status: "overdue" | "done" | "open" = done
                     ? "done"
                     : item.due_date < dueToday
@@ -358,32 +360,40 @@ export default async function ParentPage() {
                     </p>
                     <p className="muted">Today: {todayPages} pages · goal {goal}</p>
                     {kidClasses.length > 0 && (
-                      <ul className="reward-list">
-                        {kidClasses.map((item) => {
-                          const max = Number(item.max_location);
-                          const total = Number(item.total_locations);
-                          const target = Number(item.pages ?? 0);
-                          const done =
-                            item.criteria_type === "finish_book"
-                              ? total > 0 && max >= total - 1
-                              : max >= target;
-                          const overdue = !done && !!item.due_date && item.due_date < dueToday;
-                          const shown =
-                            item.criteria_type === "finish_book"
-                              ? `${max} / ${total || "?"}`
-                              : `${Math.min(max, target)} / ${target}`;
-                          const due = dueLabel(item.due_date, dueToday, done);
-                          return (
-                            <li
-                              key={`${item.class_name}-${item.title}`}
-                              className={done ? "unlocked" : overdue ? "overdue" : ""}
-                            >
-                              {item.class_name}: {item.title} · {item.book_title}
-                              {due ? ` · ${due}` : ""} — {done ? "done" : shown}
-                            </li>
-                          );
-                        })}
-                      </ul>
+                      <>
+                        <p className="muted">
+                          {kidClasses.length} assignments{" · "}
+                          <span className={overdueCount > 0 ? "overdue" : "unlocked"}>
+                            {overdueCount} overdue
+                          </span>
+                        </p>
+                        <ul className="reward-list">
+                          {kidClasses.map((item) => {
+                            const max = Number(item.max_location);
+                            const total = Number(item.total_locations);
+                            const target = Number(item.pages ?? 0);
+                            const done =
+                              item.criteria_type === "finish_book"
+                                ? total > 0 && max >= total - 1
+                                : max >= target;
+                            const overdue = !done && !!item.due_date && item.due_date < dueToday;
+                            const shown =
+                              item.criteria_type === "finish_book"
+                                ? `${max} / ${total || "?"}`
+                                : `${Math.min(max, target)} / ${target}`;
+                            const due = dueLabel(item.due_date, dueToday, done);
+                            return (
+                              <li
+                                key={`${item.class_name}-${item.title}`}
+                                className={done ? "unlocked" : overdue ? "overdue" : ""}
+                              >
+                                {item.class_name}: {item.title} · {item.book_title}
+                                {due ? ` · ${due}` : ""} — {done ? "done" : shown}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </>
                     )}
                     <div className="week">
                       {days.map((day) => {
