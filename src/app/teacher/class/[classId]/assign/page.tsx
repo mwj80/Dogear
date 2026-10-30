@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
-import { createAssignment } from "../../../actions";
+import { AssignForm } from "./form";
 
 export default async function AssignPage({
   params
@@ -41,41 +41,7 @@ export default async function AssignPage({
       <h1>Assign to {klass.name}</h1>
 
       <div className="card">
-        <form action={createAssignment} className="stack">
-          <input type="hidden" name="class_id" value={klass.id} />
-          <label>
-            Assignment title
-            <input name="title" required maxLength={60} placeholder="Read Alice" />
-          </label>
-          <label>
-            Book
-            <select name="book_id" required>
-              {books.map((book) => (
-                <option key={book.id} value={book.id}>
-                  {book.title}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Goal
-            <select name="goal" defaultValue="finish">
-              <option value="finish">Finish the book</option>
-              <option value="pages">Read N pages</option>
-            </select>
-          </label>
-          <label>
-            Pages, if page goal
-            <input name="pages" type="number" min="1" step="1" defaultValue="20" />
-          </label>
-          <label>
-            Due date
-            <input name="due_date" type="date" />
-          </label>
-          <button type="submit" className="btn">
-            Assign
-          </button>
-        </form>
+        <AssignForm classId={klass.id} books={books} />
       </div>
     </main>
   );
