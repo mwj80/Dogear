@@ -204,9 +204,30 @@ export default async function KidHomePage({
           {books.map((book) => {
             const b = book as { slug: string; title: string; author: string };
             const bookAssignments = assignments.filter((a) => a.slug === b.slug);
+            let anyOverdue = false;
+            let allDone = bookAssignments.length > 0;
+            for (const assignment of bookAssignments) {
+              const max = Number(assignment.max_location);
+              const total = Number(assignment.total_locations);
+              const target = Number(assignment.pages ?? 0);
+              const done =
+                assignment.criteria_type === "finish_book"
+                  ? total > 0 && max >= total - 1
+                  : max >= target;
+              if (!done) allDone = false;
+              if (!done && assignment.due_date && assignment.due_date < today) anyOverdue = true;
+            }
+            const status: "overdue" | "done" | "open" = anyOverdue
+              ? "overdue"
+              : allDone
+                ? "done"
+                : "open";
             return (
               <li key={b.slug}>
-                <Link href={`/kid/${kid.id}/book/${b.slug}`}>
+                <Link
+                  href={`/kid/${kid.id}/book/${b.slug}`}
+                  className={status === "overdue" ? "overdue" : status === "done" ? "unlocked" : ""}
+                >
                   {b.title}
                 </Link>
                 <span> — {b.author}</span>
