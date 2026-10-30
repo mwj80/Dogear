@@ -1,6 +1,7 @@
 "use server";
 
 import { auth, currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
@@ -187,4 +188,5 @@ export async function removeAssignment(formData: FormData) {
   `;
   revalidatePath("/teacher");
   revalidatePath("/kid");
+  redirect("/teacher");
 }
