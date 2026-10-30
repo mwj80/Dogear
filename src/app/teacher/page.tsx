@@ -5,11 +5,9 @@ import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import {
   createClass,
-  removeAssignment,
   removeClass,
   removeEnrollment,
-  renameClass,
-  updateAssignment
+  renameClass
 } from "./actions";
 
 const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -315,56 +313,9 @@ export default async function TeacherPage() {
                     <p className={status === "overdue" ? "overdue" : status === "done" ? "unlocked" : ""}>
                       {assignment.book_title}
                     </p>
-                    <form action={updateAssignment} className="stack">
-                      <input type="hidden" name="assignment_id" value={assignment.id} />
-                      <label>
-                        Title
-                        <input name="title" required maxLength={60} defaultValue={assignment.title} />
-                      </label>
-                      <label>
-                        Book
-                        <select name="book_id" defaultValue={assignment.book_id} required>
-                          {books.map((book) => (
-                            <option key={book.id} value={book.id}>
-                              {book.title}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        Goal
-                        <select
-                          name="goal"
-                          defaultValue={assignment.criteria_type === "finish_book" ? "finish" : "pages"}
-                        >
-                          <option value="finish">Finish the book</option>
-                          <option value="pages">Read N pages</option>
-                        </select>
-                      </label>
-                      <label>
-                        Pages, if page goal
-                        <input
-                          name="pages"
-                          type="number"
-                          min="1"
-                          step="1"
-                          defaultValue={assignment.pages ?? 20}
-                        />
-                      </label>
-                      <label>
-                        Due date
-                        <input name="due_date" type="date" defaultValue={assignment.due_date ?? ""} />
-                      </label>
-                      <button type="submit" className="btn">
-                        Save assignment
-                      </button>
-                    </form>
-                    <form action={removeAssignment}>
-                      <input type="hidden" name="assignment_id" value={assignment.id} />
-                      <button type="submit" className="btn secondary">
-                        Remove assignment
-                      </button>
-                    </form>
+                    <p>
+                      <Link href={`/teacher/assignment/${assignment.id}/edit`}>Edit assignment</Link>
+                    </p>
                     {enrolled.length === 0 ? (
                       <p className="muted">No kids enrolled yet.</p>
                     ) : (
