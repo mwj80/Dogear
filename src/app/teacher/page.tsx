@@ -215,6 +215,11 @@ export default async function TeacherPage() {
                   );
                 })}
               </div>
+              <div className="legend">
+                <span><span className="swatch unlocked">•</span> finished</span>
+                <span><span className="swatch overdue">•</span> overdue</span>
+                <span><span className="swatch">•</span> open</span>
+              </div>
               <form action={renameClass} className="inline-form">
                 <input type="hidden" name="class_id" value={klass.id} />
                 <label>
