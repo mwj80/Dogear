@@ -420,10 +420,30 @@ export default async function ParentPage() {
                             ? Math.min(100, Math.round((p.max_location / p.total_locations) * 100))
                             : 0;
                         const bookAssignments = kidClasses.filter((a) => a.book_id === p.book_id);
+                        let anyOverdue = false;
+                        let allDone = bookAssignments.length > 0;
+                        for (const assignment of bookAssignments) {
+                          const max = Number(assignment.max_location);
+                          const total = Number(assignment.total_locations);
+                          const target = Number(assignment.pages ?? 0);
+                          const done =
+                            assignment.criteria_type === "finish_book"
+                              ? total > 0 && max >= total - 1
+                              : max >= target;
+                          if (!done) allDone = false;
+                          if (!done && assignment.due_date && assignment.due_date < dueToday) anyOverdue = true;
+                        }
+                        const bookStatus: "overdue" | "done" | "open" = anyOverdue
+                          ? "overdue"
+                          : allDone
+                            ? "done"
+                            : "open";
                         return (
                           <div key={p.title} className="progress-row">
                             <div className="progress-meta">
-                              <span>{p.title}</span>
+                              <span className={bookStatus === "overdue" ? "overdue" : bookStatus === "done" ? "unlocked" : ""}>
+                                {p.title}
+                              </span>
                               <span>
                                 {p.max_location} / {p.total_locations || "?"} · {pct}%
                               </span>
