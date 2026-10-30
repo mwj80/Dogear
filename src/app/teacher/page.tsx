@@ -193,10 +193,10 @@ export default async function TeacherPage() {
                 {klass.name}
               </h2>
               <p className="muted">
-                {enrolled.length} kids · {classAssignments.length} assignments
-                {overdueCount > 0 && (
-                  <span className="overdue"> · {overdueCount} overdue</span>
-                )}
+                {enrolled.length} kids · {classAssignments.length} assignments{" · "}
+                <span className={overdueCount > 0 ? "overdue" : "unlocked"}>
+                  {overdueCount} overdue
+                </span>
               </p>
               <div className="week">
                 {days.map((day) => {
