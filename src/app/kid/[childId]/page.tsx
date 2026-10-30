@@ -75,10 +75,21 @@ export default async function KidHomePage({
   }[];
 
   const kid = kids[0] as { id: string; display_name: string };
+  let overdueCount = 0;
+  for (const assignment of assignments) {
+    const max = Number(assignment.max_location);
+    const total = Number(assignment.total_locations);
+    const target = Number(assignment.pages ?? 0);
+    const done =
+      assignment.criteria_type === "finish_book"
+        ? total > 0 && max >= total - 1
+        : max >= target;
+    if (!done && assignment.due_date && assignment.due_date < today) overdueCount += 1;
+  }
   const classNames = [...new Set(assignments.map((a) => a.class_name))];
   const classStatuses = classNames.map((name) => {
     const rows = assignments.filter((a) => a.class_name === name);
-    let overdueCount = 0;
+    let classOverdue = 0;
     let allDone = rows.length > 0;
     for (const assignment of rows) {
       const max = Number(assignment.max_location);
@@ -89,14 +100,14 @@ export default async function KidHomePage({
           ? total > 0 && max >= total - 1
           : max >= target;
       if (!done) allDone = false;
-      if (!done && assignment.due_date && assignment.due_date < today) overdueCount += 1;
+      if (!done && assignment.due_date && assignment.due_date < today) classOverdue += 1;
     }
-    const status: "overdue" | "done" | "open" = overdueCount > 0
+    const status: "overdue" | "done" | "open" = classOverdue > 0
       ? "overdue"
       : allDone
         ? "done"
         : "open";
-    return { name, status, overdue: overdueCount, assignments: rows.length };
+    return { name, status, overdue: classOverdue, assignments: rows.length };
   });
 
   return (
@@ -130,6 +141,12 @@ export default async function KidHomePage({
               </p>
             </div>
           ))}
+          <p className="muted">
+            {assignments.length} assignments{" · "}
+            <span className={overdueCount > 0 ? "overdue" : "unlocked"}>
+              {overdueCount} overdue
+            </span>
+          </p>
           {assignments.map((assignment) => {
             const max = Number(assignment.max_location);
             const total = Number(assignment.total_locations);
