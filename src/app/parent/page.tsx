@@ -392,8 +392,9 @@ export default async function ParentPage() {
                           .reduce((n, l) => n + Number(l.pages), 0);
                         const label = WEEKDAY[new Date(day + "T12:00:00").getDay()];
                         const status = dueByDay.get(day);
+                        const isToday = day === dueToday;
                         return (
-                          <div key={day} className={pages >= goal ? "day on" : "day"}>
+                          <div key={day} className={`day${pages >= goal ? " on" : ""}${isToday ? " today" : ""}`}>
                             <div className="dot">{pages > 0 ? pages : ""}</div>
                             {label}
                             {status && (
