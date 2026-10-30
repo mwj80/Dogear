@@ -283,10 +283,8 @@ export default function Reader({
             const statusClass = done ? "unlocked" : overdue ? "overdue" : "";
             return (
               <div key={assignment.id} className="reward-track">
-                <p>
-                  <span className={statusClass}>{assignment.class_name}</span>
-                  {": "}
-                  {assignment.title} · {goal}
+                <p className={statusClass}>
+                  {assignment.class_name}: {assignment.title} · {goal}
                   {due ? ` · ${due}` : ""}
                 </p>
                 <div className="progress-meta">
