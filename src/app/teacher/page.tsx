@@ -5,9 +5,7 @@ import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import {
   createClass,
-  removeClass,
-  removeEnrollment,
-  renameClass
+  removeEnrollment
 } from "./actions";
 
 const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -216,22 +214,6 @@ export default async function TeacherPage() {
                 <span><span className="swatch overdue">•</span> overdue</span>
                 <span><span className="swatch">•</span> open</span>
               </div>
-              <form action={renameClass} className="inline-form">
-                <input type="hidden" name="class_id" value={klass.id} />
-                <label>
-                  Name
-                  <input name="name" required maxLength={40} defaultValue={klass.name} />
-                </label>
-                <button type="submit" className="btn">
-                  Rename
-                </button>
-              </form>
-              <form action={removeClass}>
-                <input type="hidden" name="class_id" value={klass.id} />
-                <button type="submit" className="btn secondary">
-                  Remove class
-                </button>
-              </form>
               <p className="muted">{enrolled.length} kids</p>
               {enrolled.map((kid) => {
                 let kidOverdue = false;
@@ -267,11 +249,9 @@ export default async function TeacherPage() {
                   </form>
                 );
               })}
-              {available.length > 0 && (
-                <p>
-                  <Link href={`/teacher/class/${klass.id}/add`}>Add kid</Link>
-                </p>
-              )}
+              <p>
+                <Link href={`/teacher/class/${klass.id}/add`}>Class Administration</Link>
+              </p>
               <p>
                 <Link href={`/teacher/class/${klass.id}/assign`}>Add an Assignment</Link>
               </p>
