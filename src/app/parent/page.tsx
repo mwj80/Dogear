@@ -198,6 +198,7 @@ export default async function ParentPage() {
     const kidsInClass = new Set(rows.map((item) => item.child_id));
     const assignmentTitles = new Set(rows.map((item) => item.title));
     let overdueCount = 0;
+    let allDone = rows.length > 0;
     for (const item of rows) {
       const max = Number(item.max_location);
       const total = Number(item.total_locations);
@@ -206,13 +207,17 @@ export default async function ParentPage() {
         item.criteria_type === "finish_book"
           ? total > 0 && max >= total - 1
           : max >= target;
+      if (!done) allDone = false;
       if (!done && item.due_date && item.due_date < dueToday) overdueCount += 1;
     }
+    const status: "overdue" | "done" | "open" =
+      overdueCount > 0 ? "overdue" : allDone ? "done" : "open";
     return {
       name,
       kids: kidsInClass.size,
       assignments: assignmentTitles.size,
-      overdue: overdueCount
+      overdue: overdueCount,
+      status
     };
   });
 
@@ -279,7 +284,17 @@ export default async function ParentPage() {
           <h2>Classes</h2>
           {classSummaries.map((summary) => (
             <div key={summary.name} className="kid-block">
-              <p className="kid-name">{summary.name}</p>
+              <p
+                className={
+                  summary.status === "overdue"
+                    ? "kid-name overdue"
+                    : summary.status === "done"
+                      ? "kid-name unlocked"
+                      : "kid-name"
+                }
+              >
+                {summary.name}
+              </p>
               <p className="muted">
                 {summary.kids} kids · {summary.assignments} assignments
                 {summary.overdue > 0 && (
