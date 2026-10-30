@@ -148,6 +148,12 @@ input, select {
   text-align: center;
   font-size: 0.7rem;
   color: var(--muted);
+  border: 2px solid transparent;
+  border-radius: 6px;
+  padding: 0.15rem;
+}
+.day.today {
+  border-color: var(--ink);
 }
 .day .dot {
   height: 22px;
@@ -222,6 +228,10 @@ input, select {
   align-items: center;
   justify-content: center;
   color: var(--muted);
+  border: 2px solid transparent;
+}
+.cal-day.today {
+  border-color: var(--ink);
 }
 .cal-day.on {
   background: var(--accent);
