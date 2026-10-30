@@ -303,7 +303,7 @@ export default async function TeacherPage() {
               </form>
 
               {classAssignments.map((assignment) => {
-                let anyOverdue = false;
+                let overdueKids = 0;
                 let allDone = enrolled.length > 0;
                 for (const kid of enrolled) {
                   const row = progress.find(
@@ -316,9 +316,9 @@ export default async function TeacherPage() {
                       ? total > 0 && max >= total - 1
                       : max >= Number(assignment.pages ?? 0);
                   if (!done) allDone = false;
-                  if (!done && assignment.due_date && assignment.due_date < today) anyOverdue = true;
+                  if (!done && assignment.due_date && assignment.due_date < today) overdueKids += 1;
                 }
-                const status: "overdue" | "done" | "open" = anyOverdue
+                const status: "overdue" | "done" | "open" = overdueKids > 0
                   ? "overdue"
                   : allDone
                     ? "done"
@@ -329,6 +329,12 @@ export default async function TeacherPage() {
                     <p className={status === "overdue" ? "kid-name overdue" : status === "done" ? "kid-name unlocked" : "kid-name"}>
                       {klass.name}: {assignment.title}
                       {due ? ` · ${due}` : ""}
+                    </p>
+                    <p className="muted">
+                      {enrolled.length} kids{" · "}
+                      <span className={overdueKids > 0 ? "overdue" : "unlocked"}>
+                        {overdueKids} overdue
+                      </span>
                     </p>
                     <p className={status === "overdue" ? "overdue" : status === "done" ? "unlocked" : ""}>
                       {assignment.book_title}
