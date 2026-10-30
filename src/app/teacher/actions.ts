@@ -60,6 +60,7 @@ export async function removeClass(formData: FormData) {
   revalidatePath("/teacher");
   revalidatePath("/parent");
   revalidatePath("/kid");
+  redirect("/teacher");
 }
 
 export async function enrollKid(formData: FormData) {
