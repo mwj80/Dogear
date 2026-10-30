@@ -168,8 +168,8 @@ export default async function KidProgressPage({
   }
   const monthLabel = start.toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
   const dueByDay = new Map<string, "overdue" | "done" | "open">();
+  let overdueCount = 0;
   for (const assignment of assignments) {
-    if (!assignment.due_date) continue;
     const max = Number(assignment.max_location);
     const total = Number(assignment.total_locations);
     const target = Number(assignment.pages ?? 0);
@@ -177,6 +177,8 @@ export default async function KidProgressPage({
       assignment.criteria_type === "finish_book"
         ? total > 0 && max >= total - 1
         : max >= target;
+    if (!done && assignment.due_date && assignment.due_date < today) overdueCount += 1;
+    if (!assignment.due_date) continue;
     const status: "overdue" | "done" | "open" = done
       ? "done"
       : assignment.due_date < today
@@ -196,7 +198,7 @@ export default async function KidProgressPage({
   const classNames = [...new Set(assignments.map((a) => a.class_name))];
   const classStatuses = classNames.map((name) => {
     const rows = assignments.filter((a) => a.class_name === name);
-    let overdueCount = 0;
+    let classOverdue = 0;
     let allDone = rows.length > 0;
     for (const assignment of rows) {
       const max = Number(assignment.max_location);
@@ -207,14 +209,14 @@ export default async function KidProgressPage({
           ? total > 0 && max >= total - 1
           : max >= target;
       if (!done) allDone = false;
-      if (!done && assignment.due_date && assignment.due_date < today) overdueCount += 1;
+      if (!done && assignment.due_date && assignment.due_date < today) classOverdue += 1;
     }
-    const status: "overdue" | "done" | "open" = overdueCount > 0
+    const status: "overdue" | "done" | "open" = classOverdue > 0
       ? "overdue"
       : allDone
         ? "done"
         : "open";
-    return { name, status, overdue: overdueCount, assignments: rows.length };
+    return { name, status, overdue: classOverdue, assignments: rows.length };
   });
 
   return (
@@ -270,6 +272,12 @@ export default async function KidProgressPage({
               </p>
             </div>
           ))}
+          <p className="muted">
+            {assignments.length} assignments{" · "}
+            <span className={overdueCount > 0 ? "overdue" : "unlocked"}>
+              {overdueCount} overdue
+            </span>
+          </p>
           {assignments.map((assignment) => {
             const max = Number(assignment.max_location);
             const total = Number(assignment.total_locations);
