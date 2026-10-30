@@ -3,9 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
-import { enrollKid } from "../../../actions";
+import { enrollKid, removeClass, renameClass } from "../../../actions";
 
-export default async function AddKidPage({
+export default async function ClassAdminPage({
   params
 }: {
   params: Promise<{ classId: string }>;
@@ -48,14 +48,28 @@ export default async function AddKidPage({
       <header className="top">
         <Link href="/teacher">Back to teacher</Link>
       </header>
-      <h1>Add kid to {klass.name}</h1>
+      <h1>Class Administration</h1>
+      <p className="muted">{klass.name}</p>
 
-      {available.length === 0 ? (
-        <div className="card">
+      <div className="card">
+        <h2>Rename</h2>
+        <form action={renameClass} className="inline-form">
+          <input type="hidden" name="class_id" value={klass.id} />
+          <label>
+            Name
+            <input name="name" required maxLength={40} defaultValue={klass.name} />
+          </label>
+          <button type="submit" className="btn">
+            Rename
+          </button>
+        </form>
+      </div>
+
+      <div className="card">
+        <h2>Add kid</h2>
+        {available.length === 0 ? (
           <p>No kids available to add. Every kid in the household is already enrolled.</p>
-        </div>
-      ) : (
-        <div className="card">
+        ) : (
           <form action={enrollKid} className="stack">
             <input type="hidden" name="class_id" value={klass.id} />
             <label>
@@ -72,8 +86,18 @@ export default async function AddKidPage({
               Add
             </button>
           </form>
-        </div>
-      )}
+        )}
+      </div>
+
+      <div className="card">
+        <h2>Remove class</h2>
+        <form action={removeClass}>
+          <input type="hidden" name="class_id" value={klass.id} />
+          <button type="submit" className="btn secondary">
+            Remove class
+          </button>
+        </form>
+      </div>
     </main>
   );
 }
