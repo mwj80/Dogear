@@ -196,7 +196,7 @@ export default async function KidProgressPage({
   const classNames = [...new Set(assignments.map((a) => a.class_name))];
   const classStatuses = classNames.map((name) => {
     const rows = assignments.filter((a) => a.class_name === name);
-    let anyOverdue = false;
+    let overdueCount = 0;
     let allDone = rows.length > 0;
     for (const assignment of rows) {
       const max = Number(assignment.max_location);
@@ -207,14 +207,14 @@ export default async function KidProgressPage({
           ? total > 0 && max >= total - 1
           : max >= target;
       if (!done) allDone = false;
-      if (!done && assignment.due_date && assignment.due_date < today) anyOverdue = true;
+      if (!done && assignment.due_date && assignment.due_date < today) overdueCount += 1;
     }
-    const status: "overdue" | "done" | "open" = anyOverdue
+    const status: "overdue" | "done" | "open" = overdueCount > 0
       ? "overdue"
       : allDone
         ? "done"
         : "open";
-    return { name, status };
+    return { name, status, overdue: overdueCount, assignments: rows.length };
   });
 
   return (
@@ -250,18 +250,25 @@ export default async function KidProgressPage({
         <div className="card">
           <h2>Class</h2>
           {classStatuses.map((klass) => (
-            <p
-              key={klass.name}
-              className={
-                klass.status === "overdue"
-                  ? "kid-name overdue"
-                  : klass.status === "done"
-                    ? "kid-name unlocked"
-                    : "kid-name"
-              }
-            >
-              {klass.name}
-            </p>
+            <div key={klass.name} className="kid-block">
+              <p
+                className={
+                  klass.status === "overdue"
+                    ? "kid-name overdue"
+                    : klass.status === "done"
+                      ? "kid-name unlocked"
+                      : "kid-name"
+                }
+              >
+                {klass.name}
+              </p>
+              <p className="muted">
+                {klass.assignments} assignments{" · "}
+                <span className={klass.overdue > 0 ? "overdue" : "unlocked"}>
+                  {klass.overdue} overdue
+                </span>
+              </p>
+            </div>
           ))}
           {assignments.map((assignment) => {
             const max = Number(assignment.max_location);
