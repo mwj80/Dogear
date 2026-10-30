@@ -271,6 +271,16 @@ export default function Reader({
     return !done && !!assignment.due_date && assignment.due_date < today;
   }).length;
 
+  const allDone = assignments.length > 0 && assignments.every((assignment) => {
+    const target =
+      assignment.criteria_type === "finish_book"
+        ? total
+        : Number(assignment.pages ?? 0);
+    return target > 0 && highest >= target - (assignment.criteria_type === "finish_book" ? 1 : 0);
+  });
+
+  const pageStatus = overdueCount > 0 ? "overdue" : allDone ? "unlocked" : "";
+
   return (
     <div>
       {assignments.length > 0 && (
@@ -361,7 +371,7 @@ export default function Reader({
           ))}
         </div>
       )}
-      <p>
+      <p className={pageStatus}>
         Page {page}
         {total ? ` of ${total}` : ""} · Highest reached {pct}%
       </p>
