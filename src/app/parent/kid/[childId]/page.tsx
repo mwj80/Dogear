@@ -324,6 +324,11 @@ export default async function KidProgressPage({
             );
           })}
         </div>
+        <div className="legend">
+          <span><span className="swatch unlocked">•</span> finished</span>
+          <span><span className="swatch overdue">•</span> overdue</span>
+          <span><span className="swatch">•</span> open</span>
+        </div>
       </div>
 
       <div className="card">
