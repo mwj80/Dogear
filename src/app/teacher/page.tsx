@@ -16,11 +16,11 @@ import {
 
 const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-function lastSevenDays() {
+function weekAroundToday() {
   const days: string[] = [];
-  for (let i = 6; i >= 0; i--) {
+  for (let i = -3; i <= 3; i++) {
     const d = new Date();
-    d.setDate(d.getDate() - i);
+    d.setDate(d.getDate() + i);
     days.push(d.toISOString().slice(0, 10));
   }
   return days;
@@ -53,7 +53,7 @@ export default async function TeacherPage() {
 
   const todayRow = await db`SELECT CURRENT_DATE::text AS today`;
   const today = String((todayRow[0] as { today: string }).today);
-  const days = lastSevenDays();
+  const days = weekAroundToday();
 
   const kids = (await db`
     SELECT id, display_name
