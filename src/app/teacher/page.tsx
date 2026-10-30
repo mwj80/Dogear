@@ -289,10 +289,30 @@ export default async function TeacherPage() {
               </form>
 
               {classAssignments.map((assignment) => {
-                const due = dueLabel(assignment.due_date, today, false);
+                let anyOverdue = false;
+                let allDone = enrolled.length > 0;
+                for (const kid of enrolled) {
+                  const row = progress.find(
+                    (p) => p.child_id === kid.child_id && p.book_id === assignment.book_id
+                  );
+                  const max = Number(row?.max_location ?? 0);
+                  const total = Number(row?.total_locations ?? 0);
+                  const done =
+                    assignment.criteria_type === "finish_book"
+                      ? total > 0 && max >= total - 1
+                      : max >= Number(assignment.pages ?? 0);
+                  if (!done) allDone = false;
+                  if (!done && assignment.due_date && assignment.due_date < today) anyOverdue = true;
+                }
+                const status: "overdue" | "done" | "open" = anyOverdue
+                  ? "overdue"
+                  : allDone
+                    ? "done"
+                    : "open";
+                const due = dueLabel(assignment.due_date, today, status === "done");
                 return (
                   <div key={assignment.id} className="kid-block">
-                    <p className="kid-name">
+                    <p className={status === "overdue" ? "kid-name overdue" : status === "done" ? "kid-name unlocked" : "kid-name"}>
                       {klass.name}: {assignment.title}
                       {due ? ` · ${due}` : ""}
                     </p>
