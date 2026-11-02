@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
-import { enrollKid, removeClass, renameClass } from "../../../actions";
+import { enrollKid, removeClass, removeEnrollment, renameClass } from "../../../actions";
 
 export default async function ClassAdminPage({
   params
@@ -29,10 +29,12 @@ export default async function ClassAdminPage({
   const klass = classes[0] as { id: string; name: string };
 
   const enrolled = (await db`
-    SELECT child_id::text AS child_id
-    FROM enrollments
-    WHERE class_id = ${klass.id}::uuid
-  `) as { child_id: string }[];
+    SELECT c.id::text AS child_id, c.display_name
+    FROM enrollments e
+    JOIN children c ON c.id = e.child_id
+    WHERE e.class_id = ${klass.id}::uuid
+    ORDER BY c.display_name
+  `) as { child_id: string; display_name: string }[];
   const enrolledIds = new Set(enrolled.map((e) => e.child_id));
 
   const kids = (await db`
@@ -63,6 +65,24 @@ export default async function ClassAdminPage({
             Rename
           </button>
         </form>
+      </div>
+
+      <div className="card">
+        <h2>Kids</h2>
+        {enrolled.length === 0 ? (
+          <p>No kids enrolled.</p>
+        ) : (
+          enrolled.map((kid) => (
+            <form key={kid.child_id} action={removeEnrollment} className="inline-form">
+              <input type="hidden" name="class_id" value={klass.id} />
+              <input type="hidden" name="child_id" value={kid.child_id} />
+              <span>{kid.display_name}</span>
+              <button type="submit" className="btn secondary">
+                Remove
+              </button>
+            </form>
+          ))
+        )}
       </div>
 
       <div className="card">
