@@ -4,8 +4,7 @@ import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import {
-  createClass,
-  removeEnrollment
+  createClass
 } from "./actions";
 
 const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -237,16 +236,11 @@ export default async function TeacherPage() {
                     ? "done"
                     : "open";
                 return (
-                  <form key={kid.child_id} action={removeEnrollment} className="inline-form">
-                    <input type="hidden" name="class_id" value={klass.id} />
-                    <input type="hidden" name="child_id" value={kid.child_id} />
+                  <p key={kid.child_id}>
                     <span className={kidStatus === "overdue" ? "overdue" : kidStatus === "done" ? "unlocked" : ""}>
                       <Link href={`/teacher/kid/${kid.child_id}`}>{kid.display_name}</Link>
                     </span>
-                    <button type="submit" className="btn secondary">
-                      Remove
-                    </button>
-                  </form>
+                  </p>
                 );
               })}
               <p>
