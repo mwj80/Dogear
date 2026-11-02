@@ -3,9 +3,6 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
-import {
-  createClass
-} from "./actions";
 
 const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
@@ -115,15 +112,9 @@ export default async function TeacherPage() {
 
       <div className="card">
         <h2>New class</h2>
-        <form action={createClass} className="inline-form">
-          <label>
-            Name
-            <input name="name" required maxLength={40} placeholder="Reading group" />
-          </label>
-          <button type="submit" className="btn">
-            Create class
-          </button>
-        </form>
+        <p>
+          <Link href="/teacher/class/new">Create a class</Link>
+        </p>
       </div>
 
       {classes.length === 0 ? (
