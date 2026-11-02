@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
 import { ensurePageLog } from "@/lib/page-log";
+import { ensureSchema } from "@/lib/ensure-schema";
 import { streakEndingToday } from "@/lib/check-unlocks";
 import Reader from "./reader";
 
@@ -13,6 +14,7 @@ export default async function BookPage({
   const { childId, slug } = await params;
   const db = sql();
   await ensurePageLog();
+  await ensureSchema();
 
   const kids = await db`
     SELECT id, display_name FROM children WHERE id = ${childId}::uuid LIMIT 1
@@ -21,6 +23,22 @@ export default async function BookPage({
     SELECT id, title, author, epub_path FROM books WHERE slug = ${slug} LIMIT 1
   `;
   if (!kids[0] || !books[0]) notFound();
+
+  const owned = await db`
+    SELECT 1 FROM kid_books WHERE child_id = ${childId}::uuid AND book_id = ${books[0].id}::uuid LIMIT 1
+  `;
+  if (!owned[0]) {
+    return (
+      <main>
+        <header className="top">
+          <Link href={`/kid/${childId}`}>Back</Link>
+        </header>
+        <h1>Not on your reader</h1>
+        <p>This book is not on your reader yet. Ask a parent to add or buy it, or buy it yourself if you have permission.</p>
+      </main>
+    );
+  }
+
 
   const kid = kids[0] as { id: string; display_name: string };
   const book = books[0] as {
