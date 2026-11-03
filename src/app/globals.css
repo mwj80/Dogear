@@ -116,6 +116,8 @@ input, select {
   margin: 0 0 0.2rem;
   color: var(--ink);
   font-weight: 700;
+  font-style: italic;
+  text-decoration: underline;
   font-size: 1.05rem;
 }
 .kid-meta { margin: 0 0 0.6rem; font-size: 0.9rem; }
@@ -123,20 +125,21 @@ input, select {
   margin: 0.9rem 0 0.35rem;
   color: var(--ink);
   font-weight: 700;
+  text-decoration: underline;
   font-size: 0.95rem;
   letter-spacing: 0.01em;
 }
 .group-head {
   margin: 0.45rem 0 0.15rem;
   color: var(--ink);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.88rem;
 }
 .group-head .count { font-weight: 500; font-size: 0.8rem; }
 .reward-list { margin: 0.15rem 0 0.35rem; padding-left: 1.1rem; font-size: 0.85rem; }
 .reward-list li { color: var(--muted); font-weight: 400; margin: 0.15rem 0; }
-.reward-list li.unlocked { color: #1a7a3a; font-weight: 500; }
-.reward-list li.overdue { color: #b42318; font-weight: 500; }
+.reward-list li.unlocked { color: #1a7a3a; font-weight: 400; }
+.reward-list li.overdue { color: #b42318; font-weight: 400; }
 
 .week {
   display: flex;
