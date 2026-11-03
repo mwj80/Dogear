@@ -252,11 +252,14 @@ export default async function TeacherPage() {
               <p>
                 <Link href={`/teacher/class/${klass.id}/add`}>Class Administration</Link>
               </p>
-              <p>
-                <Link href={`/teacher/class/${klass.id}/assign`}>Add an Assignment</Link>
-              </p>
 
-              {classAssignments.length > 0 && <p className="section-head">Assignments</p>}
+              <p className="section-head">
+                Assignments{" "}
+                <Link href={`/teacher/class/${klass.id}/assign`} style={{ fontWeight: 400, fontSize: "0.85rem", textDecoration: "none" }}>
+                  Add an Assignment
+                </Link>
+              </p>
+              {classAssignments.length === 0 && <p className="muted">No assignments yet.</p>}
               {classAssignments.map((assignment) => {
                 let overdueKids = 0;
                 let allDone = enrolled.length > 0;
