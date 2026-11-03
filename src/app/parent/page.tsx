@@ -194,34 +194,6 @@ export default async function ParentPage({
   const remainingCents = availableCents - allocatedCents;
   const overdrawn = remainingCents < 0;
   const days = lastSevenDays();
-  const classNames = [...new Set(classes.map((item) => item.class_name))];
-  const classSummaries = classNames.map((name) => {
-    const rows = classes.filter((item) => item.class_name === name);
-    const kidsInClass = new Set(rows.map((item) => item.child_id));
-    const assignmentTitles = new Set(rows.map((item) => item.title));
-    let overdueCount = 0;
-    let allDone = rows.length > 0;
-    for (const item of rows) {
-      const max = Number(item.max_location);
-      const total = Number(item.total_locations);
-      const target = Number(item.pages ?? 0);
-      const done =
-        item.criteria_type === "finish_book"
-          ? total > 0 && max >= total - 1
-          : max >= target;
-      if (!done) allDone = false;
-      if (!done && item.due_date && item.due_date < dueToday) overdueCount += 1;
-    }
-    const status: "overdue" | "done" | "open" =
-      overdueCount > 0 ? "overdue" : allDone ? "done" : "open";
-    return {
-      name,
-      kids: kidsInClass.size,
-      assignments: assignmentTitles.size,
-      overdue: overdueCount,
-      status
-    };
-  });
 
   return (
     <main>
@@ -281,33 +253,6 @@ export default async function ParentPage({
         </div>
       )}
 
-
-      {!dbError && classSummaries.length > 0 && (
-        <div className="card">
-          <h2>Classes</h2>
-          {classSummaries.map((summary) => (
-            <div key={summary.name} className="kid-block">
-              <p
-                className={
-                  summary.status === "overdue"
-                    ? "kid-name overdue"
-                    : summary.status === "done"
-                      ? "kid-name unlocked"
-                      : "kid-name"
-                }
-              >
-                {summary.name}
-              </p>
-              <p className="muted">
-                {summary.kids} kids · {summary.assignments} assignments{" · "}
-                <span className={summary.overdue > 0 ? "overdue" : "unlocked"}>
-                  {summary.overdue} overdue
-                </span>
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
 
       {!dbError && (
         <>
@@ -372,14 +317,12 @@ export default async function ParentPage({
                     <p className={todayMet ? "unlocked" : "muted"}>Today: {todayPages} pages · goal {goal}</p>
                     {kidClasses.length > 0 && (
                       <>
-                        <p className="muted">
-                          {kidClasses.length} assignments{" · "}
-                          <span className={overdueCount > 0 ? "overdue" : "unlocked"}>
-                            {overdueCount} overdue
-                          </span>
-                        </p>
-                        <ul className="reward-list">
-                          {kidClasses.map((item) => {
+                        <p className="muted">Classes</p>
+                        {[...new Set(kidClasses.map((item) => item.class_name))].map((className) => {
+                          const classItems = kidClasses.filter((item) => item.class_name === className);
+                          let classOverdue = 0;
+                          let classDone = classItems.length > 0;
+                          for (const item of classItems) {
                             const max = Number(item.max_location);
                             const total = Number(item.total_locations);
                             const target = Number(item.pages ?? 0);
@@ -387,23 +330,49 @@ export default async function ParentPage({
                               item.criteria_type === "finish_book"
                                 ? total > 0 && max >= total - 1
                                 : max >= target;
-                            const overdue = !done && !!item.due_date && item.due_date < dueToday;
-                            const shown =
-                              item.criteria_type === "finish_book"
-                                ? `${max} / ${total || "?"}`
-                                : `${Math.min(max, target)} / ${target}`;
-                            const due = dueLabel(item.due_date, dueToday, done);
-                            return (
-                              <li
-                                key={`${item.class_name}-${item.title}`}
-                                className={done ? "unlocked" : overdue ? "overdue" : ""}
-                              >
-                                {item.class_name}: {item.title} · {item.book_title}
-                                {due ? ` · ${due}` : ""} — {done ? "done" : shown}
-                              </li>
-                            );
-                          })}
-                        </ul>
+                            if (!done) classDone = false;
+                            if (!done && item.due_date && item.due_date < dueToday) classOverdue += 1;
+                          }
+                          const classStatus: "overdue" | "done" | "open" =
+                            classOverdue > 0 ? "overdue" : classDone ? "done" : "open";
+                          return (
+                            <div key={className}>
+                              <p className={classStatus === "overdue" ? "overdue" : classStatus === "done" ? "unlocked" : ""}>
+                                {className}
+                                {" · "}
+                                <span className={classOverdue > 0 ? "overdue" : "unlocked"}>
+                                  {classOverdue} overdue
+                                </span>
+                              </p>
+                              <ul className="reward-list">
+                                {classItems.map((item) => {
+                                  const max = Number(item.max_location);
+                                  const total = Number(item.total_locations);
+                                  const target = Number(item.pages ?? 0);
+                                  const done =
+                                    item.criteria_type === "finish_book"
+                                      ? total > 0 && max >= total - 1
+                                      : max >= target;
+                                  const overdue = !done && !!item.due_date && item.due_date < dueToday;
+                                  const shown =
+                                    item.criteria_type === "finish_book"
+                                      ? `${max} / ${total || "?"}`
+                                      : `${Math.min(max, target)} / ${target}`;
+                                  const due = dueLabel(item.due_date, dueToday, done);
+                                  return (
+                                    <li
+                                      key={`${item.class_name}-${item.title}`}
+                                      className={done ? "unlocked" : overdue ? "overdue" : ""}
+                                    >
+                                      {item.title} · {item.book_title}
+                                      {due ? ` · ${due}` : ""} — {done ? "done" : shown}
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          );
+                        })}
                       </>
                     )}
                     {kidRewards.length > 0 && (
