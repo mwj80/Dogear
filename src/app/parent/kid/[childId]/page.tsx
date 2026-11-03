@@ -379,17 +379,15 @@ export default async function KidProgressPage({
             const fill = target > 0 ? Math.round((shown / target) * 100) : 0;
             const unlocked = reward.status === "unlocked";
             return (
-              <div key={reward.id} className="progress-row">
-                <div className="progress-meta">
-                  <span className={unlocked ? "unlocked" : ""} style={{ fontWeight: 400 }}>
-                    {reward.face_value} for {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope, reward.mode, reward.days)}
-                  </span>
-                  <span style={{ fontWeight: 400 }}>
-                    {unlocked
-                      ? `unlocked ${reward.unlocked_at?.slice(0, 10) ?? ""}`
-                      : `${shown} / ${target || "?"}`}
-                  </span>
-                </div>
+              <div key={reward.id} className="kid-block">
+                <p className={unlocked ? "unlocked" : ""} style={{ fontWeight: 400, margin: "0 0 0.2rem" }}>
+                  {reward.face_value} for {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope, reward.mode, reward.days)}
+                </p>
+                <p className="muted" style={{ margin: "0 0 0.35rem" }}>
+                  {unlocked
+                    ? `unlocked ${reward.unlocked_at?.slice(0, 10) ?? ""}`
+                    : `${shown} / ${target || "?"}`}
+                </p>
                 {!unlocked && target > 0 && (
                   <div className="progress-bar">
                     <div className="progress-fill" style={{ width: `${fill}%` }} />
@@ -431,17 +429,15 @@ export default async function KidProgressPage({
                 ? "done"
                 : "open";
             return (
-              <div key={p.book_id} className="progress-row">
-                <div className="progress-meta">
-                  <span className={bookStatus === "overdue" ? "overdue" : bookStatus === "done" ? "unlocked" : ""} style={{ fontWeight: 400 }}>
-                    {p.title}
-                  </span>
-                  <span style={{ fontWeight: 400 }}>
-                    {p.max_location} / {p.total_locations || "?"} · {pct}%
-                  </span>
-                </div>
+              <div key={p.book_id} className="kid-block">
+                <p className={bookStatus === "overdue" ? "overdue" : bookStatus === "done" ? "unlocked" : ""} style={{ fontWeight: 400, margin: "0 0 0.2rem" }}>
+                  {p.title}
+                </p>
+                <p className="muted" style={{ margin: "0 0 0.25rem" }}>
+                  {p.max_location} / {p.total_locations || "?"} · {pct}%
+                </p>
                 {bookAssignments.length > 0 && (
-                  <div className="progress-meta">
+                  <ul className="reward-list">
                     {bookAssignments.map((assignment) => {
                       const max = Number(assignment.max_location);
                       const total = Number(assignment.total_locations);
@@ -453,17 +449,16 @@ export default async function KidProgressPage({
                       const overdue = !done && !!assignment.due_date && assignment.due_date < today;
                       const due = dueLabel(assignment.due_date, today, done);
                       return (
-                        <span
+                        <li
                           key={`${assignment.class_name}-${assignment.title}`}
                           className={done ? "unlocked" : overdue ? "overdue" : ""}
-                          style={{ fontWeight: 400 }}
                         >
                           {assignment.class_name}
                           {due ? ` · ${due}` : ""}
-                        </span>
+                        </li>
                       );
                     })}
-                  </div>
+                  </ul>
                 )}
                 <div className="progress-bar">
                   <div className="progress-fill" style={{ width: `${pct}%` }} />
