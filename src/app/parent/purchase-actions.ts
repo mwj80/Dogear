@@ -43,6 +43,8 @@ export async function addOrBuyBook(formData: FormData) {
   if (owned[0]) throw new Error("Already on this kid’s reader");
 
   const price = Number(book.price_cents || 0);
+  const note = `Purchase: ${book.title}`;
+
   if (price > 0) {
     const house = await db`
       SELECT pot_available_cents FROM households WHERE id = ${household.household_id}::uuid
@@ -50,27 +52,40 @@ export async function addOrBuyBook(formData: FormData) {
     const available = Number((house[0] as { pot_available_cents: number } | undefined)?.pot_available_cents ?? 0);
     if (available < price) throw new Error(`Insufficient balance (need $${(price / 100).toFixed(2)})`);
 
-    await db`
-      UPDATE households
-      SET pot_available_cents = pot_available_cents - ${price}
-      WHERE id = ${household.household_id}::uuid
-    `;
-    await db`
-      INSERT INTO ledger (household_id, kind, amount_cents, note)
-      VALUES (${household.household_id}::uuid, 'purchase', ${price}, ${`Purchase: ${book.title}`})
-    `;
+    // Ledger kind must be 'load' or 'spend'. Use a transaction so a failure rolls back the balance change.
+    await db.transaction([
+      db`
+        UPDATE households
+        SET pot_available_cents = pot_available_cents - ${price}
+        WHERE id = ${household.household_id}::uuid
+      `,
+      db`
+        INSERT INTO ledger (household_id, kind, amount_cents, note)
+        VALUES (${household.household_id}::uuid, 'spend', ${price}, ${note})
+      `,
+      db`
+        INSERT INTO kid_books (child_id, book_id, purchased_by)
+        VALUES (${childId}::uuid, ${bookId}::uuid, ${by})
+      `,
+      db`
+        INSERT INTO progress (child_id, book_id, max_location, total_locations)
+        VALUES (${childId}::uuid, ${bookId}::uuid, 0, 0)
+        ON CONFLICT (child_id, book_id) DO NOTHING
+      `
+    ]);
+  } else {
+    await db.transaction([
+      db`
+        INSERT INTO kid_books (child_id, book_id, purchased_by)
+        VALUES (${childId}::uuid, ${bookId}::uuid, ${by})
+      `,
+      db`
+        INSERT INTO progress (child_id, book_id, max_location, total_locations)
+        VALUES (${childId}::uuid, ${bookId}::uuid, 0, 0)
+        ON CONFLICT (child_id, book_id) DO NOTHING
+      `
+    ]);
   }
-
-  await db`
-    INSERT INTO kid_books (child_id, book_id, purchased_by)
-    VALUES (${childId}::uuid, ${bookId}::uuid, ${by})
-  `;
-
-  await db`
-    INSERT INTO progress (child_id, book_id, max_location, total_locations)
-    VALUES (${childId}::uuid, ${bookId}::uuid, 0, 0)
-    ON CONFLICT (child_id, book_id) DO NOTHING
-  `;
 
   revalidatePath("/parent");
   revalidatePath("/kid");
