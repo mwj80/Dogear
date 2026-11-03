@@ -314,10 +314,10 @@ export default async function ParentPage({
                       <Link href={`/parent/kid/${kid.id}`}>Progress</Link>{" "}
                       <Link href={`/kid/${kid.id}`}>Open kid view</Link>
                     </p>
-                    <p className={todayMet ? "unlocked" : "muted"}>Today: {todayPages} pages · goal {goal}</p>
+                    <p className={todayMet ? "kid-meta unlocked" : "kid-meta muted"}>Today: {todayPages} pages · goal {goal}</p>
                     {kidClasses.length > 0 && (
                       <>
-                        <p className="muted">Classes</p>
+                        <p className="section-head">Classes</p>
                         {[...new Set(kidClasses.map((item) => item.class_name))].map((className) => {
                           const classItems = kidClasses.filter((item) => item.class_name === className);
                           let classOverdue = 0;
@@ -337,10 +337,10 @@ export default async function ParentPage({
                             classOverdue > 0 ? "overdue" : classDone ? "done" : "open";
                           return (
                             <div key={className}>
-                              <p className={classStatus === "overdue" ? "overdue" : classStatus === "done" ? "unlocked" : ""}>
+                              <p className={`group-head${classStatus === "overdue" ? " overdue" : classStatus === "done" ? " unlocked" : ""}`}>
                                 {className}
-                                {" · "}
-                                <span className={classOverdue > 0 ? "overdue" : "unlocked"}>
+                                <span className={`count${classOverdue > 0 ? " overdue" : " unlocked"}`}>
+                                  {" · "}
                                   {classOverdue} overdue
                                 </span>
                               </p>
@@ -377,7 +377,7 @@ export default async function ParentPage({
                     )}
                     {kidRewards.length > 0 && (
                       <>
-                        <p className="muted">Rewards</p>
+                        <p className="section-head">Rewards</p>
                         <ul className="reward-list">
                           {kidRewards.map((reward) => (
                             <li
@@ -427,38 +427,44 @@ export default async function ParentPage({
                     {kidProgress.length === 0 ? (
                       <p className="muted">No reading yet.</p>
                     ) : (
-                      kidProgress.map((p) => {
-                        const pct =
-                          p.total_locations > 0
-                            ? Math.min(100, Math.round((p.max_location / p.total_locations) * 100))
-                            : 0;
-                        const bookAssignments = kidClasses.filter((a) => a.book_id === p.book_id);
-                        let anyOverdue = false;
-                        let bookDone = bookAssignments.length > 0;
-                        for (const assignment of bookAssignments) {
-                          const max = Number(assignment.max_location);
-                          const total = Number(assignment.total_locations);
-                          const target = Number(assignment.pages ?? 0);
-                          const done =
-                            assignment.criteria_type === "finish_book"
-                              ? total > 0 && max >= total - 1
-                              : max >= target;
-                          if (!done) bookDone = false;
-                          if (!done && assignment.due_date && assignment.due_date < dueToday) anyOverdue = true;
-                        }
-                        const bookStatus: "overdue" | "done" | "open" = anyOverdue
-                          ? "overdue"
-                          : bookDone
-                            ? "done"
-                            : "open";
-                        return (
-                          <div key={p.title}>
-                            <p className={bookStatus === "overdue" ? "overdue" : bookStatus === "done" ? "unlocked" : ""}>
-                              {p.title} — {p.max_location} / {p.total_locations || "?"} ({pct}%)
-                            </p>
-                          </div>
-                        );
-                      })
+                      <>
+                        <p className="section-head">Books</p>
+                        <ul className="reward-list">
+                          {kidProgress.map((p) => {
+                            const pct =
+                              p.total_locations > 0
+                                ? Math.min(100, Math.round((p.max_location / p.total_locations) * 100))
+                                : 0;
+                            const bookAssignments = kidClasses.filter((a) => a.book_id === p.book_id);
+                            let anyOverdue = false;
+                            let bookDone = bookAssignments.length > 0;
+                            for (const assignment of bookAssignments) {
+                              const max = Number(assignment.max_location);
+                              const total = Number(assignment.total_locations);
+                              const target = Number(assignment.pages ?? 0);
+                              const done =
+                                assignment.criteria_type === "finish_book"
+                                  ? total > 0 && max >= total - 1
+                                  : max >= target;
+                              if (!done) bookDone = false;
+                              if (!done && assignment.due_date && assignment.due_date < dueToday) anyOverdue = true;
+                            }
+                            const bookStatus: "overdue" | "done" | "open" = anyOverdue
+                              ? "overdue"
+                              : bookDone
+                                ? "done"
+                                : "open";
+                            return (
+                              <li
+                                key={p.title}
+                                className={bookStatus === "overdue" ? "overdue" : bookStatus === "done" ? "unlocked" : ""}
+                              >
+                                {p.title} — {p.max_location} / {p.total_locations || "?"} ({pct}%)
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </>
                     )}
                   </div>
                 );
