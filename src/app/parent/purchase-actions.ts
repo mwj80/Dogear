@@ -2,6 +2,7 @@
 
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { ensureSchema } from "@/lib/ensure-schema";
@@ -107,6 +108,13 @@ export async function toggleSelfPurchase(formData: FormData) {
   const db = sql();
   await ensureSchema();
 
+  const kidNameRows = await db`
+    SELECT display_name FROM children
+    WHERE id = ${childId}::uuid AND household_id = ${household.household_id}::uuid
+    LIMIT 1
+  `;
+  const kidName = String((kidNameRows[0] as { display_name: string } | undefined)?.display_name ?? "kid");
+
   await db`
     UPDATE children
     SET can_self_purchase = ${can}
@@ -115,4 +123,5 @@ export async function toggleSelfPurchase(formData: FormData) {
 
   revalidatePath("/parent");
   revalidatePath("/parent/kid/new");
+  redirect(`/parent/kid/new?permission=${can ? "allowed" : "removed"}&name=${encodeURIComponent(kidName)}`);
 }
