@@ -5,7 +5,7 @@ import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { ensurePageLog } from "@/lib/page-log";
 import { streakEndingToday } from "@/lib/check-unlocks";
-import { removeKid, renameKid, setDailyGoal } from "../actions";
+import { renameKid, setDailyGoal } from "../actions";
 
 const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
@@ -467,17 +467,6 @@ export default async function KidProgressPage({
             );
           })
         )}
-      </div>
-
-      <div className="card">
-        <h2 style={{ textDecoration: "underline" }}>Remove</h2>
-        <p>Removes this kid, their reading progress, and their rewards. Ledger history stays.</p>
-        <form action={removeKid}>
-          <input type="hidden" name="child_id" value={kid.id} />
-          <button type="submit" className="btn secondary">
-            Remove {kid.display_name}
-          </button>
-        </form>
       </div>
     </main>
   );
