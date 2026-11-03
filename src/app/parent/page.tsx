@@ -245,16 +245,6 @@ export default async function ParentPage({
       </div>
 
       {!dbError && (
-        <div className="card">
-          <h2>Shop</h2>
-          <p>
-            <Link href="/parent/shop">Shop for Books</Link>
-          </p>
-        </div>
-      )}
-
-
-      {!dbError && (
         <>
           <div className="card">
             <h2>Kids</h2>
@@ -479,6 +469,13 @@ export default async function ParentPage({
             <h2>Reward</h2>
             <p>
               <Link href="/parent/reward/new">Reward Administration</Link>
+            </p>
+          </div>
+
+          <div className="card">
+            <h2>Shop</h2>
+            <p>
+              <Link href="/parent/shop">Shop for Books</Link>
             </p>
           </div>
 
