@@ -7,7 +7,7 @@ import { sql } from "@/lib/db";
 import { ensurePageLog } from "@/lib/page-log";
 import { recheckHousehold } from "@/lib/check-unlocks";
 import { loadPot, resetDemo } from "./actions";
-import { addOrBuyBook, toggleSelfPurchase } from "./purchase-actions";
+import { addOrBuyBook } from "./purchase-actions";
 import { ensureSchema } from "@/lib/ensure-schema";
 
 function lastSevenDays() {
@@ -313,17 +313,6 @@ export default async function ParentPage() {
               </div>
             ))
           )}
-          <h3>Self-purchase permission</h3>
-          {kids.map((kid: any) => (
-            <form key={`toggle-${kid.id}`} action={toggleSelfPurchase} className="stack">
-              <input type="hidden" name="child_id" value={kid.id} />
-              <label>
-                <input type="checkbox" name="can_self_purchase" defaultChecked={!!kid.can_self_purchase} />
-                {kid.display_name} can buy books
-              </label>
-              <button type="submit" className="btn secondary">Save</button>
-            </form>
-          ))}
         </div>
       )}
 
@@ -542,7 +531,7 @@ export default async function ParentPage() {
               })
             )}
             <p>
-              <Link href="/parent/kid/new">Add kid</Link>
+              <Link href="/parent/kid/new">Family Administration</Link>
             </p>
           </div>
 
