@@ -229,6 +229,14 @@ export default async function ParentPage() {
       </header>
       <h1>Parent dashboard</h1>
       <p>Signed in as {email}.</p>
+      <form action={resetDemo} style={{ textAlign: "center", margin: "0.5rem 0 1.25rem" }}>
+        <button type="submit" className="btn secondary">
+          Reset demo
+        </button>
+        <p className="muted">
+          Clears test data, resets each kid’s reader to the free titles, seeds public-domain books (some free, some 50¢), loads representative rewards, seeds a demo class, and sets balance to $40.
+        </p>
+      </form>
 
       <div className="card">
         {dbError ? (
@@ -262,14 +270,6 @@ export default async function ParentPage() {
               <button type="submit" className="btn">
                 Add to balance
               </button>
-            </form>
-            <form action={resetDemo} className="stack">
-              <button type="submit" className="btn secondary">
-                Reset demo
-              </button>
-              <p className="muted">
-                Clears test data, resets each kid’s reader to the free titles, seeds public-domain books (some free, some 50¢), loads representative rewards, seeds a demo class, and sets balance to $40.
-              </p>
             </form>
           </>
         )}
