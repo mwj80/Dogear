@@ -83,5 +83,6 @@ export async function removeKid(formData: FormData) {
 
   revalidatePath("/parent");
   revalidatePath("/kid");
-  redirect("/parent");
+  revalidatePath("/parent/kid/new");
+  redirect("/parent/kid/new");
 }
