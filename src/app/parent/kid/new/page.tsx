@@ -7,6 +7,7 @@ import { ensureSchema } from "@/lib/ensure-schema";
 import { createChild } from "../../actions";
 import { removeKid } from "../actions";
 import { toggleSelfPurchase } from "../../purchase-actions";
+import { SelfPurchaseForm } from "./self-purchase-form";
 
 export default async function FamilyAdminPage() {
   const { userId } = await auth();
@@ -55,20 +56,12 @@ export default async function FamilyAdminPage() {
           kids.map((kid) => (
             <div key={kid.id} className="kid-block">
               <p className="kid-name">{kid.display_name}</p>
-              <form action={toggleSelfPurchase} className="stack">
-                <input type="hidden" name="child_id" value={kid.id} />
-                <label>
-                  <input
-                    type="checkbox"
-                    name="can_self_purchase"
-                    defaultChecked={!!kid.can_self_purchase}
-                  />
-                  Can buy books
-                </label>
-                <button type="submit" className="btn secondary">
-                  Save permission
-                </button>
-              </form>
+              <SelfPurchaseForm
+                childId={kid.id}
+                displayName={kid.display_name}
+                canSelfPurchase={!!kid.can_self_purchase}
+                action={toggleSelfPurchase}
+              />
               <form action={removeKid} className="stack">
                 <input type="hidden" name="child_id" value={kid.id} />
                 <button type="submit" className="btn secondary">
