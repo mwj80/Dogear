@@ -67,6 +67,7 @@ export async function loadPot(formData: FormData) {
     VALUES (${household.household_id}::uuid, 'load', ${cents}, 'Parent load')
   `;
   revalidatePath("/parent");
+  revalidatePath("/parent/funds");
 }
 
 export async function createFinishReward(formData: FormData) {
