@@ -7,11 +7,18 @@ import { ensureSchema } from "@/lib/ensure-schema";
 import { createChild } from "../../actions";
 import { removeKid } from "../actions";
 import { toggleSelfPurchase } from "../../purchase-actions";
-import { SelfPurchaseForm } from "./self-purchase-form";
+import { RemoveKidForm } from "./remove-kid-form";
 
-export default async function FamilyAdminPage() {
+export default async function FamilyAdminPage({
+  searchParams
+}: {
+  searchParams: Promise<{ permission?: string; name?: string }>;
+}) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
+  const params = await searchParams;
+  const permission = params.permission;
+  const changedName = params.name ? decodeURIComponent(params.name) : "";
 
   const user = await currentUser();
   const email =
@@ -27,6 +34,13 @@ export default async function FamilyAdminPage() {
     ORDER BY created_at
   `) as { id: string; display_name: string; can_self_purchase: boolean }[];
 
+  const banner =
+    permission === "allowed"
+      ? `${changedName || "Kid"} can now buy books.`
+      : permission === "removed"
+        ? `${changedName || "Kid"} can no longer buy books.`
+        : null;
+
   return (
     <main>
       <header className="top">
@@ -34,6 +48,11 @@ export default async function FamilyAdminPage() {
       </header>
       <h1>Family Administration</h1>
       <p>Add kids, remove them, and control who can buy books.</p>
+      {banner && (
+        <div className="card" style={{ borderColor: "#2e7d32" }}>
+          <p className="unlocked">{banner}</p>
+        </div>
+      )}
 
       <div className="card">
         <h2>Add a kid</h2>
@@ -56,21 +75,25 @@ export default async function FamilyAdminPage() {
           kids.map((kid) => (
             <div key={kid.id} className="kid-block">
               <p className="kid-name">{kid.display_name}</p>
-              <SelfPurchaseForm
+              <form action={toggleSelfPurchase} className="stack">
+                <input type="hidden" name="child_id" value={kid.id} />
+                <label>
+                  <input
+                    type="checkbox"
+                    name="can_self_purchase"
+                    defaultChecked={!!kid.can_self_purchase}
+                  />
+                  Can buy books
+                </label>
+                <button type="submit" className="btn secondary">
+                  Save permission
+                </button>
+              </form>
+              <RemoveKidForm
                 childId={kid.id}
                 displayName={kid.display_name}
-                canSelfPurchase={!!kid.can_self_purchase}
-                action={toggleSelfPurchase}
+                action={removeKid}
               />
-              <form action={removeKid} className="stack">
-                <input type="hidden" name="child_id" value={kid.id} />
-                <button type="submit" className="btn secondary">
-                  Remove {kid.display_name}
-                </button>
-                <p className="muted">
-                  Removes this kid, their reading progress, and their rewards. Ledger history stays.
-                </p>
-              </form>
             </div>
           ))
         )}
