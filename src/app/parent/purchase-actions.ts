@@ -89,6 +89,7 @@ export async function addOrBuyBook(formData: FormData) {
 
   revalidatePath("/parent");
   revalidatePath("/kid");
+  revalidatePath(`/kid/${childId}/shop`);
 }
 
 export async function toggleSelfPurchase(formData: FormData) {
