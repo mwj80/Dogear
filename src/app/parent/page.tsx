@@ -281,7 +281,7 @@ export default async function ParentPage() {
                 Reset demo
               </button>
               <p className="muted">
-                Clears test data, seeds public-domain books (some free, some 50¢), adds free titles to each kid’s reader, loads representative rewards, seeds a demo class, and sets balance to $40.
+                Clears test data, resets each kid’s reader to the free titles, seeds public-domain books (some free, some 50¢), loads representative rewards, seeds a demo class, and sets balance to $40.
               </p>
             </form>
           </>
