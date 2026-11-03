@@ -88,6 +88,7 @@ export async function addOrBuyBook(formData: FormData) {
   }
 
   revalidatePath("/parent");
+  revalidatePath("/parent/shop");
   revalidatePath("/kid");
   revalidatePath(`/kid/${childId}/shop`);
 }
