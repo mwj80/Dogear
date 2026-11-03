@@ -232,7 +232,7 @@ export default async function KidProgressPage({
         <Link href="/parent">Back to parent</Link>
         <Link href={`/kid/${kid.id}`}>Open kid view</Link>
       </header>
-      <h1 className={kidStatus === "overdue" ? "overdue" : kidStatus === "done" ? "unlocked" : ""}>
+      <h1 className={kidStatus === "overdue" ? "overdue" : kidStatus === "done" ? "unlocked" : ""} style={{ fontStyle: "italic", textDecoration: "underline" }}>
         {kid.display_name}
       </h1>
       <form action={renameKid} className="inline-form">
@@ -259,57 +259,47 @@ export default async function KidProgressPage({
 
       {assignments.length > 0 && (
         <div className="card">
-          <h2>Class</h2>
-          {classStatuses.map((klass) => (
-            <div key={klass.name} className="kid-block">
-              <p
-                className={
-                  klass.status === "overdue"
-                    ? "kid-name overdue"
-                    : klass.status === "done"
-                      ? "kid-name unlocked"
-                      : "kid-name"
-                }
-              >
-                {klass.name}
-              </p>
-              <p className="muted">
-                {klass.assignments} assignments{" · "}
-                <span className={klass.overdue > 0 ? "overdue" : "unlocked"}>
-                  {klass.overdue} overdue
-                </span>
-              </p>
-            </div>
-          ))}
-          <p className="muted">
-            {assignments.length} assignments{" · "}
-            <span className={overdueCount > 0 ? "overdue" : "unlocked"}>
-              {overdueCount} overdue
-            </span>
-          </p>
-          {assignments.map((assignment) => {
-            const max = Number(assignment.max_location);
-            const total = Number(assignment.total_locations);
-            const target = Number(assignment.pages ?? 0);
-            const done =
-              assignment.criteria_type === "finish_book"
-                ? total > 0 && max >= total - 1
-                : max >= target;
-            const overdue = !done && !!assignment.due_date && assignment.due_date < today;
-            const shown =
-              assignment.criteria_type === "finish_book"
-                ? `${max} / ${total || "?"}`
-                : `${Math.min(max, target)} / ${target}`;
-            const due = dueLabel(assignment.due_date, today, done);
+          <h2 style={{ textDecoration: "underline" }}>Classes</h2>
+          {[...new Set(assignments.map((a) => a.class_name))].map((className) => {
+            const classItems = assignments.filter((a) => a.class_name === className);
+            const summary = classStatuses.find((k) => k.name === className);
+            const classStatus = summary?.status ?? "open";
+            const classOverdue = summary?.overdue ?? 0;
             return (
-              <div key={`${assignment.class_name}-${assignment.title}`} className="progress-row">
-                <div className="progress-meta">
-                  <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
-                    {assignment.class_name}: {assignment.title} · {assignment.book_title}
-                    {due ? ` · ${due}` : ""}
+              <div key={className}>
+                <p className={`group-head${classStatus === "overdue" ? " overdue" : classStatus === "done" ? " unlocked" : ""}`}>
+                  {className}
+                  <span className={`count${classOverdue > 0 ? " overdue" : " unlocked"}`}>
+                    {" · "}
+                    {classOverdue} overdue
                   </span>
-                  <span>{done ? "done" : shown}</span>
-                </div>
+                </p>
+                <ul className="reward-list">
+                  {classItems.map((assignment) => {
+                    const max = Number(assignment.max_location);
+                    const total = Number(assignment.total_locations);
+                    const target = Number(assignment.pages ?? 0);
+                    const done =
+                      assignment.criteria_type === "finish_book"
+                        ? total > 0 && max >= total - 1
+                        : max >= target;
+                    const overdue = !done && !!assignment.due_date && assignment.due_date < today;
+                    const shown =
+                      assignment.criteria_type === "finish_book"
+                        ? `${max} / ${total || "?"}`
+                        : `${Math.min(max, target)} / ${target}`;
+                    const due = dueLabel(assignment.due_date, today, done);
+                    return (
+                      <li
+                        key={`${assignment.class_name}-${assignment.title}`}
+                        className={done ? "unlocked" : overdue ? "overdue" : ""}
+                      >
+                        {assignment.title} · {assignment.book_title}
+                        {due ? ` · ${due}` : ""} — {done ? "done" : shown}
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
             );
           })}
@@ -317,7 +307,7 @@ export default async function KidProgressPage({
       )}
 
       <div className="card">
-        <h2>{monthLabel}</h2>
+        <h2 style={{ textDecoration: "underline" }}>{monthLabel}</h2>
         <div className="cal-head">
           {WEEKDAY.map((label) => (
             <div key={label}>{label}</div>
@@ -356,7 +346,7 @@ export default async function KidProgressPage({
       </div>
 
       <div className="card">
-        <h2>Rewards</h2>
+        <h2 style={{ textDecoration: "underline" }}>Rewards</h2>
         {rewards.length === 0 ? (
           <p>No rewards yet.</p>
         ) : (
@@ -391,10 +381,10 @@ export default async function KidProgressPage({
             return (
               <div key={reward.id} className="progress-row">
                 <div className="progress-meta">
-                  <span className={unlocked ? "unlocked" : ""}>
+                  <span className={unlocked ? "unlocked" : ""} style={{ fontWeight: 400 }}>
                     {reward.face_value} for {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope, reward.mode, reward.days)}
                   </span>
-                  <span>
+                  <span style={{ fontWeight: 400 }}>
                     {unlocked
                       ? `unlocked ${reward.unlocked_at?.slice(0, 10) ?? ""}`
                       : `${shown} / ${target || "?"}`}
@@ -412,7 +402,7 @@ export default async function KidProgressPage({
       </div>
 
       <div className="card">
-        <h2>Books</h2>
+        <h2 style={{ textDecoration: "underline" }}>Books</h2>
         {progress.length === 0 ? (
           <p>No reading yet.</p>
         ) : (
@@ -443,10 +433,10 @@ export default async function KidProgressPage({
             return (
               <div key={p.book_id} className="progress-row">
                 <div className="progress-meta">
-                  <span className={bookStatus === "overdue" ? "overdue" : bookStatus === "done" ? "unlocked" : ""}>
+                  <span className={bookStatus === "overdue" ? "overdue" : bookStatus === "done" ? "unlocked" : ""} style={{ fontWeight: 400 }}>
                     {p.title}
                   </span>
-                  <span>
+                  <span style={{ fontWeight: 400 }}>
                     {p.max_location} / {p.total_locations || "?"} · {pct}%
                   </span>
                 </div>
@@ -466,6 +456,7 @@ export default async function KidProgressPage({
                         <span
                           key={`${assignment.class_name}-${assignment.title}`}
                           className={done ? "unlocked" : overdue ? "overdue" : ""}
+                          style={{ fontWeight: 400 }}
                         >
                           {assignment.class_name}
                           {due ? ` · ${due}` : ""}
@@ -484,7 +475,7 @@ export default async function KidProgressPage({
       </div>
 
       <div className="card">
-        <h2>Remove</h2>
+        <h2 style={{ textDecoration: "underline" }}>Remove</h2>
         <p>Removes this kid, their reading progress, and their rewards. Ledger history stays.</p>
         <form action={removeKid}>
           <input type="hidden" name="child_id" value={kid.id} />
