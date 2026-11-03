@@ -6,7 +6,7 @@ import { ensureHousehold } from "@/lib/ensure-household";
 import { sql } from "@/lib/db";
 import { ensurePageLog } from "@/lib/page-log";
 import { recheckHousehold } from "@/lib/check-unlocks";
-import { loadPot, resetDemo } from "./actions";
+import { resetDemo } from "./actions";
 import { ensureSchema } from "@/lib/ensure-schema";
 
 function lastSevenDays() {
@@ -229,14 +229,6 @@ export default async function ParentPage() {
       </header>
       <h1>Parent dashboard</h1>
       <p>Signed in as {email}.</p>
-      <form action={resetDemo} style={{ textAlign: "center", margin: "0.5rem 0 1.25rem" }}>
-        <button type="submit" className="btn secondary">
-          Reset demo
-        </button>
-        <p className="muted">
-          Clears test data, resets each kid’s reader to the free titles, seeds public-domain books (some free, some 50¢), loads representative rewards, seeds a demo class, and sets balance to $40.
-        </p>
-      </form>
 
       <div className="card">
         {dbError ? (
@@ -262,15 +254,9 @@ export default async function ParentPage() {
                 Active rewards are allocated {money(Math.abs(remainingCents))} more than the available balance. Add funds, or a reward may unlock short.
               </div>
             )}
-            <form action={loadPot} className="stack">
-              <label>
-                Add dollars
-                <input name="dollars" type="number" min="1" step="1" defaultValue="10" />
-              </label>
-              <button type="submit" className="btn">
-                Add to balance
-              </button>
-            </form>
+            <p>
+              <Link href="/parent/funds">Add Funds</Link>
+            </p>
           </>
         )}
       </div>
@@ -512,6 +498,15 @@ export default async function ParentPage() {
 
         </>
       )}
+
+      <form action={resetDemo} style={{ textAlign: "center", margin: "1.5rem 0 1rem" }}>
+        <button type="submit" className="btn secondary">
+          Reset demo
+        </button>
+        <p className="muted">
+          Clears test data, resets each kid’s reader to the free titles, seeds public-domain books (some free, some 50¢), loads representative rewards, seeds a demo class, and sets balance to $40.
+        </p>
+      </form>
     </main>
   );
 }
