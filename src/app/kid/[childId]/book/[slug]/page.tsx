@@ -17,12 +17,14 @@ export default async function BookPage({
   await ensureSchema();
 
   const kids = await db`
-    SELECT id, display_name FROM children WHERE id = ${childId}::uuid LIMIT 1
+    SELECT id, display_name, COALESCE(can_self_purchase, false) AS can_self_purchase
+    FROM children WHERE id = ${childId}::uuid LIMIT 1
   `;
   const books = await db`
     SELECT id, title, author, epub_path FROM books WHERE slug = ${slug} LIMIT 1
   `;
   if (!kids[0] || !books[0]) notFound();
+  const kid = kids[0] as { id: string; display_name: string; can_self_purchase: boolean };
 
   const owned = await db`
     SELECT 1 FROM kid_books WHERE child_id = ${childId}::uuid AND book_id = ${books[0].id}::uuid LIMIT 1
@@ -35,12 +37,16 @@ export default async function BookPage({
         </header>
         <h1>Not on your reader</h1>
         <p>This book is not on your reader yet. Ask a parent to add or buy it, or buy it yourself if you have permission.</p>
+        {kid.can_self_purchase && (
+          <p>
+            <Link href={`/kid/${childId}/shop`}>Shop for books</Link>
+          </p>
+        )}
       </main>
     );
   }
 
 
-  const kid = kids[0] as { id: string; display_name: string };
   const book = books[0] as {
     id: string;
     title: string;
