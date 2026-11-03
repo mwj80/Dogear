@@ -282,18 +282,23 @@ export async function resetDemo() {
 
   // Reset progress and clear logs/rewards
   await db`
-    UPDATE progress p
-    SET max_location = LEAST(5, GREATEST(COALESCE(p.total_locations, 1) - 1, 0)),
-        updated_at = now()
-    FROM children c
+    DELETE FROM page_log pl
+    USING children c
+    WHERE pl.child_id = c.id
+      AND c.household_id = ${hid}::uuid
+  `;
+
+  await db`
+    DELETE FROM progress p
+    USING children c
     WHERE p.child_id = c.id
       AND c.household_id = ${hid}::uuid
   `;
 
   await db`
-    DELETE FROM page_log pl
+    DELETE FROM kid_books kb
     USING children c
-    WHERE pl.child_id = c.id
+    WHERE kb.child_id = c.id
       AND c.household_id = ${hid}::uuid
   `;
 
