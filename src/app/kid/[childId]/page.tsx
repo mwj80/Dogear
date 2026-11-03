@@ -50,7 +50,8 @@ export default async function KidHomePage({
   await ensureSchema();
 
   const kids = await db`
-    SELECT id, display_name FROM children WHERE id = ${childId}::uuid LIMIT 1
+    SELECT id, display_name, COALESCE(can_self_purchase, false) AS can_self_purchase
+    FROM children WHERE id = ${childId}::uuid LIMIT 1
   `;
   if (!kids[0]) notFound();
 
@@ -144,7 +145,7 @@ export default async function KidHomePage({
     total_locations: number;
   }[];
 
-  const kid = kids[0] as { id: string; display_name: string };
+  const kid = kids[0] as { id: string; display_name: string; can_self_purchase: boolean };
   let overdueCount = 0;
   for (const assignment of assignments) {
     const max = Number(assignment.max_location);
@@ -187,6 +188,11 @@ export default async function KidHomePage({
       </header>
       <h1>Hi, {kid.display_name}</h1>
       <p>Pick a book and earn your rewards.</p>
+      {kid.can_self_purchase && (
+        <p>
+          <Link href={`/kid/${kid.id}/shop`}>Shop for books</Link>
+        </p>
+      )}
       {assignments.length > 0 && (
         <div className="card">
           <h2>Assigned</h2>
