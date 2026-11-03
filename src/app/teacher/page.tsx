@@ -101,6 +101,13 @@ export default async function TeacherPage() {
     max_location: number;
     total_locations: number;
   }[];
+  const owned = (await db`
+    SELECT kb.child_id::text AS child_id, kb.book_id::text AS book_id
+    FROM kid_books kb
+    JOIN children c ON c.id = kb.child_id
+    WHERE c.household_id = ${teacher.household_id}::uuid
+  `) as { child_id: string; book_id: string }[];
+  const ownedSet = new Set(owned.map((o) => `${o.child_id}:${o.book_id}`));
 
   return (
     <main>
@@ -285,6 +292,7 @@ export default async function TeacherPage() {
                       <p className="muted">No kids enrolled yet.</p>
                     ) : (
                       enrolled.map((kid) => {
+                        const owns = ownedSet.has(`${kid.child_id}:${assignment.book_id}`);
                         const row = progress.find(
                           (p) => p.child_id === kid.child_id && p.book_id === assignment.book_id
                         );
@@ -307,8 +315,9 @@ export default async function TeacherPage() {
                               <span className={statusClass}>
                                 {kid.display_name}
                                 {kidDue ? ` · ${kidDue}` : ""}
+                                {!owns && <span className="muted"> · not on reader</span>}
                               </span>
-                              <span className={statusClass}>{done ? "done" : shown}</span>
+                              <span className={statusClass}>{owns ? (done ? "done" : shown) : "locked"}</span>
                             </div>
                           </div>
                         );
