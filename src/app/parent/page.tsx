@@ -7,7 +7,6 @@ import { sql } from "@/lib/db";
 import { ensurePageLog } from "@/lib/page-log";
 import { recheckHousehold } from "@/lib/check-unlocks";
 import { loadPot, resetDemo } from "./actions";
-import { addOrBuyBook } from "./purchase-actions";
 import { ensureSchema } from "@/lib/ensure-schema";
 
 function lastSevenDays() {
@@ -77,7 +76,6 @@ export default async function ParentPage() {
     pot_available_cents: number;
   } | null = null;
   let kids: { id: string; display_name: string; daily_goal_pages: number }[] = [];
-  let books: { id: string; title: string }[] = [];
   let rewards: {
     id: string;
     face_value: string;
@@ -115,7 +113,6 @@ export default async function ParentPage() {
     max_location: number;
     total_locations: number;
   }[] = [];
-  let ownedBooks: { child_id: string; book_id: string }[] = [];
   let dueToday = new Date().toISOString().slice(0, 10);
   let dbError: string | null = null;
 
@@ -133,15 +130,6 @@ export default async function ParentPage() {
       WHERE household_id = ${household.household_id}::uuid
       ORDER BY created_at
     `) as { id: string; display_name: string; daily_goal_pages: number }[];
-    books = (await db`
-      SELECT id, title, COALESCE(price_cents, 0) AS price_cents FROM books ORDER BY title
-    `) as { id: string; title: string }[];
-    ownedBooks = (await db`
-      SELECT kb.child_id::text AS child_id, kb.book_id::text AS book_id
-      FROM kid_books kb
-      JOIN children c ON c.id = kb.child_id
-      WHERE c.household_id = ${household.household_id}::uuid
-    `) as { child_id: string; book_id: string }[];
     rewards = (await db`
       SELECT r.id, r.face_value, r.reward_type, r.status, r.cost_cents,
              r.shortfall_cents, r.child_id, r.criteria_type, r.scope,
@@ -200,7 +188,6 @@ export default async function ParentPage() {
   const remainingCents = availableCents - allocatedCents;
   const overdrawn = remainingCents < 0;
   const days = lastSevenDays();
-  const ownedSet = new Set(ownedBooks.map((o) => `${o.child_id}:${o.book_id}`));
   const classNames = [...new Set(classes.map((item) => item.class_name))];
   const classSummaries = classNames.map((name) => {
     const rows = classes.filter((item) => item.class_name === name);
@@ -290,29 +277,10 @@ export default async function ParentPage() {
 
       {!dbError && (
         <div className="card">
-          <h2>Library</h2>
-          <p className="muted">Add free books or buy titles for your kids. Authorized kids can buy for themselves. Buying creates a progress row immediately. Books a kid already owns are hidden.</p>
-          {books.length === 0 ? (
-            <p>No books yet. Reset demo to load public-domain titles.</p>
-          ) : (
-            books.map((book: any) => (
-              <div key={book.id} className="kid-block">
-                <p><strong>{book.title}</strong> — {money(Number(book.price_cents || 0))}</p>
-                {kids.map((kid) => {
-                  const alreadyOwns = ownedSet.has(`${kid.id}:${book.id}`);
-                  if (alreadyOwns) return null;
-                  return (
-                    <form key={`${kid.id}-${book.id}`} action={addOrBuyBook} style={{display:"inline", marginRight:"0.5rem"}}>
-                      <input type="hidden" name="child_id" value={kid.id} />
-                      <input type="hidden" name="book_id" value={book.id} />
-                      <input type="hidden" name="by" value="parent" />
-                      <button type="submit" className="btn secondary">Add/Buy for {kid.display_name}</button>
-                    </form>
-                  );
-                })}
-              </div>
-            ))
-          )}
+          <h2>Shop</h2>
+          <p>
+            <Link href="/parent/shop">Shop for Books</Link>
+          </p>
         </div>
       )}
 
