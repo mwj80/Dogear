@@ -321,15 +321,15 @@ export async function resetDemo() {
   const bookId = books[0]?.id;
   const bookId2 = books[1]?.id ?? bookId;
 
-  // Seed public-domain books if missing
+  // Seed public-domain books if missing (using proxy to avoid CORS)
   await db`
     INSERT INTO books (title, author, slug, price_cents, epub_path)
     VALUES
-      ('Alice’s Adventures in Wonderland', 'Lewis Carroll', 'alice', 0, 'https://www.gutenberg.org/cache/epub/11/pg11.epub'),
-      ('Pride and Prejudice', 'Jane Austen', 'pride', 50, 'https://www.gutenberg.org/cache/epub/1342/pg1342.epub'),
-      ('The Adventures of Sherlock Holmes', 'Arthur Conan Doyle', 'sherlock', 0, 'https://www.gutenberg.org/cache/epub/1661/pg1661.epub'),
-      ('Treasure Island', 'Robert Louis Stevenson', 'treasure', 50, 'https://www.gutenberg.org/cache/epub/120/pg120.epub'),
-      ('Frankenstein', 'Mary Shelley', 'frankenstein', 0, 'https://www.gutenberg.org/cache/epub/84/pg84.epub')
+      ('Alice’s Adventures in Wonderland', 'Lewis Carroll', 'alice', 0, '/api/epub?url=' || encodeURIComponent('https://www.gutenberg.org/cache/epub/11/pg11.epub')),
+      ('Pride and Prejudice', 'Jane Austen', 'pride', 50, '/api/epub?url=' || encodeURIComponent('https://www.gutenberg.org/cache/epub/1342/pg1342.epub')),
+      ('The Adventures of Sherlock Holmes', 'Arthur Conan Doyle', 'sherlock', 0, '/api/epub?url=' || encodeURIComponent('https://www.gutenberg.org/cache/epub/1661/pg1661.epub')),
+      ('Treasure Island', 'Robert Louis Stevenson', 'treasure', 50, '/api/epub?url=' || encodeURIComponent('https://www.gutenberg.org/cache/epub/120/pg120.epub')),
+      ('Frankenstein', 'Mary Shelley', 'frankenstein', 0, '/api/epub?url=' || encodeURIComponent('https://www.gutenberg.org/cache/epub/84/pg84.epub'))
     ON CONFLICT (slug) DO UPDATE SET
       price_cents = EXCLUDED.price_cents,
       epub_path = EXCLUDED.epub_path,
