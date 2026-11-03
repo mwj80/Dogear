@@ -63,9 +63,15 @@ function criteriaLabel(
   return `finishing ${title}`;
 }
 
-export default async function ParentPage() {
+export default async function ParentPage({
+  searchParams
+}: {
+  searchParams: Promise<{ funds?: string }>;
+}) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
+  const params = await searchParams;
+  const fundsAdded = Number(params.funds ?? 0);
 
   const user = await currentUser();
   const email =
@@ -229,6 +235,11 @@ export default async function ParentPage() {
       </header>
       <h1>Parent dashboard</h1>
       <p>Signed in as {email}.</p>
+      {fundsAdded > 0 && (
+        <div className="card" style={{ borderColor: "#2e7d32" }}>
+          <p className="unlocked">Added {money(fundsAdded)} to the available balance.</p>
+        </div>
+      )}
 
       <div className="card">
         {dbError ? (
