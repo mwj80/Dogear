@@ -68,6 +68,7 @@ export async function loadPot(formData: FormData) {
   `;
   revalidatePath("/parent");
   revalidatePath("/parent/funds");
+  redirect(`/parent?funds=${cents}`);
 }
 
 export async function createFinishReward(formData: FormData) {
