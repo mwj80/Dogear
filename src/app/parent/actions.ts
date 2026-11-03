@@ -40,6 +40,7 @@ export async function createChild(formData: FormData) {
   `;
 
   revalidatePath("/parent");
+  revalidatePath("/parent/kid/new");
 }
 
 export async function loadPot(formData: FormData) {
