@@ -299,9 +299,11 @@ export default async function ParentPage({
                 const todayMet = todayPages >= goal;
                 return (
                   <div key={kid.id} className="kid-block">
-                    <p className={kidStatus === "overdue" ? "kid-name overdue" : kidStatus === "done" ? "kid-name unlocked" : "kid-name"}>
-                      {kid.display_name}{" "}
-                      <Link href={`/parent/kid/${kid.id}`}>Progress</Link>{" "}
+                    <p style={{ display: "flex", alignItems: "baseline", gap: "1rem", flexWrap: "wrap" }}>
+                      <span className={kidStatus === "overdue" ? "kid-name overdue" : kidStatus === "done" ? "kid-name unlocked" : "kid-name"}>
+                        {kid.display_name}
+                      </span>
+                      <Link href={`/parent/kid/${kid.id}`}>Progress</Link>
                       <Link href={`/kid/${kid.id}`}>Open kid view</Link>
                     </p>
                     <p className={todayMet ? "kid-meta unlocked" : "kid-meta muted"}>Today: {todayPages} pages · goal {goal}</p>
