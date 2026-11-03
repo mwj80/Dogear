@@ -103,6 +103,11 @@ export default async function TeacherKidPage({
   const byDay = new Map(log.map((entry) => [entry.day, Number(entry.pages)]));
   const todayPages = byDay.get(today) ?? 0;
 
+  const ownedRows = (await db`
+    SELECT book_id::text AS book_id FROM kid_books WHERE child_id = ${kid.id}::uuid
+  `) as { book_id: string }[];
+  const ownedSet = new Set(ownedRows.map((r) => r.book_id));
+
   let overdueCount = 0;
   let allDone = assignments.length > 0;
   const dueByDay = new Map<string, "overdue" | "done" | "open">();
@@ -162,6 +167,7 @@ export default async function TeacherKidPage({
             </span>
           </p>
           {assignments.map((assignment) => {
+            const owns = ownedSet.has(assignment.book_id);
             const max = Number(assignment.max_location);
             const total = Number(assignment.total_locations);
             const target = Number(assignment.pages ?? 0);
@@ -182,8 +188,9 @@ export default async function TeacherKidPage({
                   <span className={statusClass}>
                     {assignment.class_name}: {assignment.title} · {assignment.book_title}
                     {due ? ` · ${due}` : ""}
+                    {!owns && <span className="muted"> · not on reader</span>}
                   </span>
-                  <span className={statusClass}>{done ? "done" : shown}</span>
+                  <span className={statusClass}>{owns ? (done ? "done" : shown) : "locked"}</span>
                 </div>
               </div>
             );
