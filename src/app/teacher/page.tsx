@@ -183,7 +183,7 @@ export default async function TeacherPage() {
               <h2 className={classStatus === "overdue" ? "overdue" : classStatus === "done" ? "unlocked" : ""}>
                 {klass.name}
               </h2>
-              <p className="muted">
+              <p className="kid-meta muted">
                 {enrolled.length} kids · {classAssignments.length} assignments{" · "}
                 <span className={overdueCount > 0 ? "overdue" : "unlocked"}>
                   {overdueCount} overdue
@@ -211,36 +211,44 @@ export default async function TeacherPage() {
                 <span><span className="swatch overdue">•</span> overdue</span>
                 <span><span className="swatch">•</span> open</span>
               </div>
-              <p className="muted">{enrolled.length} kids</p>
-              {enrolled.map((kid) => {
-                let kidOverdue = false;
-                let kidDone = classAssignments.length > 0;
-                for (const assignment of classAssignments) {
-                  const row = progress.find(
-                    (p) => p.child_id === kid.child_id && p.book_id === assignment.book_id
-                  );
-                  const max = Number(row?.max_location ?? 0);
-                  const total = Number(row?.total_locations ?? 0);
-                  const done =
-                    assignment.criteria_type === "finish_book"
-                      ? total > 0 && max >= total - 1
-                      : max >= Number(assignment.pages ?? 0);
-                  if (!done) kidDone = false;
-                  if (!done && assignment.due_date && assignment.due_date < today) kidOverdue = true;
-                }
-                const kidStatus: "overdue" | "done" | "open" = kidOverdue
-                  ? "overdue"
-                  : kidDone
-                    ? "done"
-                    : "open";
-                return (
-                  <p key={kid.child_id}>
-                    <span className={kidStatus === "overdue" ? "overdue" : kidStatus === "done" ? "unlocked" : ""}>
-                      <Link href={`/teacher/kid/${kid.child_id}`}>{kid.display_name}</Link>
-                    </span>
-                  </p>
-                );
-              })}
+
+              <p className="section-head">Kids</p>
+              {enrolled.length === 0 ? (
+                <p className="muted">No kids enrolled yet.</p>
+              ) : (
+                <ul className="reward-list">
+                  {enrolled.map((kid) => {
+                    let kidOverdue = false;
+                    let kidDone = classAssignments.length > 0;
+                    for (const assignment of classAssignments) {
+                      const row = progress.find(
+                        (p) => p.child_id === kid.child_id && p.book_id === assignment.book_id
+                      );
+                      const max = Number(row?.max_location ?? 0);
+                      const total = Number(row?.total_locations ?? 0);
+                      const done =
+                        assignment.criteria_type === "finish_book"
+                          ? total > 0 && max >= total - 1
+                          : max >= Number(assignment.pages ?? 0);
+                      if (!done) kidDone = false;
+                      if (!done && assignment.due_date && assignment.due_date < today) kidOverdue = true;
+                    }
+                    const kidStatus: "overdue" | "done" | "open" = kidOverdue
+                      ? "overdue"
+                      : kidDone
+                        ? "done"
+                        : "open";
+                    return (
+                      <li
+                        key={kid.child_id}
+                        className={kidStatus === "overdue" ? "overdue" : kidStatus === "done" ? "unlocked" : ""}
+                      >
+                        <Link href={`/teacher/kid/${kid.child_id}`}>{kid.display_name}</Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
               <p>
                 <Link href={`/teacher/class/${klass.id}/add`}>Class Administration</Link>
               </p>
@@ -248,6 +256,7 @@ export default async function TeacherPage() {
                 <Link href={`/teacher/class/${klass.id}/assign`}>Add an Assignment</Link>
               </p>
 
+              {classAssignments.length > 0 && <p className="section-head">Assignments</p>}
               {classAssignments.map((assignment) => {
                 let overdueKids = 0;
                 let allDone = enrolled.length > 0;
@@ -272,18 +281,16 @@ export default async function TeacherPage() {
                 const due = dueLabel(assignment.due_date, today, status === "done");
                 return (
                   <div key={assignment.id} className="kid-block">
-                    <p className={status === "overdue" ? "kid-name overdue" : status === "done" ? "kid-name unlocked" : "kid-name"}>
-                      {klass.name}: {assignment.title}
+                    <p className={`group-head${status === "overdue" ? " overdue" : status === "done" ? " unlocked" : ""}`}>
+                      {assignment.title}
                       {due ? ` · ${due}` : ""}
                     </p>
-                    <p className="muted">
-                      {enrolled.length} kids{" · "}
+                    <p className="kid-meta muted">
+                      {assignment.book_title}
+                      {" · "}
                       <span className={overdueKids > 0 ? "overdue" : "unlocked"}>
                         {overdueKids} overdue
                       </span>
-                    </p>
-                    <p className={status === "overdue" ? "overdue" : status === "done" ? "unlocked" : ""}>
-                      {assignment.book_title}
                     </p>
                     <p>
                       <Link href={`/teacher/assignment/${assignment.id}/edit`}>Edit assignment</Link>
@@ -291,37 +298,36 @@ export default async function TeacherPage() {
                     {enrolled.length === 0 ? (
                       <p className="muted">No kids enrolled yet.</p>
                     ) : (
-                      enrolled.map((kid) => {
-                        const owns = ownedSet.has(`${kid.child_id}:${assignment.book_id}`);
-                        const row = progress.find(
-                          (p) => p.child_id === kid.child_id && p.book_id === assignment.book_id
-                        );
-                        const max = Number(row?.max_location ?? 0);
-                        const total = Number(row?.total_locations ?? 0);
-                        const done =
-                          assignment.criteria_type === "finish_book"
-                            ? total > 0 && max >= total - 1
-                            : max >= Number(assignment.pages ?? 0);
-                        const overdue = !done && !!assignment.due_date && assignment.due_date < today;
-                        const shown =
-                          assignment.criteria_type === "finish_book"
-                            ? `${max} / ${total || "?"}`
-                            : `${Math.min(max, Number(assignment.pages ?? 0))} / ${assignment.pages}`;
-                        const kidDue = dueLabel(assignment.due_date, today, done);
-                        const statusClass = done ? "unlocked" : overdue ? "overdue" : "";
-                        return (
-                          <div key={kid.child_id} className="progress-row">
-                            <div className="progress-meta">
-                              <span className={statusClass}>
-                                {kid.display_name}
-                                {kidDue ? ` · ${kidDue}` : ""}
-                                {!owns && <span className="muted"> · not on reader</span>}
-                              </span>
-                              <span className={statusClass}>{owns ? (done ? "done" : shown) : "locked"}</span>
-                            </div>
-                          </div>
-                        );
-                      })
+                      <ul className="reward-list">
+                        {enrolled.map((kid) => {
+                          const owns = ownedSet.has(`${kid.child_id}:${assignment.book_id}`);
+                          const row = progress.find(
+                            (p) => p.child_id === kid.child_id && p.book_id === assignment.book_id
+                          );
+                          const max = Number(row?.max_location ?? 0);
+                          const total = Number(row?.total_locations ?? 0);
+                          const done =
+                            assignment.criteria_type === "finish_book"
+                              ? total > 0 && max >= total - 1
+                              : max >= Number(assignment.pages ?? 0);
+                          const overdue = !done && !!assignment.due_date && assignment.due_date < today;
+                          const shown =
+                            assignment.criteria_type === "finish_book"
+                              ? `${max} / ${total || "?"}`
+                              : `${Math.min(max, Number(assignment.pages ?? 0))} / ${assignment.pages}`;
+                          const kidDue = dueLabel(assignment.due_date, today, done);
+                          const statusClass = done ? "unlocked" : overdue ? "overdue" : "";
+                          return (
+                            <li key={kid.child_id} className={statusClass}>
+                              {kid.display_name}
+                              {kidDue ? ` · ${kidDue}` : ""}
+                              {!owns && " · not on reader"}
+                              {" — "}
+                              {owns ? (done ? "done" : shown) : "locked"}
+                            </li>
+                          );
+                        })}
+                      </ul>
                     )}
                   </div>
                 );
