@@ -322,20 +322,26 @@ export async function resetDemo() {
   const bookId2 = books[1]?.id ?? bookId;
 
   // Seed public-domain books if missing (using proxy to avoid CORS)
-  await db`
-    INSERT INTO books (title, author, slug, price_cents, epub_path)
-    VALUES
-      ('Alice’s Adventures in Wonderland', 'Lewis Carroll', 'alice', 0, '/api/epub?url=' || encodeURIComponent('https://www.gutenberg.org/cache/epub/11/pg11.epub')),
-      ('Pride and Prejudice', 'Jane Austen', 'pride', 50, '/api/epub?url=' || encodeURIComponent('https://www.gutenberg.org/cache/epub/1342/pg1342.epub')),
-      ('The Adventures of Sherlock Holmes', 'Arthur Conan Doyle', 'sherlock', 0, '/api/epub?url=' || encodeURIComponent('https://www.gutenberg.org/cache/epub/1661/pg1661.epub')),
-      ('Treasure Island', 'Robert Louis Stevenson', 'treasure', 50, '/api/epub?url=' || encodeURIComponent('https://www.gutenberg.org/cache/epub/120/pg120.epub')),
-      ('Frankenstein', 'Mary Shelley', 'frankenstein', 0, '/api/epub?url=' || encodeURIComponent('https://www.gutenberg.org/cache/epub/84/pg84.epub'))
-    ON CONFLICT (slug) DO UPDATE SET
-      price_cents = EXCLUDED.price_cents,
-      epub_path = EXCLUDED.epub_path,
-      title = EXCLUDED.title,
-      author = EXCLUDED.author
-  `;
+  const bookSeeds = [
+    { title: "Alice’s Adventures in Wonderland", author: "Lewis Carroll", slug: "alice", price: 0, url: "https://www.gutenberg.org/cache/epub/11/pg11.epub" },
+    { title: "Pride and Prejudice", author: "Jane Austen", slug: "pride", price: 50, url: "https://www.gutenberg.org/cache/epub/1342/pg1342.epub" },
+    { title: "The Adventures of Sherlock Holmes", author: "Arthur Conan Doyle", slug: "sherlock", price: 0, url: "https://www.gutenberg.org/cache/epub/1661/pg1661.epub" },
+    { title: "Treasure Island", author: "Robert Louis Stevenson", slug: "treasure", price: 50, url: "https://www.gutenberg.org/cache/epub/120/pg120.epub" },
+    { title: "Frankenstein", author: "Mary Shelley", slug: "frankenstein", price: 0, url: "https://www.gutenberg.org/cache/epub/84/pg84.epub" }
+  ];
+
+  for (const b of bookSeeds) {
+    const path = `/api/epub?url=${encodeURIComponent(b.url)}`;
+    await db`
+      INSERT INTO books (title, author, slug, price_cents, epub_path)
+      VALUES (${b.title}, ${b.author}, ${b.slug}, ${b.price}, ${path})
+      ON CONFLICT (slug) DO UPDATE SET
+        price_cents = EXCLUDED.price_cents,
+        epub_path = EXCLUDED.epub_path,
+        title = EXCLUDED.title,
+        author = EXCLUDED.author
+    `;
+  }
 
   // Explicitly add free books (alice, sherlock) to each kid
   const freeBooks = await db`SELECT id FROM books WHERE slug IN ('alice', 'sherlock')`;
