@@ -112,4 +112,5 @@ export async function toggleSelfPurchase(formData: FormData) {
   `;
 
   revalidatePath("/parent");
+  revalidatePath("/parent/kid/new");
 }
