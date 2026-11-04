@@ -3,8 +3,8 @@ import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Reading rewards",
-  description: "Parent-funded reading rewards"
+  title: "LitLoot",
+  description: "Read pages. Earn loot."
 };
 
 export default function RootLayout({
