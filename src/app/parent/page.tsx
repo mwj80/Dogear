@@ -198,7 +198,7 @@ export default async function ParentPage({
   return (
     <main>
       <header className="top">
-        <Link href="/">DogEar</Link>
+        <Link href="/">✨ LitLoot</Link>
         <span>
           <Link href="/teacher">Teacher</Link>
           <Link href="/admin">Rates</Link>
