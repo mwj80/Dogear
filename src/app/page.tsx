@@ -5,7 +5,10 @@ export default function HomePage() {
   return (
     <main>
       <header className="top">
-        <strong>DogEar</strong>
+        <div className="brand">
+          <strong>✨ LitLoot</strong>
+          <small>Read pages. Earn loot.</small>
+        </div>
         <span>
           <SignedOut>
             <SignInButton mode="redirect">
@@ -22,8 +25,7 @@ export default function HomePage() {
       </header>
       <h1>Reading rewards</h1>
       <p>
-        Parents fund a pot. Kids read real books. Rewards unlock when reading
-        goals are met.
+        Parent-funded reading rewards — kids read real books, unlock Robux, gift cards, and more.
       </p>
       <div className="card">
         <SignedOut>
