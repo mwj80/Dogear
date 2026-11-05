@@ -232,7 +232,7 @@ export default async function KidProgressPage({
         <Link href="/parent">Back to parent</Link>
         <Link href={`/kid/${kid.id}`}>Open kid view</Link>
       </header>
-      <h1 className={kidStatus === "overdue" ? "overdue" : kidStatus === "done" ? "unlocked" : ""} style={{ fontStyle: "italic", textDecoration: "underline" }}>
+      <h1 style={{ fontStyle: "italic", textDecoration: "underline", color: "var(--ink)" }}>
         {kid.display_name}
       </h1>
       <form action={renameKid} className="inline-form">
