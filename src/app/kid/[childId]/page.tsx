@@ -186,87 +186,73 @@ export default async function KidHomePage({
       <header className="top">
         <Link href="/parent">Back to parent</Link>
       </header>
-      <h1>Hi, {kid.display_name}</h1>
+      <h1 style={{ fontStyle: "italic", textDecoration: "underline", color: "var(--ink)" }}>
+        Hi, {kid.display_name}
+      </h1>
       <p>Pick a book and earn your rewards.</p>
-      {kid.can_self_purchase && (
-        <p>
-          <Link href={`/kid/${kid.id}/shop`}>Shop for books</Link>
-        </p>
-      )}
       {assignments.length > 0 && (
         <div className="card">
-          <h2>Assigned</h2>
-          {classStatuses.map((klass) => (
-            <div key={klass.name} className="kid-block">
-              <p
-                className={
-                  klass.status === "overdue"
-                    ? "kid-name overdue"
-                    : klass.status === "done"
-                      ? "kid-name unlocked"
-                      : "kid-name"
-                }
-              >
-                {klass.name}
-              </p>
-              <p className="muted">
-                {klass.assignments} assignments{" · "}
-                <span className={klass.overdue > 0 ? "overdue" : "unlocked"}>
-                  {klass.overdue} overdue
-                </span>
-              </p>
-            </div>
-          ))}
-          <p className="muted">
-            {assignments.length} assignments{" · "}
-            <span className={overdueCount > 0 ? "overdue" : "unlocked"}>
-              {overdueCount} overdue
-            </span>
-          </p>
-          {assignments.map((assignment) => {
-            const max = Number(assignment.max_location);
-            const total = Number(assignment.total_locations);
-            const target = Number(assignment.pages ?? 0);
-            const done =
-              assignment.criteria_type === "finish_book"
-                ? total > 0 && max >= total - 1
-                : max >= target;
-            const overdue = !done && !!assignment.due_date && assignment.due_date < today;
-            const shown =
-              assignment.criteria_type === "finish_book"
-                ? `${max} / ${total || "?"}`
-                : `${Math.min(max, target)} / ${target}`;
-            const goal =
-              assignment.criteria_type === "finish_book"
-                ? `Finish ${assignment.book_title}`
-                : `Read ${target} pages in ${assignment.book_title}`;
-            const due = dueLabel(assignment.due_date, today, done);
-            const fill = target > 0 ? Math.round((Math.min(max, target) / target) * 100) : 0;
+          <h2 style={{ textDecoration: "underline" }}>Classes</h2>
+          {[...new Set(assignments.map((a) => a.class_name))].map((className) => {
+            const classItems = assignments.filter((a) => a.class_name === className);
+            const summary = classStatuses.find((k) => k.name === className);
+            const classStatus = summary?.status ?? "open";
+            const classOverdue = summary?.overdue ?? 0;
             return (
-              <div key={`${assignment.slug}-${assignment.title}`} className="progress-row">
-                <div className="progress-meta">
-                  <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
-                    {assignment.class_name}:{" "}
-                    <Link href={`/kid/${kid.id}/book/${assignment.slug}`}>{assignment.title}</Link>
-                    {" "}· {goal}
-                    {due ? ` · ${due}` : ""}
+              <div key={className}>
+                <p className="group-head">
+                  {className}
+                  <span className={`count${classOverdue > 0 ? " overdue" : " unlocked"}`}>
+                    {" · "}
+                    {classOverdue} overdue
                   </span>
-                  <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
-                    {done ? "done" : shown}
-                  </span>
-                </div>
-                {!done && target > 0 && (
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: `${fill}%` }} />
-                  </div>
-                )}
+                </p>
+                <ul className="reward-list">
+                  {classItems.map((assignment) => {
+                    const max = Number(assignment.max_location);
+                    const total = Number(assignment.total_locations);
+                    const target = Number(assignment.pages ?? 0);
+                    const done =
+                      assignment.criteria_type === "finish_book"
+                        ? total > 0 && max >= total - 1
+                        : max >= target;
+                    const overdue = !done && !!assignment.due_date && assignment.due_date < today;
+                    const shown =
+                      assignment.criteria_type === "finish_book"
+                        ? `${max} / ${total || "?"}`
+                        : `${Math.min(max, target)} / ${target}`;
+                    const goal =
+                      assignment.criteria_type === "finish_book"
+                        ? `Finish ${assignment.book_title}`
+                        : `Read ${target} pages in ${assignment.book_title}`;
+                    const due = dueLabel(assignment.due_date, today, done);
+                    const fill = target > 0 ? Math.round((Math.min(max, target) / target) * 100) : 0;
+                    return (
+                      <li key={`${assignment.slug}-${assignment.title}`}>
+                        <Link href={`/kid/${kid.id}/book/${assignment.slug}`}>{assignment.title}</Link>
+                        {" · "}
+                        {goal}
+                        {due ? ` · ${due}` : ""}
+                        {" — "}
+                        <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
+                          {done ? "done" : shown}
+                        </span>
+                        {!done && target > 0 && (
+                          <div className="progress-bar" style={{ marginTop: "0.25rem" }}>
+                            <div className="progress-fill" style={{ width: `${fill}%` }} />
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
             );
           })}
         </div>
       )}
       <div className="card">
-        <h2>Rewards</h2>
+        <h2 style={{ textDecoration: "underline" }}>Rewards</h2>
         {rewards.length === 0 ? (
           <p>No rewards yet.</p>
         ) : (
@@ -299,17 +285,15 @@ export default async function KidHomePage({
             const fill = target > 0 ? Math.round((shown / target) * 100) : 0;
             const unlocked = reward.status === "unlocked";
             return (
-              <div key={reward.id} className="progress-row">
-                <div className="progress-meta">
-                  <span className={unlocked ? "unlocked" : ""}>
-                    {reward.face_value} for {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope, reward.mode, reward.days)}
-                  </span>
-                  <span>
-                    {unlocked
-                      ? `unlocked ${reward.unlocked_at?.slice(0, 10) ?? ""}`
-                      : `${shown} / ${target || "?"}`}
-                  </span>
-                </div>
+              <div key={reward.id} className="kid-block">
+                <p style={{ margin: "0 0 0.2rem", fontWeight: 400 }}>
+                  {reward.face_value} for {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope, reward.mode, reward.days)}
+                </p>
+                <p className={unlocked ? "unlocked" : "muted"} style={{ margin: "0 0 0.35rem", fontWeight: 400 }}>
+                  {unlocked
+                    ? `unlocked ${reward.unlocked_at?.slice(0, 10) ?? ""}`
+                    : `${shown} / ${target || "?"}`}
+                </p>
                 {!unlocked && target > 0 && (
                   <div className="progress-bar">
                     <div className="progress-fill" style={{ width: `${fill}%` }} />
@@ -321,68 +305,54 @@ export default async function KidHomePage({
         )}
       </div>
       <div className="card">
-        <h2>Library</h2>
-        <ul>
-          {books.map((book) => {
-            const b = book as { slug: string; title: string; author: string };
-            const bookAssignments = assignments.filter((a) => a.slug === b.slug);
-            let anyOverdue = false;
-            let allDone = bookAssignments.length > 0;
-            for (const assignment of bookAssignments) {
-              const max = Number(assignment.max_location);
-              const total = Number(assignment.total_locations);
-              const target = Number(assignment.pages ?? 0);
-              const done =
-                assignment.criteria_type === "finish_book"
-                  ? total > 0 && max >= total - 1
-                  : max >= target;
-              if (!done) allDone = false;
-              if (!done && assignment.due_date && assignment.due_date < today) anyOverdue = true;
-            }
-            const status: "overdue" | "done" | "open" = anyOverdue
-              ? "overdue"
-              : allDone
-                ? "done"
-                : "open";
-            return (
-              <li key={b.slug}>
-                <Link
-                  href={`/kid/${kid.id}/book/${b.slug}`}
-                  className={status === "overdue" ? "overdue" : status === "done" ? "unlocked" : ""}
-                >
-                  {b.title}
-                </Link>
-                <span> — {b.author}</span>
-                {bookAssignments.length > 0 && (
-                  <span>
-                    {" — "}
-                    {bookAssignments.map((assignment, i) => {
-                      const max = Number(assignment.max_location);
-                      const total = Number(assignment.total_locations);
-                      const target = Number(assignment.pages ?? 0);
-                      const done =
-                        assignment.criteria_type === "finish_book"
-                          ? total > 0 && max >= total - 1
-                          : max >= target;
-                      const overdue = !done && !!assignment.due_date && assignment.due_date < today;
-                      const due = dueLabel(assignment.due_date, today, done);
-                      return (
-                        <span
-                          key={`${assignment.class_name}-${assignment.title}`}
-                          className={done ? "unlocked" : overdue ? "overdue" : ""}
-                        >
-                          {i > 0 ? ", " : ""}
-                          {assignment.class_name}
-                          {due ? ` · ${due}` : ""}
-                        </span>
-                      );
-                    })}
-                  </span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <p style={{ display: "flex", alignItems: "baseline", gap: "1rem", flexWrap: "wrap" }}>
+          <span className="section-head" style={{ margin: 0 }}>Books</span>
+          {kid.can_self_purchase && (
+            <Link href={`/kid/${kid.id}/shop`}>Shop for books</Link>
+          )}
+        </p>
+        {books.length === 0 ? (
+          <p>No books on your reader yet.</p>
+        ) : (
+          <ul className="reward-list">
+            {books.map((book) => {
+              const b = book as { slug: string; title: string; author: string };
+              const bookAssignments = assignments.filter((a) => a.slug === b.slug);
+              return (
+                <li key={b.slug}>
+                  <Link href={`/kid/${kid.id}/book/${b.slug}`}>{b.title}</Link>
+                  {b.author ? ` — ${b.author}` : ""}
+                  {bookAssignments.length > 0 && (
+                    <span>
+                      {" · "}
+                      {bookAssignments.map((assignment, i) => {
+                        const max = Number(assignment.max_location);
+                        const total = Number(assignment.total_locations);
+                        const target = Number(assignment.pages ?? 0);
+                        const done =
+                          assignment.criteria_type === "finish_book"
+                            ? total > 0 && max >= total - 1
+                            : max >= target;
+                        const overdue = !done && !!assignment.due_date && assignment.due_date < today;
+                        const due = dueLabel(assignment.due_date, today, done);
+                        return (
+                          <span
+                            key={`${assignment.class_name}-${assignment.title}`}
+                            className={done ? "unlocked" : overdue ? "overdue" : ""}
+                          >
+                            {i > 0 ? ", " : ""}
+                            {assignment.class_name}
+                            {due ? ` · ${due}` : ""}
+                          </span>
+                        );
+                      })}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </main>
   );
