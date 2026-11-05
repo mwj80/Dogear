@@ -300,7 +300,7 @@ export default async function ParentPage({
                 return (
                   <div key={kid.id} className="kid-block">
                     <p style={{ display: "flex", alignItems: "baseline", gap: "1rem", flexWrap: "wrap" }}>
-                      <span className={kidStatus === "overdue" ? "kid-name overdue" : kidStatus === "done" ? "kid-name unlocked" : "kid-name"}>
+                      <span className="kid-name">
                         {kid.display_name}
                       </span>
                       <Link href={`/parent/kid/${kid.id}`}>Progress</Link>
