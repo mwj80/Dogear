@@ -239,10 +239,7 @@ export default async function TeacherPage() {
                         ? "done"
                         : "open";
                     return (
-                      <li
-                        key={kid.child_id}
-                        className={kidStatus === "overdue" ? "overdue" : kidStatus === "done" ? "unlocked" : ""}
-                      >
+                      <li key={kid.child_id}>
                         <Link href={`/teacher/kid/${kid.child_id}`}>{kid.display_name}</Link>
                       </li>
                     );
@@ -319,12 +316,12 @@ export default async function TeacherPage() {
                           const kidDue = dueLabel(assignment.due_date, today, done);
                           const statusClass = done ? "unlocked" : overdue ? "overdue" : "";
                           return (
-                            <li key={kid.child_id} className={statusClass}>
+                            <li key={kid.child_id}>
                               {kid.display_name}
                               {kidDue ? ` · ${kidDue}` : ""}
                               {!owns && " · not on reader"}
                               {" — "}
-                              {owns ? (done ? "done" : shown) : "locked"}
+                              <span className={statusClass}>{owns ? (done ? "done" : shown) : "locked"}</span>
                             </li>
                           );
                         })}
