@@ -150,7 +150,7 @@ export default async function TeacherKidPage({
       <header className="top">
         <Link href="/teacher">Back to teacher</Link>
       </header>
-      <h1 className={kidStatus === "overdue" ? "overdue" : kidStatus === "done" ? "unlocked" : ""}>
+      <h1 style={{ color: "var(--ink)" }}>
         {kid.display_name}
       </h1>
       <p className={todayMet ? "unlocked" : "muted"}>
