@@ -146,17 +146,6 @@ export default async function KidHomePage({
   }[];
 
   const kid = kids[0] as { id: string; display_name: string; can_self_purchase: boolean };
-  let overdueCount = 0;
-  for (const assignment of assignments) {
-    const max = Number(assignment.max_location);
-    const total = Number(assignment.total_locations);
-    const target = Number(assignment.pages ?? 0);
-    const done =
-      assignment.criteria_type === "finish_book"
-        ? total > 0 && max >= total - 1
-        : max >= target;
-    if (!done && assignment.due_date && assignment.due_date < today) overdueCount += 1;
-  }
   const classNames = [...new Set(assignments.map((a) => a.class_name))];
   const classStatuses = classNames.map((name) => {
     const rows = assignments.filter((a) => a.class_name === name);
