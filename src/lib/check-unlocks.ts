@@ -4,8 +4,10 @@ import { ensurePageLog } from "./page-log";
 type RewardRow = {
   id: string;
   household_id: string;
+  child_id: string;
   cost_cents: number;
   face_value: string;
+  reward_type: string;
   criteria_type: string;
   scope: string;
   book_id: string | null;
@@ -98,6 +100,37 @@ async function spendAndUnlock(reward: RewardRow, note: string) {
   return true;
 }
 
+function providerFor(rewardType: string) {
+  if (rewardType === "robux") return "roblox";
+  if (rewardType === "clash_royale") return "clash_royale";
+  return null;
+}
+
+async function queueRelease(reward: RewardRow, childId: string) {
+  const provider = providerFor(reward.reward_type);
+  if (!provider) return;
+  const db = sql();
+  const accounts = await db`
+    SELECT identifier
+    FROM kid_game_accounts
+    WHERE child_id = ${childId}::uuid AND provider = ${provider}
+    LIMIT 1
+  `;
+  const identifier = (accounts[0] as { identifier: string } | undefined)?.identifier;
+  await db`
+    INSERT INTO reward_releases (reward_id, child_id, provider, identifier, face_value, status)
+    VALUES (
+      ${reward.id}::uuid,
+      ${childId}::uuid,
+      ${provider},
+      ${identifier ?? ""},
+      ${reward.face_value},
+      ${identifier ? "pending" : "unmatched"}
+    )
+    ON CONFLICT (reward_id) DO NOTHING
+  `;
+}
+
 export async function checkUnlocks(
   childId: string,
   bookId: string
@@ -152,7 +185,7 @@ export async function checkUnlocks(
   }
 
   const rewards = await db`
-    SELECT id, household_id, cost_cents, face_value, criteria_type, scope, book_id, criteria_json
+    SELECT id, household_id, child_id, cost_cents, face_value, reward_type, criteria_type, scope, book_id, criteria_json
     FROM rewards
     WHERE child_id = ${childId}::uuid
       AND status = 'active'
@@ -192,6 +225,7 @@ export async function checkUnlocks(
               : "Reach-page unlock";
     const claimed = await spendAndUnlock(reward, note);
     if (!claimed) continue;
+    await queueRelease(reward, childId);
     unlocked.push({ id: reward.id, face_value: reward.face_value });
   }
   return unlocked;
