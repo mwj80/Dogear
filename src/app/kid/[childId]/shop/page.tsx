@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
 import { ensureSchema } from "@/lib/ensure-schema";
+import { ensureClassics } from "@/lib/ensure-classics";
 import { addOrBuyBook } from "@/app/parent/purchase-actions";
 
 function money(cents: number) {
@@ -16,6 +17,7 @@ export default async function KidShopPage({
   const { childId } = await params;
   const db = sql();
   await ensureSchema();
+  await ensureClassics();
 
   const kids = await db`
     SELECT id, display_name, COALESCE(can_self_purchase, false) AS can_self_purchase, household_id
