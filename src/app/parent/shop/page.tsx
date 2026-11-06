@@ -4,21 +4,16 @@ import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { ensureSchema } from "@/lib/ensure-schema";
-import { addOrBuyBook, importGutenbergClassics } from "../purchase-actions";
+import { ensureClassics } from "@/lib/ensure-classics";
+import { addOrBuyBook } from "../purchase-actions";
 
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-export default async function ParentShopPage({
-  searchParams
-}: {
-  searchParams: Promise<{ imported?: string }>;
-}) {
+export default async function ParentShopPage() {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
-  const params = await searchParams;
-  const imported = Number(params.imported ?? "");
 
   const user = await currentUser();
   const email =
@@ -26,6 +21,7 @@ export default async function ParentShopPage({
   const household = await ensureHousehold({ clerkUserId: userId, email });
   const db = sql();
   await ensureSchema();
+  await ensureClassics();
 
   const kids = (await db`
     SELECT id, display_name
@@ -59,35 +55,13 @@ export default async function ParentShopPage({
         Buying creates a progress row immediately. Books a kid already owns are hidden.
       </p>
 
-      {Number.isFinite(imported) && imported >= 0 && params.imported !== undefined && (
-        <div className="card" style={{ borderColor: "#2e7d32" }}>
-          <p className="unlocked">
-            {imported === 0
-              ? "Classics already in the shop. No new books added."
-              : `Added ${imported} public-domain classic${imported === 1 ? "" : "s"}.`}
-          </p>
-        </div>
-      )}
-
-      <div className="card">
-        <p className="section-head">Public-domain classics</p>
-        <p className="muted">
-          Import free Project Gutenberg titles. Existing books are left alone. Nothing is added to a kid’s reader.
-        </p>
-        <form action={importGutenbergClassics}>
-          <button type="submit" className="btn secondary">
-            Import classics
-          </button>
-        </form>
-      </div>
-
       {kids.length === 0 ? (
         <div className="card">
           <p>Add a kid on Family Administration first.</p>
         </div>
       ) : books.length === 0 ? (
         <div className="card">
-          <p>No books yet. Import classics above, or reset the demo on the parent page.</p>
+          <p>No books yet.</p>
         </div>
       ) : (
         books.map((book) => (
