@@ -6,7 +6,8 @@ import { ensureHousehold } from "@/lib/ensure-household";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { ensureClassics } from "@/lib/ensure-classics";
 import { BOOK_GENRES } from "@/lib/gutenberg-classics";
-import { addOrBuyBook } from "../purchase-actions";
+import { searchGutendex } from "@/lib/gutendex";
+import { addOrBuyBook, addCatalogBook } from "../purchase-actions";
 
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
@@ -31,6 +32,12 @@ export default async function ParentShopPage({
   await ensureSchema();
   await ensureClassics();
 
+  const house = await db`
+    SELECT COALESCE(allow_adult_titles, false) AS allow_adult_titles
+    FROM households WHERE id = ${household.household_id}::uuid
+  `;
+  const allowAdult = Boolean((house[0] as { allow_adult_titles: boolean } | undefined)?.allow_adult_titles);
+
   const kids = (await db`
     SELECT id, display_name
     FROM children
@@ -45,6 +52,12 @@ export default async function ParentShopPage({
       AND (${genre} = '' OR genre = ${genre})
     ORDER BY title
   `) as { id: string; title: string; author: string; genre: string; price_cents: number }[];
+
+  const catalog = allowAdult && q ? await searchGutendex({ q, allowAdult }) : [];
+  const knownSlugs = new Set(
+    (await db`SELECT slug FROM books WHERE slug LIKE 'gutenberg-%'`) as { slug: string }[]
+  );
+  const freshCatalog = catalog.filter((hit) => !knownSlugs.has(`gutenberg-${hit.gutenbergId}`));
 
   const owned = (await db`
     SELECT kb.child_id::text AS child_id, kb.book_id::text AS book_id
@@ -86,42 +99,87 @@ export default async function ParentShopPage({
         )}
       </form>
 
+      {!allowAdult && (
+        <div className="card">
+          <p className="muted">
+            Full catalog is off. Only the kids’ classics are listed. Turn on adult titles in Family Administration to search Project Gutenberg.
+          </p>
+        </div>
+      )}
+
       {kids.length === 0 ? (
         <div className="card">
           <p>Add a kid on Family Administration first.</p>
         </div>
-      ) : books.length === 0 ? (
-        <div className="card">
-          <p>No books match that search.</p>
-        </div>
       ) : (
-        books.map((book) => (
-          <div key={book.id} className="card">
-            <p>
-              <strong>{book.title}</strong>
-              {book.author ? ` — ${book.author}` : ""}
-              {book.genre ? ` · ${book.genre}` : ""} · {money(Number(book.price_cents || 0))}
-            </p>
-            {kids.map((kid) => {
-              const alreadyOwns = ownedSet.has(`${kid.id}:${book.id}`);
-              if (alreadyOwns) return null;
-              return (
-                <form
-                  key={`${kid.id}-${book.id}`}
-                  action={addOrBuyBook}
-                  style={{ display: "inline", marginRight: "0.5rem" }}
-                >
-                  <input type="hidden" name="child_id" value={kid.id} />
-                  <input type="hidden" name="book_id" value={book.id} />
-                  <input type="hidden" name="by" value="parent" />
-                  <button type="submit" className="btn secondary">
-                    Add/Buy for {kid.display_name}
-                  </button>
-                </form>
-              );
-            })}
-          </div>
-        ))
+        <>
+          {books.length === 0 && freshCatalog.length === 0 ? (
+            <div className="card">
+              <p>{q || genre ? "No books match that search." : "No books yet."}</p>
+            </div>
+          ) : (
+            books.map((book) => (
+              <div key={book.id} className="card">
+                <p>
+                  <strong>{book.title}</strong>
+                  {book.author ? ` — ${book.author}` : ""}
+                  {book.genre ? ` · ${book.genre}` : ""} · {money(Number(book.price_cents || 0))}
+                </p>
+                {kids.map((kid) => {
+                  const alreadyOwns = ownedSet.has(`${kid.id}:${book.id}`);
+                  if (alreadyOwns) return null;
+                  return (
+                    <form
+                      key={`${kid.id}-${book.id}`}
+                      action={addOrBuyBook}
+                      style={{ display: "inline", marginRight: "0.5rem" }}
+                    >
+                      <input type="hidden" name="child_id" value={kid.id} />
+                      <input type="hidden" name="book_id" value={book.id} />
+                      <input type="hidden" name="by" value="parent" />
+                      <button type="submit" className="btn secondary">
+                        Add/Buy for {kid.display_name}
+                      </button>
+                    </form>
+                  );
+                })}
+              </div>
+            ))
+          )}
+
+          {freshCatalog.length > 0 && (
+            <>
+              <h2>From Project Gutenberg</h2>
+              <p className="muted">These are not in the shop yet. Adding one saves it for free.</p>
+              {freshCatalog.map((hit) => (
+                <div key={hit.gutenbergId} className="card">
+                  <p>
+                    <strong>{hit.title}</strong>
+                    {hit.author ? ` — ${hit.author}` : ""}
+                    {hit.subjects[0] ? ` · ${hit.subjects[0]}` : ""} · Free
+                  </p>
+                  {kids.map((kid) => (
+                    <form
+                      key={`${kid.id}-${hit.gutenbergId}`}
+                      action={addCatalogBook}
+                      style={{ display: "inline", marginRight: "0.5rem" }}
+                    >
+                      <input type="hidden" name="child_id" value={kid.id} />
+                      <input type="hidden" name="gutenberg_id" value={hit.gutenbergId} />
+                      <input type="hidden" name="title" value={hit.title} />
+                      <input type="hidden" name="author" value={hit.author} />
+                      <input type="hidden" name="genre" value={hit.subjects[0] ?? ""} />
+                      <input type="hidden" name="by" value="parent" />
+                      <button type="submit" className="btn secondary">
+                        Add for {kid.display_name}
+                      </button>
+                    </form>
+                  ))}
+                </div>
+              ))}
+            </>
+          )}
+        </>
       )}
     </main>
   );

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { ensureSchema } from "@/lib/ensure-schema";
+import { gutenbergEpubPath } from "@/lib/gutenberg-classics";
 
 export async function addOrBuyBook(formData: FormData) {
   const { userId } = await auth();
@@ -53,7 +54,6 @@ export async function addOrBuyBook(formData: FormData) {
     const available = Number((house[0] as { pot_available_cents: number } | undefined)?.pot_available_cents ?? 0);
     if (available < price) throw new Error(`Insufficient balance (need $${(price / 100).toFixed(2)})`);
 
-    // Ledger kind must be 'load' or 'spend'. Use a transaction so a failure rolls back the balance change.
     await db.transaction([
       db`
         UPDATE households
@@ -92,6 +92,95 @@ export async function addOrBuyBook(formData: FormData) {
   revalidatePath("/parent/shop");
   revalidatePath("/kid");
   revalidatePath(`/kid/${childId}/shop`);
+}
+
+export async function addCatalogBook(formData: FormData) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Not signed in");
+
+  const childId = String(formData.get("child_id") ?? "");
+  const gutenbergId = Number(formData.get("gutenberg_id") ?? 0);
+  const title = String(formData.get("title") ?? "").trim();
+  const author = String(formData.get("author") ?? "").trim();
+  const genre = String(formData.get("genre") ?? "").trim();
+  const by = String(formData.get("by") ?? "parent") === "self" ? "self" : "parent";
+  if (!childId || !gutenbergId || !title) throw new Error("Kid and book are required");
+
+  const user = await currentUser();
+  const email = user?.primaryEmailAddress?.emailAddress ?? `${userId}@users.invalid`;
+  const household = await ensureHousehold({ clerkUserId: userId, email });
+  const db = sql();
+  await ensureSchema();
+
+  const house = await db`
+    SELECT COALESCE(allow_adult_titles, false) AS allow_adult_titles
+    FROM households WHERE id = ${household.household_id}::uuid
+  `;
+  const allowAdult = Boolean((house[0] as { allow_adult_titles: boolean } | undefined)?.allow_adult_titles);
+  if (!allowAdult) throw new Error("Adult titles are off. Turn them on in Family Administration.");
+
+  const kidRows = await db`
+    SELECT id, can_self_purchase FROM children
+    WHERE id = ${childId}::uuid AND household_id = ${household.household_id}::uuid
+    LIMIT 1
+  `;
+  const kid = kidRows[0] as { id: string; can_self_purchase: boolean } | undefined;
+  if (!kid) throw new Error("Kid not found");
+  if (by === "self" && !kid.can_self_purchase) throw new Error("This kid is not authorized to buy books");
+
+  const slug = `gutenberg-${gutenbergId}`;
+  const path = gutenbergEpubPath(gutenbergId);
+  const inserted = await db`
+    INSERT INTO books (title, author, slug, price_cents, epub_path, genre)
+    VALUES (${title}, ${author}, ${slug}, 0, ${path}, ${genre || null})
+    ON CONFLICT (slug) DO UPDATE SET
+      title = EXCLUDED.title,
+      author = EXCLUDED.author,
+      epub_path = EXCLUDED.epub_path
+    RETURNING id
+  `;
+  const bookId = (inserted[0] as { id: string }).id;
+
+  await db.transaction([
+    db`
+      INSERT INTO kid_books (child_id, book_id, purchased_by)
+      VALUES (${childId}::uuid, ${bookId}::uuid, ${by})
+      ON CONFLICT DO NOTHING
+    `,
+    db`
+      INSERT INTO progress (child_id, book_id, max_location, total_locations)
+      VALUES (${childId}::uuid, ${bookId}::uuid, 0, 0)
+      ON CONFLICT (child_id, book_id) DO NOTHING
+    `
+  ]);
+
+  revalidatePath("/parent");
+  revalidatePath("/parent/shop");
+  revalidatePath("/kid");
+  revalidatePath(`/kid/${childId}/shop`);
+}
+
+export async function toggleAdultTitles(formData: FormData) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Not signed in");
+  const allow = formData.get("allow_adult_titles") === "on";
+
+  const user = await currentUser();
+  const email = user?.primaryEmailAddress?.emailAddress ?? `${userId}@users.invalid`;
+  const household = await ensureHousehold({ clerkUserId: userId, email });
+  const db = sql();
+  await ensureSchema();
+
+  await db`
+    UPDATE households
+    SET allow_adult_titles = ${allow}
+    WHERE id = ${household.household_id}::uuid
+  `;
+
+  revalidatePath("/parent");
+  revalidatePath("/parent/shop");
+  revalidatePath("/parent/kid/new");
+  redirect(`/parent/kid/new?adult=${allow ? "on" : "off"}`);
 }
 
 export async function toggleSelfPurchase(formData: FormData) {
