@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { ensureSchema } from "@/lib/ensure-schema";
+import { GUTENBERG_CLASSICS, gutenbergEpubPath } from "@/lib/gutenberg-classics";
 
 export async function addOrBuyBook(formData: FormData) {
   const { userId } = await auth();
@@ -92,6 +93,30 @@ export async function addOrBuyBook(formData: FormData) {
   revalidatePath("/parent/shop");
   revalidatePath("/kid");
   revalidatePath(`/kid/${childId}/shop`);
+}
+
+export async function importGutenbergClassics() {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Not signed in");
+
+  const db = sql();
+  await ensureSchema();
+
+  let added = 0;
+  for (const book of GUTENBERG_CLASSICS) {
+    const path = gutenbergEpubPath(book.id);
+    const rows = await db`
+      INSERT INTO books (title, author, slug, price_cents, epub_path)
+      VALUES (${book.title}, ${book.author}, ${book.slug}, 0, ${path})
+      ON CONFLICT (slug) DO NOTHING
+      RETURNING id
+    `;
+    if (rows[0]) added += 1;
+  }
+
+  revalidatePath("/parent/shop");
+  revalidatePath("/kid");
+  redirect(`/parent/shop?imported=${added}`);
 }
 
 export async function toggleSelfPurchase(formData: FormData) {
