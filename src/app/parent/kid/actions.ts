@@ -86,3 +86,50 @@ export async function removeKid(formData: FormData) {
   revalidatePath("/parent/kid/new");
   redirect("/parent/kid/new");
 }
+
+export async function addGameAccount(formData: FormData) {
+  const household = await householdOfUser();
+  const childId = String(formData.get("child_id") ?? "");
+  const providerSelect = String(formData.get("provider") ?? "").trim();
+  const otherLabel = String(formData.get("other_label") ?? "").trim();
+  const identifier = String(formData.get("identifier") ?? "").trim();
+  const provider = providerSelect === "other" ? otherLabel : providerSelect;
+  if (!childId || !provider || !identifier) throw new Error("Game and identifier are required");
+
+  const db = sql();
+  const kids = await db`
+    SELECT id, display_name FROM children
+    WHERE id = ${childId}::uuid AND household_id = ${household.household_id}::uuid
+    LIMIT 1
+  `;
+  if (!kids[0]) throw new Error("Kid not in this household");
+  const name = String((kids[0] as { display_name: string }).display_name);
+
+  await db`
+    INSERT INTO kid_game_accounts (child_id, provider, identifier)
+    VALUES (${childId}::uuid, ${provider}, ${identifier})
+    ON CONFLICT (child_id, provider)
+    DO UPDATE SET identifier = EXCLUDED.identifier
+  `;
+
+  revalidatePath("/parent");
+  revalidatePath("/parent/kid/new");
+  redirect(`/parent/kid/new?account=saved&name=${encodeURIComponent(name)}&game=${encodeURIComponent(provider)}`);
+}
+
+export async function removeGameAccount(formData: FormData) {
+  const household = await householdOfUser();
+  const accountId = String(formData.get("account_id") ?? "");
+  if (!accountId) throw new Error("Missing account");
+  const db = sql();
+  await db`
+    DELETE FROM kid_game_accounts a
+    USING children c
+    WHERE a.id = ${accountId}::uuid
+      AND a.child_id = c.id
+      AND c.household_id = ${household.household_id}::uuid
+  `;
+  revalidatePath("/parent");
+  revalidatePath("/parent/kid/new");
+  redirect("/parent/kid/new?account=removed");
+}
