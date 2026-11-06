@@ -65,7 +65,7 @@ export default async function ParentShopPage({
         Buying creates a progress row immediately. Books a kid already owns are hidden.
       </p>
 
-      <form method="get" className="card" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+      <form key={`${q}|${genre}`} method="get" className="card" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
         <input
           type="search"
           name="q"

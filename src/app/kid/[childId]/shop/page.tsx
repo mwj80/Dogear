@@ -76,7 +76,7 @@ export default async function KidShopPage({
       <p>Available balance: {money(balance)}</p>
       <p className="muted">Buying adds the book to your reader.</p>
 
-      <form method="get" className="card" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+      <form key={`${q}|${genre}`} method="get" className="card" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
         <input
           type="search"
           name="q"
