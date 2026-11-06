@@ -51,6 +51,17 @@ export function streakEndingToday(
 
 async function spendAndUnlock(reward: RewardRow, note: string) {
   const db = sql();
+
+  // Claim first so a second check cannot spend again.
+  const claimed = await db`
+    UPDATE rewards
+    SET status = 'unlocked',
+        unlocked_at = now()
+    WHERE id = ${reward.id}::uuid AND status = 'active'
+    RETURNING id
+  `;
+  if (!claimed[0]) return false;
+
   const house = await db`
     SELECT pot_available_cents
     FROM households
@@ -81,11 +92,10 @@ async function spendAndUnlock(reward: RewardRow, note: string) {
   `;
   await db`
     UPDATE rewards
-    SET status = 'unlocked',
-        unlocked_at = now(),
-        shortfall_cents = ${shortfall}
-    WHERE id = ${reward.id}::uuid AND status = 'active'
+    SET shortfall_cents = ${shortfall}
+    WHERE id = ${reward.id}::uuid
   `;
+  return true;
 }
 
 export async function checkUnlocks(
@@ -180,7 +190,8 @@ export async function checkUnlocks(
             : mode === "read"
               ? "Read-pages unlock"
               : "Reach-page unlock";
-    await spendAndUnlock(reward, note);
+    const claimed = await spendAndUnlock(reward, note);
+    if (!claimed) continue;
     unlocked.push({ id: reward.id, face_value: reward.face_value });
   }
   return unlocked;
