@@ -78,10 +78,10 @@ export default async function KidShopPage({
     ORDER BY b.title
   `) as { id: string; title: string; author: string; genre: string; price_cents: number }[];
 
-  const catalog = allowAdult && q ? await searchGutendex({ q, allowAdult }) : [];
+  const catalogResult = allowAdult && q ? await searchGutendex({ q, allowAdult }) : { hits: [] };
   const knownRows = (await db`SELECT slug FROM books WHERE slug LIKE 'gutenberg-%'`) as { slug: string }[];
   const knownSlugs = new Set(knownRows.map((row) => row.slug));
-  const freshCatalog = catalog.filter((hit) => !knownSlugs.has(`gutenberg-${hit.gutenbergId}`));
+  const freshCatalog = catalogResult.hits.filter((hit) => !knownSlugs.has(`gutenberg-${hit.gutenbergId}`));
 
   return (
     <main>
@@ -116,6 +116,12 @@ export default async function KidShopPage({
       {!allowAdult && (
         <div className="card">
           <p className="muted">Only kids’ classics are listed. A parent can turn on the full catalog for you.</p>
+        </div>
+      )}
+
+      {catalogResult.error && (
+        <div className="card">
+          <p className="muted">{catalogResult.error}</p>
         </div>
       )}
 
@@ -158,7 +164,6 @@ export default async function KidShopPage({
             <div key={hit.gutenbergId} className="card">
               <p>
                 <strong>{hit.title}</strong> — {hit.author}
-                {hit.subjects[0] ? ` · ${hit.subjects[0]}` : ""}
               </p>
               <p className="muted">Free</p>
               <form action={addCatalogBook}>

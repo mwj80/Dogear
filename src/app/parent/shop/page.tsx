@@ -47,10 +47,10 @@ export default async function ParentShopPage({
     ORDER BY title
   `) as { id: string; title: string; author: string; genre: string; price_cents: number }[];
 
-  const catalog = q ? await searchGutendex({ q, allowAdult: true }) : [];
+  const catalogResult = q ? await searchGutendex({ q, allowAdult: true }) : { hits: [] };
   const knownRows = (await db`SELECT slug FROM books WHERE slug LIKE 'gutenberg-%'`) as { slug: string }[];
   const knownSlugs = new Set(knownRows.map((row) => row.slug));
-  const freshCatalog = catalog.filter((hit) => !knownSlugs.has(`gutenberg-${hit.gutenbergId}`));
+  const freshCatalog = catalogResult.hits.filter((hit) => !knownSlugs.has(`gutenberg-${hit.gutenbergId}`));
 
   const owned = (await db`
     SELECT kb.child_id::text AS child_id, kb.book_id::text AS book_id
@@ -91,6 +91,12 @@ export default async function ParentShopPage({
           <Link href="/parent/shop">Clear</Link>
         )}
       </form>
+
+      {catalogResult.error && (
+        <div className="card">
+          <p className="muted">{catalogResult.error}</p>
+        </div>
+      )}
 
       {kids.length === 0 ? (
         <div className="card">
@@ -140,8 +146,7 @@ export default async function ParentShopPage({
                 <div key={hit.gutenbergId} className="card">
                   <p>
                     <strong>{hit.title}</strong>
-                    {hit.author ? ` — ${hit.author}` : ""}
-                    {hit.subjects[0] ? ` · ${hit.subjects[0]}` : ""} · Free
+                    {hit.author ? ` — ${hit.author}` : ""} · Free
                   </p>
                   {kids.map((kid) => (
                     <form
