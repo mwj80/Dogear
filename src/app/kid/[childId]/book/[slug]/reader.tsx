@@ -388,10 +388,14 @@ export default function Reader({
       {justUnlocked.length > 0 && (
         <div className="modal" onClick={() => setJustUnlocked([])}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <p style={{ fontSize: "2rem", margin: "0 0 0.25rem" }}>🎉</p>
             <h2>Reward unlocked!</h2>
             {justUnlocked.map((value) => (
-              <p key={value}>{value}</p>
+              <p key={value} style={{ color: "var(--ink)", fontWeight: 600 }}>
+                {value}
+              </p>
             ))}
+            <p className="muted">Charged to the family balance. Nice work.</p>
             <button type="button" className="btn" onClick={() => setJustUnlocked([])}>
               Keep reading
             </button>
