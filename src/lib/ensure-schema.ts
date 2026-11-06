@@ -30,4 +30,14 @@ export async function ensureSchema() {
       UNIQUE (child_id, provider)
     )
   `;
+  await db`
+    CREATE TABLE IF NOT EXISTS kid_game_requests (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      child_id uuid REFERENCES children(id) ON DELETE CASCADE,
+      provider text NOT NULL,
+      identifier text NOT NULL,
+      status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+      created_at timestamptz DEFAULT now()
+    )
+  `;
 }
