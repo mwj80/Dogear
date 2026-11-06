@@ -6,6 +6,7 @@ import { ensureHousehold } from "@/lib/ensure-household";
 import { sql } from "@/lib/db";
 import { ensurePageLog } from "@/lib/page-log";
 import { recheckHousehold } from "@/lib/check-unlocks";
+import { markReleaseSent } from "./kid/actions";
 import { resetDemo } from "./actions";
 import { ensureSchema } from "@/lib/ensure-schema";
 
@@ -122,6 +123,14 @@ export default async function ParentPage({
   let dueToday = new Date().toISOString().slice(0, 10);
   let dbError: string | null = null;
   let recentUnlocks: { face_value: string; display_name: string; unlocked_at: string }[] = [];
+  let releases: {
+    id: string;
+    display_name: string;
+    provider: string;
+    identifier: string;
+    face_value: string;
+    status: string;
+  }[] = [];
 
   try {
     household = await ensureHousehold({ clerkUserId: userId, email });
@@ -194,6 +203,15 @@ export default async function ParentPage({
       ORDER BY r.unlocked_at DESC
       LIMIT 8
     `) as typeof recentUnlocks;
+    releases = (await db`
+      SELECT rr.id::text AS id, c.display_name, rr.provider, rr.identifier,
+             rr.face_value, rr.status
+      FROM reward_releases rr
+      JOIN children c ON c.id = rr.child_id
+      WHERE c.household_id = ${household.household_id}::uuid
+        AND rr.status IN ('pending', 'unmatched')
+      ORDER BY rr.created_at DESC
+    `) as typeof releases;
   } catch (err) {
     dbError = err instanceof Error ? err.message : "Database error";
   }
@@ -223,7 +241,35 @@ export default async function ParentPage({
           <p className="unlocked">Added {money(fundsAdded)} to the available balance.</p>
         </div>
       )}
-      {!dbError && recentUnlocks.length > 0 && (
+      {!dbError && releases.length > 0 && (
+        <div className="card" style={{ borderColor: "#d32f2f" }}>
+          <h2 style={{ textDecoration: "underline" }}>Reward releases</h2>
+          <p className="muted">Proof of concept. Mark sent after you deliver the reward to the account.</p>
+          <ul className="reward-list">
+            {releases.map((release) => (
+              <li key={release.id}>
+                {release.display_name}
+                {" · "}
+                {release.face_value}
+                {" · "}
+                {release.provider === "roblox" ? "Roblox" : "Clash Royale"}
+                {" · "}
+                {release.status === "unmatched"
+                  ? "no account saved"
+                  : release.identifier}
+                {release.status === "pending" && (
+                  <form action={markReleaseSent} style={{ display: "inline", marginLeft: "0.5rem" }}>
+                    <input type="hidden" name="release_id" value={release.id} />
+                    <button type="submit" className="btn" style={{ padding: "0.2rem 0.5rem", fontSize: "0.8rem" }}>
+                      Mark sent
+                    </button>
+                  </form>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
         <div className="card" style={{ borderColor: "#2e7d32" }}>
           <p className="unlocked" style={{ margin: "0 0 0.35rem" }}>Recent unlocks</p>
           <ul className="reward-list">
