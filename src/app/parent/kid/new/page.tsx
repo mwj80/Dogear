@@ -176,12 +176,7 @@ export default async function FamilyAdminPage({
                   <select name="provider" required defaultValue="roblox">
                     <option value="roblox">Roblox</option>
                     <option value="clash_royale">Clash Royale</option>
-                    <option value="other">Other</option>
                   </select>
-                </label>
-                <label>
-                  Other name
-                  <input name="other_label" maxLength={40} placeholder="Only if Other" />
                 </label>
                 <label>
                   Username or player ID
