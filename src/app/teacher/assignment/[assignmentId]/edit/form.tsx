@@ -27,11 +27,16 @@ export function EditForm({
     setSaved(true);
   }
 
+  function confirmRemove(e: React.FormEvent<HTMLFormElement>) {
+    const ok = window.confirm(`Remove ${assignment.title}? Kids will no longer see this assignment.`);
+    if (!ok) e.preventDefault();
+  }
+
   return (
     <>
       {saved && (
-        <div className="banner unlocked">
-          Assignment saved.
+        <div className="card" style={{ borderColor: "#2e7d32", marginTop: 0 }}>
+          <p className="unlocked">Assignment saved.</p>
         </div>
       )}
       <form action={handleSave} className="stack">
@@ -78,7 +83,10 @@ export function EditForm({
           Save assignment
         </button>
       </form>
-      <form action={removeAssignment}>
+
+      <form action={removeAssignment} onSubmit={confirmRemove} style={{ marginTop: "1.5rem" }}>
+        <p className="section-head">Remove</p>
+        <p className="muted">Removes this assignment. Kids will no longer see it.</p>
         <input type="hidden" name="assignment_id" value={assignment.id} />
         <button type="submit" className="btn secondary">
           Remove assignment
