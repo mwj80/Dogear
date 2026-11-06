@@ -66,6 +66,8 @@ type EpubRendition = {
   resize: (w: number, h: number) => void;
 };
 
+const SIZES = [90, 110, 130, 150];
+
 function loadScript(src: string) {
   return new Promise<void>((resolve, reject) => {
     const existing = document.querySelector(`script[src="${src}"]`);
@@ -79,6 +81,18 @@ function loadScript(src: string) {
     s.onerror = () => reject(new Error(`Failed to load ${src}`));
     document.body.appendChild(s);
   });
+}
+
+function themeFor(size: number, night: boolean) {
+  return {
+    body: {
+      "font-family": "Georgia, serif",
+      "font-size": `${size}%`,
+      "line-height": "1.55",
+      color: night ? "#f5f0e8" : "#1c1916",
+      background: night ? "#1c1916" : "#fff"
+    }
+  };
 }
 
 function isRead(reward: RewardInfo) {
@@ -149,7 +163,10 @@ export default function Reader({
   const [items, setItems] = useState(rewards);
   const [justUnlocked, setJustUnlocked] = useState<string[]>([]);
   const [highest, setHighest] = useState(startLocation);
+  const [size, setSize] = useState(110);
+  const [night, setNight] = useState(false);
   const maxRef = useRef(startLocation);
+  const prefs = useRef({ size: 110, night: false });
 
   function applyUnlocks(unlocked: { id: string; face_value: string }[]) {
     if (!unlocked?.length) return;
@@ -164,6 +181,24 @@ export default function Reader({
   }
 
   useEffect(() => {
+    const savedSize = Number(localStorage.getItem("litloot-font") ?? 110);
+    const savedNight = localStorage.getItem("litloot-night") === "1";
+    if (SIZES.includes(savedSize)) {
+      prefs.current.size = savedSize;
+      setSize(savedSize);
+    }
+    prefs.current.night = savedNight;
+    setNight(savedNight);
+  }, []);
+
+  useEffect(() => {
+    prefs.current = { size, night };
+    renditionRef.current?.themes.default(themeFor(size, night));
+    localStorage.setItem("litloot-font", String(size));
+    localStorage.setItem("litloot-night", night ? "1" : "0");
+  }, [size, night]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function boot() {
@@ -176,8 +211,6 @@ export default function Reader({
         );
         if (cancelled || !hostRef.current || !window.ePub) return;
 
-        // Fetch as a buffer. epub.js mishandles URLs that contain a query string
-        // (the catalog proxy path), which is why Jane Eyre never opened.
         const res = await fetch(epubPath);
         if (!res.ok) throw new Error(`Could not download the book (${res.status})`);
         const buffer = await res.arrayBuffer();
@@ -200,13 +233,7 @@ export default function Reader({
           allowScriptedContent: false
         });
         renditionRef.current = rendition;
-        rendition.themes.default({
-          body: {
-            "font-family": "Georgia, serif",
-            "line-height": "1.5",
-            color: "#1c1916"
-          }
-        });
+        rendition.themes.default(themeFor(prefs.current.size, prefs.current.night));
 
         await rendition.display();
         if (cancelled) return;
@@ -268,6 +295,11 @@ export default function Reader({
         totalLocations: length
       }).then((unlocked) => applyUnlocks(unlocked ?? []));
     }
+  }
+
+  function changeSize(next: number) {
+    if (!SIZES.includes(next)) return;
+    setSize(next);
   }
 
   const pct = total ? Math.round(((highest + 1) / total) * 100) : 0;
@@ -390,7 +422,19 @@ export default function Reader({
         {total ? ` of ${total}` : ""} · Highest reached {pct}%
       </p>
       {status ? <p>{status}</p> : null}
-      <div ref={hostRef} className="reader" />
+      <div className="reader-tools">
+        <button type="button" className="btn secondary" onClick={() => changeSize(size - 20)} disabled={size <= SIZES[0]}>
+          A−
+        </button>
+        <span className="size">{size}%</span>
+        <button type="button" className="btn secondary" onClick={() => changeSize(size + 20)} disabled={size >= SIZES[SIZES.length - 1]}>
+          A+
+        </button>
+        <button type="button" className="btn secondary" onClick={() => setNight((on) => !on)}>
+          {night ? "Light" : "Night"}
+        </button>
+      </div>
+      <div ref={hostRef} className={night ? "reader night" : "reader"} />
       <div className="nav">
         <button type="button" className="btn" onClick={() => void updateFromRendition("prev")}>
           Previous
