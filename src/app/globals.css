@@ -98,6 +98,14 @@ input, select {
   min-height: 420px;
   overflow: hidden;
 }
+.reader.night { background: #1c1916; border-color: #333; }
+.reader-tools {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.4rem 0 0.5rem;
+}
+.reader-tools .size { min-width: 3.2rem; text-align: center; font-size: 0.85rem; color: var(--muted); }
 .nav {
   display: flex;
   gap: 0.75rem;
