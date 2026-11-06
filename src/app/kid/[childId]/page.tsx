@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requestGameAccount } from "@/app/parent/kid/actions";
+import { signOutKid } from "../sign-in/actions";
 import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
 import { ensurePageLog } from "@/lib/page-log";
@@ -198,6 +199,11 @@ export default async function KidHomePage({
     <main>
       <header className="top">
         <Link href="/parent">Back to parent</Link>
+        <form action={signOutKid}>
+          <button type="submit" className="btn secondary" style={{ padding: "0.25rem 0.6rem" }}>
+            Sign out
+          </button>
+        </form>
       </header>
       <h1 style={{ fontStyle: "italic", textDecoration: "underline", color: "var(--ink)" }}>
         Hi, {kid.display_name}
