@@ -51,10 +51,11 @@ export default async function EditAssignmentPage({
       <header className="top">
         <Link href="/teacher">Back to teacher</Link>
       </header>
-      <h1>Edit {assignment.title}</h1>
-      <p className="muted">{assignment.class_name}</p>
+      <h1 style={{ fontStyle: "italic", textDecoration: "underline" }}>Edit assignment</h1>
+      <p className="muted">{assignment.class_name} · {assignment.title}</p>
 
       <div className="card">
+        <h2 style={{ textDecoration: "underline" }}>Details</h2>
         <EditForm assignment={assignment} books={books} />
       </div>
     </main>
