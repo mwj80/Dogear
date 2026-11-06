@@ -145,7 +145,7 @@ export default function Reader({
   const bookRef = useRef<EpubBook | null>(null);
   const [page, setPage] = useState(startLocation + 1);
   const [total, setTotal] = useState(0);
-  const [status, setStatus] = useState("Loading book…");
+  const [status, setStatus] = useState("Loading book\u2026");
   const [items, setItems] = useState(rewards);
   const [justUnlocked, setJustUnlocked] = useState<string[]>([]);
   const [highest, setHighest] = useState(startLocation);
@@ -179,7 +179,7 @@ export default function Reader({
         const book = window.ePub(epubPath);
         bookRef.current = book;
         await book.ready;
-        if (cancelled) return;
+        if (cancelled || !hostRef.current) return;
 
         const w = hostRef.current.clientWidth || 720;
         const h = Math.max(420, Math.floor(window.innerHeight * 0.6));
@@ -201,25 +201,33 @@ export default function Reader({
           }
         });
 
-        await book.locations.generate(700);
+        // Open the book first. Location generation can be slow on long catalog titles.
+        await rendition.display();
         if (cancelled) return;
-        const length = book.locations.length() || 1;
-        setTotal(length);
-
-        const start = Math.min(Math.max(startLocation, 0), length - 1);
-        const cfi = book.locations.cfiFromLocation(start);
-        await rendition.display(cfi);
-        setPage(start + 1);
-        setHighest(Math.max(start, maxRef.current));
         setStatus("");
 
-        const unlocked = await saveProgress({
-          childId,
-          bookId,
-          maxLocation: Math.max(start, maxRef.current),
-          totalLocations: length
-        });
-        applyUnlocks(unlocked ?? []);
+        try {
+          await book.locations.generate(1600);
+          if (cancelled) return;
+          const length = book.locations.length() || 1;
+          setTotal(length);
+          const start = Math.min(Math.max(startLocation, 0), length - 1);
+          if (start > 0) {
+            const cfi = book.locations.cfiFromLocation(start);
+            await rendition.display(cfi);
+            setPage(start + 1);
+            setHighest(Math.max(start, maxRef.current));
+          }
+          const unlocked = await saveProgress({
+            childId,
+            bookId,
+            maxLocation: Math.max(start, maxRef.current),
+            totalLocations: length
+          });
+          applyUnlocks(unlocked ?? []);
+        } catch {
+          // Book is open; page counts can fail on some catalog EPUBs.
+        }
       } catch (err) {
         setStatus(err instanceof Error ? err.message : "Could not open book");
       }
@@ -343,7 +351,7 @@ export default function Reader({
             return (
               <div key={r.id} className="reward-track">
                 <p>
-                  {goalLabel(r)} → <strong>{r.face_value}</strong>
+                  {goalLabel(r)} \u2192 <strong>{r.face_value}</strong>
                 </p>
                 {target > 0 && (
                   <>
@@ -388,7 +396,7 @@ export default function Reader({
       {justUnlocked.length > 0 && (
         <div className="modal" onClick={() => setJustUnlocked([])}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <p style={{ fontSize: "2rem", margin: "0 0 0.25rem" }}>🎉</p>
+            <p style={{ fontSize: "2rem", margin: "0 0 0.25rem" }}>\ud83c\udf89</p>
             <h2>Reward unlocked!</h2>
             {justUnlocked.map((value) => (
               <p key={value} style={{ color: "var(--ink)", fontWeight: 600 }}>
