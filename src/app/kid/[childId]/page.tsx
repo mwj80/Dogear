@@ -50,7 +50,7 @@ export default async function KidHomePage({
   await ensureSchema();
 
   const kids = await db`
-    SELECT id, display_name, COALESCE(can_self_purchase, false) AS can_self_purchase
+    SELECT id, display_name, daily_goal_pages, COALESCE(can_self_purchase, false) AS can_self_purchase
     FROM children WHERE id = ${childId}::uuid LIMIT 1
   `;
   if (!kids[0]) notFound();
@@ -145,7 +145,26 @@ export default async function KidHomePage({
     total_locations: number;
   }[];
 
-  const kid = kids[0] as { id: string; display_name: string; can_self_purchase: boolean };
+  const kid = kids[0] as {
+    id: string;
+    display_name: string;
+    can_self_purchase: boolean;
+    daily_goal_pages: number;
+  };
+  const goal = Number(kid.daily_goal_pages) || 5;
+  const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+  const last14 = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(`${today}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - (13 - i));
+    const day = d.toISOString().slice(0, 10);
+    return {
+      day,
+      label: WEEKDAY[d.getUTCDay()],
+      pages: byDay.get(day) ?? 0,
+      isToday: day === today
+    };
+  });
+  const chartMax = Math.max(goal, ...last14.map((d) => d.pages), 1);
   const classNames = [...new Set(assignments.map((a) => a.class_name))];
   const classStatuses = classNames.map((name) => {
     const rows = assignments.filter((a) => a.class_name === name);
@@ -179,6 +198,28 @@ export default async function KidHomePage({
         Hi, {kid.display_name}
       </h1>
       <p>Pick a book and earn your rewards.</p>
+      <div className="card">
+        <h2 style={{ textDecoration: "underline" }}>Last 14 days</h2>
+        <p className="muted">Pages read. Green bars met the {goal}-page goal.</p>
+        <div className="chart">
+          {last14.map((d) => {
+            const met = d.pages >= goal;
+            return (
+              <div key={d.day} className={`chart-col${d.isToday ? " today" : ""}`}>
+                <div className="chart-track">
+                  <div
+                    className={`chart-bar${met ? " on" : ""}`}
+                    style={{ height: `${d.pages > 0 ? Math.max(Math.round((d.pages / chartMax) * 100), 8) : 0}px` }}
+                    title={`${d.pages} pages`}
+                  />
+                </div>
+                <span>{d.pages}</span>
+                <span>{d.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
       {assignments.length > 0 && (
         <div className="card">
           <h2 style={{ textDecoration: "underline" }}>Classes</h2>
