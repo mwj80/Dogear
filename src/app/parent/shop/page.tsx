@@ -5,15 +5,23 @@ import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { ensureClassics } from "@/lib/ensure-classics";
+import { BOOK_GENRES } from "@/lib/gutenberg-classics";
 import { addOrBuyBook } from "../purchase-actions";
 
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-export default async function ParentShopPage() {
+export default async function ParentShopPage({
+  searchParams
+}: {
+  searchParams: Promise<{ q?: string; genre?: string }>;
+}) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
+  const params = await searchParams;
+  const q = String(params.q ?? "").trim();
+  const genre = String(params.genre ?? "").trim();
 
   const user = await currentUser();
   const email =
@@ -31,10 +39,12 @@ export default async function ParentShopPage() {
   `) as { id: string; display_name: string }[];
 
   const books = (await db`
-    SELECT id, title, author, COALESCE(price_cents, 0) AS price_cents
+    SELECT id, title, author, COALESCE(genre, '') AS genre, COALESCE(price_cents, 0) AS price_cents
     FROM books
+    WHERE (${q} = '' OR title ILIKE ${'%' + q + '%'} OR author ILIKE ${'%' + q + '%'})
+      AND (${genre} = '' OR genre = ${genre})
     ORDER BY title
-  `) as { id: string; title: string; author: string; price_cents: number }[];
+  `) as { id: string; title: string; author: string; genre: string; price_cents: number }[];
 
   const owned = (await db`
     SELECT kb.child_id::text AS child_id, kb.book_id::text AS book_id
@@ -55,20 +65,42 @@ export default async function ParentShopPage() {
         Buying creates a progress row immediately. Books a kid already owns are hidden.
       </p>
 
+      <form method="get" className="card" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+        <input
+          type="search"
+          name="q"
+          defaultValue={q}
+          placeholder="Search title or author"
+          aria-label="Search title or author"
+          style={{ flex: "1 1 12rem" }}
+        />
+        <select name="genre" defaultValue={genre} aria-label="Genre">
+          <option value="">All genres</option>
+          {BOOK_GENRES.map((g) => (
+            <option key={g} value={g}>{g}</option>
+          ))}
+        </select>
+        <button type="submit" className="btn secondary">Search</button>
+        {(q || genre) && (
+          <Link href="/parent/shop">Clear</Link>
+        )}
+      </form>
+
       {kids.length === 0 ? (
         <div className="card">
           <p>Add a kid on Family Administration first.</p>
         </div>
       ) : books.length === 0 ? (
         <div className="card">
-          <p>No books yet.</p>
+          <p>No books match that search.</p>
         </div>
       ) : (
         books.map((book) => (
           <div key={book.id} className="card">
             <p>
               <strong>{book.title}</strong>
-              {book.author ? ` — ${book.author}` : ""} · {money(Number(book.price_cents || 0))}
+              {book.author ? ` — ${book.author}` : ""}
+              {book.genre ? ` · ${book.genre}` : ""} · {money(Number(book.price_cents || 0))}
             </p>
             {kids.map((kid) => {
               const alreadyOwns = ownedSet.has(`${kid.id}:${book.id}`);

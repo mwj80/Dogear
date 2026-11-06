@@ -8,6 +8,10 @@ export async function ensureSchema() {
     ADD COLUMN IF NOT EXISTS price_cents integer NOT NULL DEFAULT 0
   `;
   await db`
+    ALTER TABLE books
+    ADD COLUMN IF NOT EXISTS genre text
+  `;
+  await db`
     ALTER TABLE children
     ADD COLUMN IF NOT EXISTS can_self_purchase boolean NOT NULL DEFAULT false
   `;
