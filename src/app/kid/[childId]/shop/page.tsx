@@ -4,7 +4,8 @@ import { sql } from "@/lib/db";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { ensureClassics } from "@/lib/ensure-classics";
 import { BOOK_GENRES } from "@/lib/gutenberg-classics";
-import { addOrBuyBook } from "@/app/parent/purchase-actions";
+import { searchGutendex } from "@/lib/gutendex";
+import { addOrBuyBook, addCatalogBook } from "@/app/parent/purchase-actions";
 
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
@@ -49,11 +50,12 @@ export default async function KidShopPage({
   }
 
   const house = await db`
-    SELECT pot_available_cents FROM households WHERE id = ${kid.household_id}::uuid
+    SELECT pot_available_cents, COALESCE(allow_adult_titles, false) AS allow_adult_titles
+    FROM households WHERE id = ${kid.household_id}::uuid
   `;
-  const balance = Number(
-    (house[0] as { pot_available_cents: number } | undefined)?.pot_available_cents ?? 0
-  );
+  const houseRow = house[0] as { pot_available_cents: number; allow_adult_titles: boolean } | undefined;
+  const balance = Number(houseRow?.pot_available_cents ?? 0);
+  const allowAdult = Boolean(houseRow?.allow_adult_titles);
 
   const books = (await db`
     SELECT b.id, b.title, b.author, COALESCE(b.genre, '') AS genre, b.price_cents
@@ -66,6 +68,12 @@ export default async function KidShopPage({
       AND (${genre} = '' OR b.genre = ${genre})
     ORDER BY b.title
   `) as { id: string; title: string; author: string; genre: string; price_cents: number }[];
+
+  const catalog = allowAdult && q ? await searchGutendex({ q, allowAdult }) : [];
+  const knownSlugs = new Set(
+    (await db`SELECT slug FROM books WHERE slug LIKE 'gutenberg-%'`) as { slug: string }[]
+  );
+  const freshCatalog = catalog.filter((hit) => !knownSlugs.has(`gutenberg-${hit.gutenbergId}`));
 
   return (
     <main>
@@ -97,7 +105,13 @@ export default async function KidShopPage({
         )}
       </form>
 
-      {books.length === 0 ? (
+      {!allowAdult && (
+        <div className="card">
+          <p className="muted">Only kids’ classics are listed. A parent can turn on the full catalog.</p>
+        </div>
+      )}
+
+      {books.length === 0 && freshCatalog.length === 0 ? (
         <div className="card">
           <p>{q || genre ? "No books match that search." : "No more books to add."}</p>
         </div>
@@ -127,6 +141,30 @@ export default async function KidShopPage({
             </div>
           );
         })
+      )}
+
+      {freshCatalog.length > 0 && (
+        <>
+          <h2>From Project Gutenberg</h2>
+          {freshCatalog.map((hit) => (
+            <div key={hit.gutenbergId} className="card">
+              <p>
+                <strong>{hit.title}</strong> — {hit.author}
+                {hit.subjects[0] ? ` · ${hit.subjects[0]}` : ""}
+              </p>
+              <p className="muted">Free</p>
+              <form action={addCatalogBook}>
+                <input type="hidden" name="child_id" value={kid.id} />
+                <input type="hidden" name="gutenberg_id" value={hit.gutenbergId} />
+                <input type="hidden" name="title" value={hit.title} />
+                <input type="hidden" name="author" value={hit.author} />
+                <input type="hidden" name="genre" value={hit.subjects[0] ?? ""} />
+                <input type="hidden" name="by" value="self" />
+                <button type="submit" className="btn">Add</button>
+              </form>
+            </div>
+          ))}
+        </>
       )}
     </main>
   );
