@@ -281,7 +281,6 @@ input, select {
   display: flex;
   gap: 0.3rem;
   align-items: flex-end;
-  height: 140px;
   margin-top: 0.5rem;
 }
 .chart-col {
@@ -295,12 +294,13 @@ input, select {
 .chart-col span {
   font-size: 0.65rem;
   color: var(--muted);
+  line-height: 1;
 }
 .chart-col.today span:last-child { color: var(--ink); font-weight: 700; }
 .chart-track {
   width: 100%;
   height: 100px;
-  background: var(--line);
+  background: #eee;
   border-radius: 4px;
   display: flex;
   align-items: flex-end;
@@ -308,6 +308,7 @@ input, select {
 }
 .chart-bar {
   width: 100%;
+  min-height: 0;
   background: #bbdefb;
   border-radius: 4px 4px 0 0;
 }
