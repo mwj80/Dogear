@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requestGameAccount } from "@/app/parent/kid/actions";
 import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
 import { ensurePageLog } from "@/lib/page-log";
@@ -40,11 +41,15 @@ function criteriaLabel(
 }
 
 export default async function KidHomePage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ childId: string }>;
+  searchParams: Promise<{ requested?: string }>;
 }) {
   const { childId } = await params;
+  const query = await searchParams;
+  const requested = query.requested === "1";
   const db = sql();
   await ensurePageLog();
   await ensureSchema();
@@ -198,6 +203,11 @@ export default async function KidHomePage({
         Hi, {kid.display_name}
       </h1>
       <p>Pick a book and earn your rewards.</p>
+      {requested && (
+        <div className="card" style={{ borderColor: "#2e7d32" }}>
+          <p className="unlocked">Request sent. A parent will approve it before it is used.</p>
+        </div>
+      )}
       <div className="card">
         <h2 style={{ textDecoration: "underline" }}>Last 14 days</h2>
         <p className="muted">Pages read. Green bars met the {goal}-page goal.</p>
@@ -383,6 +393,32 @@ export default async function KidHomePage({
             })}
           </ul>
         )}
+      </div>
+      <div className="card">
+        <h2 style={{ textDecoration: "underline" }}>Game account</h2>
+        <p className="muted">Ask a parent to update where rewards are sent. Nothing changes until they approve.</p>
+        <form action={requestGameAccount} className="stack">
+          <input type="hidden" name="child_id" value={kid.id} />
+          <label>
+            Game
+            <select name="provider" required defaultValue="roblox">
+              <option value="roblox">Roblox</option>
+              <option value="clash_royale">Clash Royale</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label>
+            Other name
+            <input name="other_label" maxLength={40} placeholder="Only if Other" />
+          </label>
+          <label>
+            Username or player ID
+            <input name="identifier" required maxLength={80} placeholder="Roblox username or Clash Royale tag" />
+          </label>
+          <button type="submit" className="btn">
+            Request update
+          </button>
+        </form>
       </div>
     </main>
   );
