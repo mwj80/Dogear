@@ -18,8 +18,7 @@ export const GUTENBERG_CLASSICS = [
   { id: 98, slug: "call-of-the-wild", title: "The Call of the Wild", author: "Jack London" },
   { id: 236, slug: "jungle-book-2", title: "The Second Jungle Book", author: "Rudyard Kipling" },
   { id: 43, slug: "jekyll-hyde", title: "The Strange Case of Dr. Jekyll and Mr. Hyde", author: "Robert Louis Stevenson" },
-  { id: 1080, slug: "secret-garden", title: "The Secret Garden", author: "Frances Hodgson Burnett" },
-  { id: 113, slug: "secret-garden-alt", title: "The Secret Garden (alt)", author: "Frances Hodgson Burnett" }
+  { id: 1080, slug: "secret-garden", title: "The Secret Garden", author: "Frances Hodgson Burnett" }
 ] as const;
 
 export function gutenbergEpubPath(id: number) {
