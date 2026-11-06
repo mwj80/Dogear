@@ -7,12 +7,14 @@ import { ensureSchema } from "@/lib/ensure-schema";
 import { createChild } from "../../actions";
 import { removeKid, addGameAccount, removeGameAccount, approveGameRequest, rejectGameRequest } from "../actions";
 import { toggleSelfPurchase, toggleFullCatalog } from "../../purchase-actions";
+import { setKidPin } from "../pin-actions";
 import { RemoveKidForm } from "./remove-kid-form";
+import { PinForm } from "./pin-form";
 
 export default async function FamilyAdminPage({
   searchParams
 }: {
-  searchParams: Promise<{ permission?: string; name?: string; account?: string; game?: string; catalog?: string }>;
+  searchParams: Promise<{ permission?: string; name?: string; account?: string; game?: string; catalog?: string; pin?: string }>;
 }) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
@@ -33,11 +35,12 @@ export default async function FamilyAdminPage({
   const kids = (await db`
     SELECT id, display_name,
            COALESCE(can_self_purchase, false) AS can_self_purchase,
-           COALESCE(can_browse_adult, false) AS can_browse_adult
+           COALESCE(can_browse_adult, false) AS can_browse_adult,
+           (pin_hash IS NOT NULL) AS has_pin
     FROM children
     WHERE household_id = ${household.household_id}::uuid
     ORDER BY created_at
-  `) as { id: string; display_name: string; can_self_purchase: boolean; can_browse_adult: boolean }[];
+  `) as { id: string; display_name: string; can_self_purchase: boolean; can_browse_adult: boolean; has_pin: boolean }[];
 
   const accounts = (await db`
     SELECT a.id::text AS id, a.child_id::text AS child_id, a.provider, a.identifier
@@ -57,21 +60,23 @@ export default async function FamilyAdminPage({
   `) as { id: string; child_id: string; provider: string; identifier: string }[];
 
   const banner =
-    permission === "allowed"
-      ? `${changedName || "Kid"} can now buy books.`
-      : permission === "removed"
-        ? `${changedName || "Kid"} can no longer buy books.`
-        : catalog === "on"
-          ? `${changedName || "Kid"} can now search the full catalog.`
-          : catalog === "off"
-            ? `${changedName || "Kid"} can no longer search the full catalog.`
-            : accountNotice === "saved"
-              ? `Saved ${accountGame || "account"} for ${changedName || "kid"}.`
-              : accountNotice === "approved"
-                ? `Approved ${accountGame || "account"} for ${changedName || "kid"}.`
-                : accountNotice === "rejected"
-                  ? "Rejected a game account request."
-                  : null;
+    params.pin === "set"
+      ? `Set a PIN for ${changedName || "kid"}. They can sign in on their own device.`
+      : permission === "allowed"
+        ? `${changedName || "Kid"} can now buy books.`
+        : permission === "removed"
+          ? `${changedName || "Kid"} can no longer buy books.`
+          : catalog === "on"
+            ? `${changedName || "Kid"} can now search the full catalog.`
+            : catalog === "off"
+              ? `${changedName || "Kid"} can no longer search the full catalog.`
+              : accountNotice === "saved"
+                ? `Saved ${accountGame || "account"} for ${changedName || "kid"}.`
+                : accountNotice === "approved"
+                  ? `Approved ${accountGame || "account"} for ${changedName || "kid"}.`
+                  : accountNotice === "rejected"
+                    ? "Rejected a game account request."
+                    : null;
 
   return (
     <main>
@@ -79,7 +84,7 @@ export default async function FamilyAdminPage({
         <Link href="/parent">Back to parent</Link>
       </header>
       <h1>Family Administration</h1>
-      <p>Add kids, remove them, control who can buy books, and store game account IDs for rewards.</p>
+      <p>Add kids, set a PIN so they can sign in on their own device, control who can buy books, and store game account IDs for rewards.</p>
       {banner && (
         <div className="card" style={{ borderColor: "#2e7d32" }}>
           <p className="unlocked">{banner}</p>
@@ -107,6 +112,15 @@ export default async function FamilyAdminPage({
           kids.map((kid) => (
             <div key={kid.id} className="kid-block">
               <p className="kid-name">{kid.display_name}</p>
+
+              <p className="section-head">Sign-in PIN</p>
+              <p className="muted">
+                {kid.has_pin
+                  ? "PIN is set. They sign in at the home page with their name and this PIN."
+                  : "No PIN yet. Set a 4-digit PIN so they can sign in on their own device."}
+              </p>
+              <PinForm childId={kid.id} hasPin={!!kid.has_pin} action={setKidPin} />
+
               <form action={toggleSelfPurchase} className="stack">
                 <input type="hidden" name="child_id" value={kid.id} />
                 <label>
