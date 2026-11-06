@@ -54,9 +54,8 @@ export default async function ParentShopPage({
   `) as { id: string; title: string; author: string; genre: string; price_cents: number }[];
 
   const catalog = allowAdult && q ? await searchGutendex({ q, allowAdult }) : [];
-  const knownSlugs = new Set(
-    (await db`SELECT slug FROM books WHERE slug LIKE 'gutenberg-%'`) as { slug: string }[]
-  );
+  const knownRows = (await db`SELECT slug FROM books WHERE slug LIKE 'gutenberg-%'`) as { slug: string }[];
+  const knownSlugs = new Set(knownRows.map((row) => row.slug));
   const freshCatalog = catalog.filter((hit) => !knownSlugs.has(`gutenberg-${hit.gutenbergId}`));
 
   const owned = (await db`
