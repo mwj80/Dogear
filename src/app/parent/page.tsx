@@ -121,6 +121,7 @@ export default async function ParentPage({
   }[] = [];
   let dueToday = new Date().toISOString().slice(0, 10);
   let dbError: string | null = null;
+  let recentUnlocks: { face_value: string; display_name: string; unlocked_at: string }[] = [];
 
   try {
     household = await ensureHousehold({ clerkUserId: userId, email });
@@ -183,6 +184,16 @@ export default async function ParentPage({
       WHERE c.household_id = ${household.household_id}::uuid
       ORDER BY a.due_date NULLS LAST, a.created_at
     `) as typeof classes;
+    recentUnlocks = (await db`
+      SELECT r.face_value, c.display_name, r.unlocked_at::text AS unlocked_at
+      FROM rewards r
+      JOIN children c ON c.id = r.child_id
+      WHERE r.household_id = ${household.household_id}::uuid
+        AND r.status = 'unlocked'
+        AND r.unlocked_at >= CURRENT_DATE - INTERVAL '7 days'
+      ORDER BY r.unlocked_at DESC
+      LIMIT 8
+    `) as typeof recentUnlocks;
   } catch (err) {
     dbError = err instanceof Error ? err.message : "Database error";
   }
@@ -210,6 +221,20 @@ export default async function ParentPage({
       {fundsAdded > 0 && (
         <div className="card" style={{ borderColor: "#2e7d32" }}>
           <p className="unlocked">Added {money(fundsAdded)} to the available balance.</p>
+        </div>
+      )}
+      {!dbError && recentUnlocks.length > 0 && (
+        <div className="card" style={{ borderColor: "#2e7d32" }}>
+          <p className="unlocked" style={{ margin: "0 0 0.35rem" }}>Recent unlocks</p>
+          <ul className="reward-list">
+            {recentUnlocks.map((item) => (
+              <li key={`${item.display_name}-${item.unlocked_at}`} className="unlocked">
+                {item.display_name} unlocked {item.face_value}
+                {" · "}
+                {item.unlocked_at.slice(0, 10)}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
