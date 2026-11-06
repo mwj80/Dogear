@@ -39,7 +39,7 @@ type Props = {
 
 declare global {
   interface Window {
-    ePub?: (url: string) => EpubBook;
+    ePub?: (source: string | ArrayBuffer) => EpubBook;
   }
 }
 
@@ -176,7 +176,14 @@ export default function Reader({
         );
         if (cancelled || !hostRef.current || !window.ePub) return;
 
-        const book = window.ePub(epubPath);
+        // Fetch as a buffer. epub.js mishandles URLs that contain a query string
+        // (the catalog proxy path), which is why Jane Eyre never opened.
+        const res = await fetch(epubPath);
+        if (!res.ok) throw new Error(`Could not download the book (${res.status})`);
+        const buffer = await res.arrayBuffer();
+        if (cancelled || !hostRef.current) return;
+
+        const book = window.ePub(buffer);
         bookRef.current = book;
         await book.ready;
         if (cancelled || !hostRef.current) return;
@@ -201,7 +208,6 @@ export default function Reader({
           }
         });
 
-        // Open the book first. Location generation can be slow on long catalog titles.
         await rendition.display();
         if (cancelled) return;
         setStatus("");
