@@ -40,4 +40,18 @@ export async function ensureSchema() {
       created_at timestamptz DEFAULT now()
     )
   `;
+  await db`
+    CREATE TABLE IF NOT EXISTS reward_releases (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      reward_id uuid REFERENCES rewards(id) ON DELETE CASCADE,
+      child_id uuid REFERENCES children(id) ON DELETE CASCADE,
+      provider text NOT NULL,
+      identifier text NOT NULL,
+      face_value text NOT NULL,
+      status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'unmatched')),
+      created_at timestamptz DEFAULT now(),
+      sent_at timestamptz,
+      UNIQUE (reward_id)
+    )
+  `;
 }
