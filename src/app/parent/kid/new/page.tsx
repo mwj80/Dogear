@@ -5,7 +5,7 @@ import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { createChild } from "../../actions";
-import { removeKid, addGameAccount, removeGameAccount } from "../actions";
+import { removeKid, addGameAccount, removeGameAccount, approveGameRequest, rejectGameRequest } from "../actions";
 import { toggleSelfPurchase } from "../../purchase-actions";
 import { RemoveKidForm } from "./remove-kid-form";
 
@@ -44,6 +44,15 @@ export default async function FamilyAdminPage({
     ORDER BY a.provider
   `) as { id: string; child_id: string; provider: string; identifier: string }[];
 
+  const requests = (await db`
+    SELECT r.id::text AS id, r.child_id::text AS child_id, r.provider, r.identifier
+    FROM kid_game_requests r
+    JOIN children c ON c.id = r.child_id
+    WHERE c.household_id = ${household.household_id}::uuid
+      AND r.status = 'pending'
+    ORDER BY r.created_at
+  `) as { id: string; child_id: string; provider: string; identifier: string }[];
+
   const banner =
     permission === "allowed"
       ? `${changedName || "Kid"} can now buy books.`
@@ -51,9 +60,11 @@ export default async function FamilyAdminPage({
         ? `${changedName || "Kid"} can no longer buy books.`
         : accountNotice === "saved"
           ? `Saved ${accountGame || "account"} for ${changedName || "kid"}.`
-          : accountNotice === "removed"
-            ? "Removed a game account."
-            : null;
+          : accountNotice === "approved"
+            ? `Approved ${accountGame || "account"} for ${changedName || "kid"}.`
+            : accountNotice === "rejected"
+              ? "Rejected a game account request."
+              : null;
 
   return (
     <main>
@@ -106,6 +117,36 @@ export default async function FamilyAdminPage({
 
               <p className="section-head">Game accounts</p>
               <p className="muted">Usernames and player IDs used to send rewards.</p>
+              {requests.filter((r) => r.child_id === kid.id).length > 0 && (
+                <>
+                  <p className="group-head">Waiting for approval</p>
+                  <ul className="reward-list">
+                    {requests
+                      .filter((r) => r.child_id === kid.id)
+                      .map((request) => (
+                        <li key={request.id}>
+                          <strong>{request.provider === "roblox" ? "Roblox" : request.provider === "clash_royale" ? "Clash Royale" : request.provider}</strong>
+                          {" · "}
+                          {request.identifier}
+                          {" · "}
+                          <form action={approveGameRequest} style={{ display: "inline" }}>
+                            <input type="hidden" name="request_id" value={request.id} />
+                            <button type="submit" className="btn" style={{ padding: "0.2rem 0.5rem", fontSize: "0.8rem" }}>
+                              Approve
+                            </button>
+                          </form>
+                          {" "}
+                          <form action={rejectGameRequest} style={{ display: "inline" }}>
+                            <input type="hidden" name="request_id" value={request.id} />
+                            <button type="submit" className="btn secondary" style={{ padding: "0.2rem 0.5rem", fontSize: "0.8rem" }}>
+                              Reject
+                            </button>
+                          </form>
+                        </li>
+                      ))}
+                  </ul>
+                </>
+              )}
               {accounts.filter((a) => a.child_id === kid.id).length === 0 ? (
                 <p className="muted">None yet.</p>
               ) : (
