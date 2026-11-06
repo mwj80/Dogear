@@ -11,7 +11,7 @@ export type CatalogResult = {
   error?: string;
 };
 
-function text(entry: string, tag: string) {
+function tagText(entry: string, tag: string) {
   const match = entry.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i"));
   return match ? match[1].replace(/<[^>]+>/g, "").trim() : "";
 }
@@ -37,26 +37,25 @@ export async function searchGutendex(opts: {
     const xml = await res.text();
     const entries = xml.match(/<entry>[\s\S]*?<\/entry>/g) ?? [];
 
-    const hits = entries
-      .map((entry) => {
-        const idUrl = text(entry, "id");
-        const idMatch = idUrl.match(/\/ebooks\/(\d+)\.opds/);
-        if (!idMatch) return null;
-        const title = text(entry, "title");
-        if (!title || /\(French\)|\(Finnish\)|\(German\)|\(Spanish\)|\(Italian\)/i.test(title)) {
-          return null;
-        }
-        const gutenbergId = Number(idMatch[1]);
-        return {
-          gutenbergId,
-          title,
-          author: text(entry, "content"),
-          subjects: [],
-          epubUrl: `https://www.gutenberg.org/cache/epub/${gutenbergId}/pg${gutenbergId}.epub`
-        } satisfies CatalogHit;
-      })
-      .filter((book): book is CatalogHit => book !== null)
-      .slice(0, 20);
+    const hits: CatalogHit[] = [];
+    for (const entry of entries) {
+      const idUrl = tagText(entry, "id");
+      const idMatch = idUrl.match(/\/ebooks\/(\d+)\.opds/);
+      if (!idMatch) continue;
+      const title = tagText(entry, "title");
+      if (!title || /\(French\)|\(Finnish\)|\(German\)|\(Spanish\)|\(Italian\)/i.test(title)) {
+        continue;
+      }
+      const gutenbergId = Number(idMatch[1]);
+      hits.push({
+        gutenbergId,
+        title,
+        author: tagText(entry, "content"),
+        subjects: [],
+        epubUrl: `https://www.gutenberg.org/cache/epub/${gutenbergId}/pg${gutenbergId}.epub`
+      });
+      if (hits.length >= 20) break;
+    }
 
     return { hits };
   } catch {
