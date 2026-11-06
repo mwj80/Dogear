@@ -10,6 +10,7 @@ export default function HomePage() {
           <small>Read pages. Earn loot.</small>
         </div>
         <span>
+          <Link href="/kid/sign-in">Kid sign in</Link>
           <SignedOut>
             <SignInButton mode="redirect">
               <button type="button" className="btn">
@@ -34,12 +35,16 @@ export default function HomePage() {
             <Link href="/sign-up">Create parent account</Link>
             {" · "}
             <Link href="/sign-in">Sign in</Link>
+            {" · "}
+            <Link href="/kid/sign-in">Kid sign in</Link>
           </p>
         </SignedOut>
         <SignedIn>
           <p>You are signed in.</p>
           <p>
             <Link href="/parent">Go to parent dashboard</Link>
+            {" · "}
+            <Link href="/kid/sign-in">Kid sign in</Link>
           </p>
         </SignedIn>
       </div>

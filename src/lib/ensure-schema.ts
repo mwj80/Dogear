@@ -20,6 +20,10 @@ export async function ensureSchema() {
     ADD COLUMN IF NOT EXISTS can_browse_adult boolean NOT NULL DEFAULT false
   `;
   await db`
+    ALTER TABLE children
+    ADD COLUMN IF NOT EXISTS pin_hash text
+  `;
+  await db`
     CREATE TABLE IF NOT EXISTS kid_books (
       child_id uuid REFERENCES children(id) ON DELETE CASCADE,
       book_id uuid REFERENCES books(id) ON DELETE CASCADE,
