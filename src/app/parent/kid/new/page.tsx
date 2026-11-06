@@ -5,20 +5,22 @@ import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { createChild } from "../../actions";
-import { removeKid } from "../actions";
+import { removeKid, addGameAccount, removeGameAccount } from "../actions";
 import { toggleSelfPurchase } from "../../purchase-actions";
 import { RemoveKidForm } from "./remove-kid-form";
 
 export default async function FamilyAdminPage({
   searchParams
 }: {
-  searchParams: Promise<{ permission?: string; name?: string }>;
+  searchParams: Promise<{ permission?: string; name?: string; account?: string; game?: string }>;
 }) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
   const params = await searchParams;
   const permission = params.permission;
   const changedName = params.name ? decodeURIComponent(params.name) : "";
+  const accountNotice = params.account;
+  const accountGame = params.game ? decodeURIComponent(params.game) : "";
 
   const user = await currentUser();
   const email =
@@ -34,12 +36,24 @@ export default async function FamilyAdminPage({
     ORDER BY created_at
   `) as { id: string; display_name: string; can_self_purchase: boolean }[];
 
+  const accounts = (await db`
+    SELECT a.id::text AS id, a.child_id::text AS child_id, a.provider, a.identifier
+    FROM kid_game_accounts a
+    JOIN children c ON c.id = a.child_id
+    WHERE c.household_id = ${household.household_id}::uuid
+    ORDER BY a.provider
+  `) as { id: string; child_id: string; provider: string; identifier: string }[];
+
   const banner =
     permission === "allowed"
       ? `${changedName || "Kid"} can now buy books.`
       : permission === "removed"
         ? `${changedName || "Kid"} can no longer buy books.`
-        : null;
+        : accountNotice === "saved"
+          ? `Saved ${accountGame || "account"} for ${changedName || "kid"}.`
+          : accountNotice === "removed"
+            ? "Removed a game account."
+            : null;
 
   return (
     <main>
@@ -47,7 +61,7 @@ export default async function FamilyAdminPage({
         <Link href="/parent">Back to parent</Link>
       </header>
       <h1>Family Administration</h1>
-      <p>Add kids, remove them, and control who can buy books.</p>
+      <p>Add kids, remove them, control who can buy books, and store game account IDs for rewards.</p>
       {banner && (
         <div className="card" style={{ borderColor: "#2e7d32" }}>
           <p className="unlocked">{banner}</p>
@@ -89,6 +103,54 @@ export default async function FamilyAdminPage({
                   Save permission
                 </button>
               </form>
+
+              <p className="section-head">Game accounts</p>
+              <p className="muted">Usernames and player IDs used to send rewards.</p>
+              {accounts.filter((a) => a.child_id === kid.id).length === 0 ? (
+                <p className="muted">None yet.</p>
+              ) : (
+                <ul className="reward-list">
+                  {accounts
+                    .filter((a) => a.child_id === kid.id)
+                    .map((account) => (
+                      <li key={account.id}>
+                        <strong>{account.provider === "roblox" ? "Roblox" : account.provider === "clash_royale" ? "Clash Royale" : account.provider}</strong>
+                        {" · "}
+                        {account.identifier}
+                        {" · "}
+                        <form action={removeGameAccount} style={{ display: "inline" }}>
+                          <input type="hidden" name="account_id" value={account.id} />
+                          <button type="submit" className="btn secondary" style={{ padding: "0.2rem 0.5rem", fontSize: "0.8rem" }}>
+                            Remove
+                          </button>
+                        </form>
+                      </li>
+                    ))}
+                </ul>
+              )}
+              <form action={addGameAccount} className="stack">
+                <input type="hidden" name="child_id" value={kid.id} />
+                <label>
+                  Game
+                  <select name="provider" required defaultValue="roblox">
+                    <option value="roblox">Roblox</option>
+                    <option value="clash_royale">Clash Royale</option>
+                    <option value="other">Other</option>
+                  </select>
+                </label>
+                <label>
+                  Other name
+                  <input name="other_label" maxLength={40} placeholder="Only if Other" />
+                </label>
+                <label>
+                  Username or player ID
+                  <input name="identifier" required maxLength={80} placeholder="Roblox username or Clash Royale tag" />
+                </label>
+                <button type="submit" className="btn">
+                  Save account
+                </button>
+              </form>
+
               <RemoveKidForm
                 childId={kid.id}
                 displayName={kid.display_name}
