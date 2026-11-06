@@ -112,21 +112,16 @@ export async function addCatalogBook(formData: FormData) {
   const db = sql();
   await ensureSchema();
 
-  const house = await db`
-    SELECT COALESCE(allow_adult_titles, false) AS allow_adult_titles
-    FROM households WHERE id = ${household.household_id}::uuid
-  `;
-  const allowAdult = Boolean((house[0] as { allow_adult_titles: boolean } | undefined)?.allow_adult_titles);
-  if (!allowAdult) throw new Error("Adult titles are off. Turn them on in Family Administration.");
-
   const kidRows = await db`
-    SELECT id, can_self_purchase FROM children
+    SELECT id, can_self_purchase, COALESCE(can_browse_adult, false) AS can_browse_adult
+    FROM children
     WHERE id = ${childId}::uuid AND household_id = ${household.household_id}::uuid
     LIMIT 1
   `;
-  const kid = kidRows[0] as { id: string; can_self_purchase: boolean } | undefined;
+  const kid = kidRows[0] as { id: string; can_self_purchase: boolean; can_browse_adult: boolean } | undefined;
   if (!kid) throw new Error("Kid not found");
   if (by === "self" && !kid.can_self_purchase) throw new Error("This kid is not authorized to buy books");
+  if (by === "self" && !kid.can_browse_adult) throw new Error("This kid is not allowed to search the full catalog");
 
   const slug = `gutenberg-${gutenbergId}`;
   const path = gutenbergEpubPath(gutenbergId);
@@ -160,10 +155,13 @@ export async function addCatalogBook(formData: FormData) {
   revalidatePath(`/kid/${childId}/shop`);
 }
 
-export async function toggleAdultTitles(formData: FormData) {
+export async function toggleFullCatalog(formData: FormData) {
   const { userId } = await auth();
   if (!userId) throw new Error("Not signed in");
-  const allow = formData.get("allow_adult_titles") === "on";
+
+  const childId = String(formData.get("child_id") ?? "");
+  const can = formData.get("can_browse_adult") === "on";
+  if (!childId) throw new Error("Kid is required");
 
   const user = await currentUser();
   const email = user?.primaryEmailAddress?.emailAddress ?? `${userId}@users.invalid`;
@@ -171,16 +169,23 @@ export async function toggleAdultTitles(formData: FormData) {
   const db = sql();
   await ensureSchema();
 
+  const kidNameRows = await db`
+    SELECT display_name FROM children
+    WHERE id = ${childId}::uuid AND household_id = ${household.household_id}::uuid
+    LIMIT 1
+  `;
+  const kidName = String((kidNameRows[0] as { display_name: string } | undefined)?.display_name ?? "kid");
+
   await db`
-    UPDATE households
-    SET allow_adult_titles = ${allow}
-    WHERE id = ${household.household_id}::uuid
+    UPDATE children
+    SET can_browse_adult = ${can}
+    WHERE id = ${childId}::uuid AND household_id = ${household.household_id}::uuid
   `;
 
   revalidatePath("/parent");
-  revalidatePath("/parent/shop");
   revalidatePath("/parent/kid/new");
-  redirect(`/parent/kid/new?adult=${allow ? "on" : "off"}`);
+  revalidatePath(`/kid/${childId}/shop`);
+  redirect(`/parent/kid/new?catalog=${can ? "on" : "off"}&name=${encodeURIComponent(kidName)}`);
 }
 
 export async function toggleSelfPurchase(formData: FormData) {

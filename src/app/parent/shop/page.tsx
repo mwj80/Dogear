@@ -32,12 +32,6 @@ export default async function ParentShopPage({
   await ensureSchema();
   await ensureClassics();
 
-  const house = await db`
-    SELECT COALESCE(allow_adult_titles, false) AS allow_adult_titles
-    FROM households WHERE id = ${household.household_id}::uuid
-  `;
-  const allowAdult = Boolean((house[0] as { allow_adult_titles: boolean } | undefined)?.allow_adult_titles);
-
   const kids = (await db`
     SELECT id, display_name
     FROM children
@@ -53,7 +47,7 @@ export default async function ParentShopPage({
     ORDER BY title
   `) as { id: string; title: string; author: string; genre: string; price_cents: number }[];
 
-  const catalog = allowAdult && q ? await searchGutendex({ q, allowAdult }) : [];
+  const catalog = q ? await searchGutendex({ q, allowAdult: true }) : [];
   const knownRows = (await db`SELECT slug FROM books WHERE slug LIKE 'gutenberg-%'`) as { slug: string }[];
   const knownSlugs = new Set(knownRows.map((row) => row.slug));
   const freshCatalog = catalog.filter((hit) => !knownSlugs.has(`gutenberg-${hit.gutenbergId}`));
@@ -97,14 +91,6 @@ export default async function ParentShopPage({
           <Link href="/parent/shop">Clear</Link>
         )}
       </form>
-
-      {!allowAdult && (
-        <div className="card">
-          <p className="muted">
-            Full catalog is off. Only the kids’ classics are listed. Turn on adult titles in Family Administration to search Project Gutenberg.
-          </p>
-        </div>
-      )}
 
       {kids.length === 0 ? (
         <div className="card">

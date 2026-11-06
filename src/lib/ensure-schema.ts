@@ -16,8 +16,8 @@ export async function ensureSchema() {
     ADD COLUMN IF NOT EXISTS can_self_purchase boolean NOT NULL DEFAULT false
   `;
   await db`
-    ALTER TABLE households
-    ADD COLUMN IF NOT EXISTS allow_adult_titles boolean NOT NULL DEFAULT false
+    ALTER TABLE children
+    ADD COLUMN IF NOT EXISTS can_browse_adult boolean NOT NULL DEFAULT false
   `;
   await db`
     CREATE TABLE IF NOT EXISTS kid_books (

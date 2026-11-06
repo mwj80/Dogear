@@ -6,13 +6,13 @@ import { ensureHousehold } from "@/lib/ensure-household";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { createChild } from "../../actions";
 import { removeKid, addGameAccount, removeGameAccount, approveGameRequest, rejectGameRequest } from "../actions";
-import { toggleSelfPurchase, toggleAdultTitles } from "../../purchase-actions";
+import { toggleSelfPurchase, toggleFullCatalog } from "../../purchase-actions";
 import { RemoveKidForm } from "./remove-kid-form";
 
 export default async function FamilyAdminPage({
   searchParams
 }: {
-  searchParams: Promise<{ permission?: string; name?: string; account?: string; game?: string; adult?: string }>;
+  searchParams: Promise<{ permission?: string; name?: string; account?: string; game?: string; catalog?: string }>;
 }) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
@@ -21,7 +21,7 @@ export default async function FamilyAdminPage({
   const changedName = params.name ? decodeURIComponent(params.name) : "";
   const accountNotice = params.account;
   const accountGame = params.game ? decodeURIComponent(params.game) : "";
-  const adult = params.adult;
+  const catalog = params.catalog;
 
   const user = await currentUser();
   const email =
@@ -30,18 +30,14 @@ export default async function FamilyAdminPage({
   const db = sql();
   await ensureSchema();
 
-  const house = await db`
-    SELECT COALESCE(allow_adult_titles, false) AS allow_adult_titles
-    FROM households WHERE id = ${household.household_id}::uuid
-  `;
-  const allowAdult = Boolean((house[0] as { allow_adult_titles: boolean } | undefined)?.allow_adult_titles);
-
   const kids = (await db`
-    SELECT id, display_name, COALESCE(can_self_purchase, false) AS can_self_purchase
+    SELECT id, display_name,
+           COALESCE(can_self_purchase, false) AS can_self_purchase,
+           COALESCE(can_browse_adult, false) AS can_browse_adult
     FROM children
     WHERE household_id = ${household.household_id}::uuid
     ORDER BY created_at
-  `) as { id: string; display_name: string; can_self_purchase: boolean }[];
+  `) as { id: string; display_name: string; can_self_purchase: boolean; can_browse_adult: boolean }[];
 
   const accounts = (await db`
     SELECT a.id::text AS id, a.child_id::text AS child_id, a.provider, a.identifier
@@ -65,16 +61,16 @@ export default async function FamilyAdminPage({
       ? `${changedName || "Kid"} can now buy books.`
       : permission === "removed"
         ? `${changedName || "Kid"} can no longer buy books.`
-        : accountNotice === "saved"
-          ? `Saved ${accountGame || "account"} for ${changedName || "kid"}.`
-          : accountNotice === "approved"
-            ? `Approved ${accountGame || "account"} for ${changedName || "kid"}.`
-            : accountNotice === "rejected"
-              ? "Rejected a game account request."
-              : adult === "on"
-                ? "Adult titles are on. The shop can search the full Gutenberg catalog."
-                : adult === "off"
-                  ? "Adult titles are off. The shop shows kids’ classics only."
+        : catalog === "on"
+          ? `${changedName || "Kid"} can now search the full catalog.`
+          : catalog === "off"
+            ? `${changedName || "Kid"} can no longer search the full catalog.`
+            : accountNotice === "saved"
+              ? `Saved ${accountGame || "account"} for ${changedName || "kid"}.`
+              : accountNotice === "approved"
+                ? `Approved ${accountGame || "account"} for ${changedName || "kid"}.`
+                : accountNotice === "rejected"
+                  ? "Rejected a game account request."
                   : null;
 
   return (
@@ -89,22 +85,6 @@ export default async function FamilyAdminPage({
           <p className="unlocked">{banner}</p>
         </div>
       )}
-
-      <div className="card">
-        <h2>Catalog</h2>
-        <p className="muted">
-          Off by default. When on, the shop can search the full Project Gutenberg catalog, including adult titles.
-        </p>
-        <form action={toggleAdultTitles} className="stack">
-          <label>
-            <input type="checkbox" name="allow_adult_titles" defaultChecked={allowAdult} />
-            Allow adult titles
-          </label>
-          <button type="submit" className="btn secondary">
-            Save catalog setting
-          </button>
-        </form>
-      </div>
 
       <div className="card">
         <h2>Add a kid</h2>
@@ -138,7 +118,21 @@ export default async function FamilyAdminPage({
                   Can buy books
                 </label>
                 <button type="submit" className="btn secondary">
-                  Save permission
+                  Save buy permission
+                </button>
+              </form>
+              <form action={toggleFullCatalog} className="stack">
+                <input type="hidden" name="child_id" value={kid.id} />
+                <label>
+                  <input
+                    type="checkbox"
+                    name="can_browse_adult"
+                    defaultChecked={!!kid.can_browse_adult}
+                  />
+                  Can search the full catalog
+                </label>
+                <button type="submit" className="btn secondary">
+                  Save catalog permission
                 </button>
               </form>
 

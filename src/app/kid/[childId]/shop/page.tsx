@@ -27,13 +27,22 @@ export default async function KidShopPage({
   await ensureClassics();
 
   const kids = await db`
-    SELECT id, display_name, COALESCE(can_self_purchase, false) AS can_self_purchase, household_id
+    SELECT id, display_name,
+           COALESCE(can_self_purchase, false) AS can_self_purchase,
+           COALESCE(can_browse_adult, false) AS can_browse_adult,
+           household_id
     FROM children
     WHERE id = ${childId}::uuid
     LIMIT 1
   `;
   const kid = kids[0] as
-    | { id: string; display_name: string; can_self_purchase: boolean; household_id: string }
+    | {
+        id: string;
+        display_name: string;
+        can_self_purchase: boolean;
+        can_browse_adult: boolean;
+        household_id: string;
+      }
     | undefined;
   if (!kid) notFound();
 
@@ -50,12 +59,12 @@ export default async function KidShopPage({
   }
 
   const house = await db`
-    SELECT pot_available_cents, COALESCE(allow_adult_titles, false) AS allow_adult_titles
-    FROM households WHERE id = ${kid.household_id}::uuid
+    SELECT pot_available_cents FROM households WHERE id = ${kid.household_id}::uuid
   `;
-  const houseRow = house[0] as { pot_available_cents: number; allow_adult_titles: boolean } | undefined;
-  const balance = Number(houseRow?.pot_available_cents ?? 0);
-  const allowAdult = Boolean(houseRow?.allow_adult_titles);
+  const balance = Number(
+    (house[0] as { pot_available_cents: number } | undefined)?.pot_available_cents ?? 0
+  );
+  const allowAdult = Boolean(kid.can_browse_adult);
 
   const books = (await db`
     SELECT b.id, b.title, b.author, COALESCE(b.genre, '') AS genre, b.price_cents
@@ -106,7 +115,7 @@ export default async function KidShopPage({
 
       {!allowAdult && (
         <div className="card">
-          <p className="muted">Only kids’ classics are listed. A parent can turn on the full catalog.</p>
+          <p className="muted">Only kids’ classics are listed. A parent can turn on the full catalog for you.</p>
         </div>
       )}
 
