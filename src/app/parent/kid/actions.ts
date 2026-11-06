@@ -219,3 +219,21 @@ export async function rejectGameRequest(formData: FormData) {
   revalidatePath("/parent/kid/new");
   redirect("/parent/kid/new?account=rejected");
 }
+
+export async function markReleaseSent(formData: FormData) {
+  const household = await householdOfUser();
+  const releaseId = String(formData.get("release_id") ?? "");
+  if (!releaseId) throw new Error("Missing release");
+  const db = sql();
+  await db`
+    UPDATE reward_releases rr
+    SET status = 'sent', sent_at = now()
+    FROM children c
+    WHERE rr.id = ${releaseId}::uuid
+      AND rr.child_id = c.id
+      AND c.household_id = ${household.household_id}::uuid
+      AND rr.status = 'pending'
+  `;
+  revalidatePath("/parent");
+  redirect("/parent");
+}
