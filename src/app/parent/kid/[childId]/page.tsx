@@ -334,7 +334,7 @@ export default async function KidProgressPage({
                     title={`${d.pages} pages`}
                   />
                 </div>
-                <span>{d.pages || ""}</span>
+                <span>{d.pages}</span>
                 <span>{d.label}</span>
               </div>
             );
