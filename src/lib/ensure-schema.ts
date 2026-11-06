@@ -20,4 +20,14 @@ export async function ensureSchema() {
       PRIMARY KEY (child_id, book_id)
     )
   `;
+  await db`
+    CREATE TABLE IF NOT EXISTS kid_game_accounts (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      child_id uuid REFERENCES children(id) ON DELETE CASCADE,
+      provider text NOT NULL,
+      identifier text NOT NULL,
+      created_at timestamptz DEFAULT now(),
+      UNIQUE (child_id, provider)
+    )
+  `;
 }
