@@ -309,11 +309,14 @@ export default async function TeacherPage() {
                               ? total > 0 && max >= total - 1
                               : max >= Number(assignment.pages ?? 0);
                           const overdue = !done && !!assignment.due_date && assignment.due_date < today;
-                          const shown =
-                            assignment.criteria_type === "finish_book"
-                              ? `${max} / ${total || "?"}`
-                              : `${Math.min(max, Number(assignment.pages ?? 0))} / ${assignment.pages}`;
-                          const kidDue = dueLabel(assignment.due_date, today, done);
+                          const started = max > 0;
+                          const label = !owns
+                            ? "locked"
+                            : done
+                              ? "done"
+                              : started
+                                ? "in progress"
+                                : "not started";
                           const statusClass = done ? "unlocked" : overdue ? "overdue" : "";
                           return (
                             <li key={kid.child_id}>
@@ -321,7 +324,8 @@ export default async function TeacherPage() {
                               {kidDue ? ` · ${kidDue}` : ""}
                               {!owns && " · not on reader"}
                               {" — "}
-                              <span className={statusClass}>{owns ? (done ? "done" : shown) : "locked"}</span>
+                              <span className={statusClass}>{label}</span>
+                              {owns && !done && started ? ` · ${shown}` : ""}
                             </li>
                           );
                         })}
