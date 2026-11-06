@@ -330,7 +330,7 @@ export default async function KidProgressPage({
                 <div className="chart-track">
                   <div
                     className={`chart-bar${met ? " on" : ""}`}
-                    style={{ height: `${d.pages > 0 ? Math.max(height, 8) : 0}%` }}
+                    style={{ height: `${d.pages > 0 ? Math.max(Math.round((d.pages / chartMax) * 100), 8) : 0}px` }}
                     title={`${d.pages} pages`}
                   />
                 </div>
