@@ -270,6 +270,7 @@ export default async function ParentPage({
           </ul>
         </div>
       )}
+      {!dbError && recentUnlocks.length > 0 && (
         <div className="card" style={{ borderColor: "#2e7d32" }}>
           <p className="unlocked" style={{ margin: "0 0 0.35rem" }}>Recent unlocks</p>
           <ul className="reward-list">
