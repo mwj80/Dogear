@@ -167,6 +167,18 @@ export default async function KidProgressPage({
     cells.push({ day, pages: byDay.get(day) ?? 0 });
   }
   const monthLabel = start.toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+  const last14 = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(`${today}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - (13 - i));
+    const day = d.toISOString().slice(0, 10);
+    return {
+      day,
+      label: WEEKDAY[d.getUTCDay()],
+      pages: byDay.get(day) ?? 0,
+      isToday: day === today
+    };
+  });
+  const chartMax = Math.max(goal, ...last14.map((d) => d.pages), 1);
   const dueByDay = new Map<string, "overdue" | "done" | "open">();
   let overdueCount = 0;
   let allDone = assignments.length > 0;
@@ -305,6 +317,30 @@ export default async function KidProgressPage({
           })}
         </div>
       )}
+
+      <div className="card">
+        <h2 style={{ textDecoration: "underline" }}>Last 14 days</h2>
+        <p className="muted">Pages read. Green bars met the {goal}-page goal.</p>
+        <div className="chart">
+          {last14.map((d) => {
+            const met = d.pages >= goal;
+            const height = Math.round((d.pages / chartMax) * 100);
+            return (
+              <div key={d.day} className={`chart-col${d.isToday ? " today" : ""}`}>
+                <div className="chart-track">
+                  <div
+                    className={`chart-bar${met ? " on" : ""}`}
+                    style={{ height: `${d.pages > 0 ? Math.max(height, 8) : 0}%` }}
+                    title={`${d.pages} pages`}
+                  />
+                </div>
+                <span>{d.pages || ""}</span>
+                <span>{d.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="card">
         <h2 style={{ textDecoration: "underline" }}>{monthLabel}</h2>
