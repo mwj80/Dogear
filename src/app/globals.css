@@ -130,6 +130,26 @@ input, select {
 }
 .btn.secondary:hover { background: #333; }
 
+body.night {
+  background: #1c1916;
+  color: #f5f0e8;
+}
+body.night main h1,
+body.night main h2 { color: #f5f0e8; }
+body.night main p { color: #c8c0b4; }
+body.night .banner {
+  background: #2a2622;
+  border-color: #3a342e;
+}
+body.night .banner.done { background: #1e2a1f; }
+body.night .banner p,
+body.night .reward-track p { color: #f5f0e8; }
+body.night .reader-tools .size { color: #c8c0b4; }
+body.night .modal-card {
+  background: #2a2622;
+  color: #f5f0e8;
+}
+
 .kid-block {
   border-top: 1px solid var(--line);
   padding: 0.85rem 0 1rem;
