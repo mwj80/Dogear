@@ -66,7 +66,7 @@ type EpubRendition = {
   resize: (w: number, h: number) => void;
 };
 
-const SIZES = [90, 110, 130, 150];
+const SIZES = [80, 100, 110, 130, 150];
 
 function loadScript(src: string) {
   return new Promise<void>((resolve, reject) => {
@@ -301,8 +301,10 @@ export default function Reader({
     }
   }
 
-  function changeSize(next: number) {
-    if (!SIZES.includes(next)) return;
+  function stepSize(dir: -1 | 1) {
+    const idx = SIZES.indexOf(size);
+    const next = SIZES[idx + dir];
+    if (next === undefined) return;
     setSize(next);
   }
 
@@ -330,6 +332,7 @@ export default function Reader({
   });
 
   const pageStatus = overdueCount > 0 ? "overdue" : allDone ? "unlocked" : "";
+  const sizeIdx = SIZES.indexOf(size);
 
   return (
     <div>
@@ -427,11 +430,11 @@ export default function Reader({
       </p>
       {status ? <p>{status}</p> : null}
       <div className="reader-tools">
-        <button type="button" className="btn secondary" onClick={() => changeSize(size - 20)} disabled={size <= SIZES[0]}>
+        <button type="button" className="btn secondary" onClick={() => stepSize(-1)} disabled={sizeIdx <= 0}>
           A−
         </button>
         <span className="size">{size}%</span>
-        <button type="button" className="btn secondary" onClick={() => changeSize(size + 20)} disabled={size >= SIZES[SIZES.length - 1]}>
+        <button type="button" className="btn secondary" onClick={() => stepSize(1)} disabled={sizeIdx >= SIZES.length - 1}>
           A+
         </button>
         <button type="button" className="btn secondary" onClick={() => setNight((on) => !on)}>
