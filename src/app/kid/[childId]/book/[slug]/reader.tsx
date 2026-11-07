@@ -196,6 +196,10 @@ export default function Reader({
     renditionRef.current?.themes.default(themeFor(size, night));
     localStorage.setItem("litloot-font", String(size));
     localStorage.setItem("litloot-night", night ? "1" : "0");
+    document.body.classList.toggle("night", night);
+    return () => {
+      document.body.classList.remove("night");
+    };
   }, [size, night]);
 
   useEffect(() => {
