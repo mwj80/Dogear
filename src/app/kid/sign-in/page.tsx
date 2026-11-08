@@ -12,7 +12,9 @@ export default async function KidSignInPage({
       ? "Enter your name and PIN."
       : params.error === "no"
         ? "That name and PIN did not match. Ask a parent to check the PIN."
-        : null;
+        : params.error === "locked"
+          ? "Too many tries. Wait 15 minutes, or ask a parent to check the PIN."
+          : null;
 
   return (
     <main>
