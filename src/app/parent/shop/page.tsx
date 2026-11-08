@@ -16,13 +16,14 @@ function money(cents: number) {
 export default async function ParentShopPage({
   searchParams
 }: {
-  searchParams: Promise<{ q?: string; genre?: string }>;
+  searchParams: Promise<{ q?: string; genre?: string; error?: string }>;
 }) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
   const params = await searchParams;
   const q = String(params.q ?? "").trim();
   const genre = String(params.genre ?? "").trim();
+  const error = String(params.error ?? "").trim();
 
   const user = await currentUser();
   const email =
@@ -70,6 +71,10 @@ export default async function ParentShopPage({
         Add free books or buy titles for your kids. Authorized kids can buy for themselves.
         Buying creates a progress row immediately. Books a kid already owns are hidden.
       </p>
+
+      {error && (
+        <div className="warning">{error}</div>
+      )}
 
       <form key={`${q}|${genre}`} method="get" className="card" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
         <input
