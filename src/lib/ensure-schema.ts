@@ -66,4 +66,15 @@ export async function ensureSchema() {
       UNIQUE (reward_id)
     )
   `;
+  await db`
+    CREATE TABLE IF NOT EXISTS kid_sign_in_attempts (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      key text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )
+  `;
+  await db`
+    CREATE INDEX IF NOT EXISTS kid_sign_in_attempts_key_created
+    ON kid_sign_in_attempts (key, created_at)
+  `;
 }
