@@ -16,6 +16,15 @@ function fail(path: string, message: string): never {
   redirect(`${path}?error=${encodeURIComponent(message)}`);
 }
 
+function isRedirect(err: unknown) {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "digest" in err &&
+    String((err as { digest?: unknown }).digest).startsWith("NEXT_REDIRECT")
+  );
+}
+
 export async function addOrBuyBook(formData: FormData) {
   const { userId } = await auth();
   const childId = String(formData.get("child_id") ?? "");
@@ -104,7 +113,7 @@ export async function addOrBuyBook(formData: FormData) {
     revalidatePath("/kid");
     revalidatePath(`/kid/${childId}/shop`);
   } catch (err) {
-    if (err instanceof Error && err.message === "NEXT_REDIRECT") throw err;
+    if (isRedirect(err)) throw err;
     const message = err instanceof Error ? err.message : "Could not add that book.";
     fail(back, message);
   }
@@ -173,7 +182,7 @@ export async function addCatalogBook(formData: FormData) {
     revalidatePath("/kid");
     revalidatePath(`/kid/${childId}/shop`);
   } catch (err) {
-    if (err instanceof Error && err.message === "NEXT_REDIRECT") throw err;
+    if (isRedirect(err)) throw err;
     const message = err instanceof Error ? err.message : "Could not add that book.";
     fail(back, message);
   }
