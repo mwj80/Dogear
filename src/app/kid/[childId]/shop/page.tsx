@@ -16,12 +16,13 @@ export default async function KidShopPage({
   searchParams
 }: {
   params: Promise<{ childId: string }>;
-  searchParams: Promise<{ q?: string; genre?: string }>;
+  searchParams: Promise<{ q?: string; genre?: string; error?: string }>;
 }) {
   const { childId } = await params;
   const filters = await searchParams;
   const q = String(filters.q ?? "").trim();
   const genre = String(filters.genre ?? "").trim();
+  const error = String(filters.error ?? "").trim();
   const db = sql();
   await ensureSchema();
   await ensureClassics();
@@ -91,6 +92,10 @@ export default async function KidShopPage({
       <h1>Shop</h1>
       <p>Available balance: {money(balance)}</p>
       <p className="muted">Buying adds the book to your reader.</p>
+
+      {error && (
+        <div className="warning">{error}</div>
+      )}
 
       <form key={`${q}|${genre}`} method="get" className="card" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
         <input
