@@ -1,9 +1,13 @@
+import { gutenbergCoverUrl } from "./gutenberg-classics";
+
 export type CatalogHit = {
   gutenbergId: number;
   title: string;
   author: string;
   subjects: string[];
   epubUrl: string;
+  coverUrl: string;
+  teaser: string;
 };
 
 export type CatalogResult = {
@@ -52,7 +56,9 @@ export async function searchGutendex(opts: {
         title,
         author: tagText(entry, "content"),
         subjects: [],
-        epubUrl: `https://www.gutenberg.org/cache/epub/${gutenbergId}/pg${gutenbergId}.epub`
+        epubUrl: `https://www.gutenberg.org/cache/epub/${gutenbergId}/pg${gutenbergId}.epub`,
+        coverUrl: gutenbergCoverUrl(gutenbergId),
+        teaser: "A public-domain book from Project Gutenberg."
       });
       if (hits.length >= 20) break;
     }
