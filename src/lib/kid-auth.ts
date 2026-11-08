@@ -6,9 +6,17 @@ import { sql } from "./db";
 
 const COOKIE = "kid_session";
 const MAX_AGE = 60 * 60 * 24 * 30;
+const DEMO_SECRET = "litloot-kid-pin-demo";
 
 function secret() {
-  return process.env.KID_AUTH_SECRET || "litloot-kid-pin-demo";
+  const value = process.env.KID_AUTH_SECRET;
+  if (process.env.NODE_ENV === "production") {
+    if (!value || value === DEMO_SECRET) {
+      throw new Error("KID_AUTH_SECRET must be set to a unique value in production");
+    }
+    return value;
+  }
+  return value || DEMO_SECRET;
 }
 
 export function hashPin(pin: string) {
