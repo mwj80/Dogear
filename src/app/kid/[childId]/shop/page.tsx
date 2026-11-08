@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { ensureClassics } from "@/lib/ensure-classics";
-import { BOOK_GENRES } from "@/lib/gutenberg-classics";
+import { BOOK_GENRES, coverAndTeaserForSlug } from "@/lib/gutenberg-classics";
 import { searchGutendex } from "@/lib/gutendex";
 import { addOrBuyBook, addCatalogBook } from "@/app/parent/purchase-actions";
 
@@ -67,7 +67,7 @@ export default async function KidShopPage({
   const allowAdult = Boolean(kid.can_browse_adult);
 
   const books = (await db`
-    SELECT b.id, b.title, b.author, COALESCE(b.genre, '') AS genre, b.price_cents
+    SELECT b.id, b.slug, b.title, b.author, COALESCE(b.genre, '') AS genre, b.price_cents
     FROM books b
     WHERE NOT EXISTS (
       SELECT 1 FROM kid_books kb
@@ -76,7 +76,7 @@ export default async function KidShopPage({
       AND (${q} = '' OR b.title ILIKE ${'%' + q + '%'} OR b.author ILIKE ${'%' + q + '%'})
       AND (${genre} = '' OR b.genre = ${genre})
     ORDER BY b.title
-  `) as { id: string; title: string; author: string; genre: string; price_cents: number }[];
+  `) as { id: string; slug: string; title: string; author: string; genre: string; price_cents: number }[];
 
   const catalogResult = allowAdult && q ? await searchGutendex({ q, allowAdult }) : { hits: [] };
   const knownRows = (await db`SELECT slug FROM books WHERE slug LIKE 'gutenberg-%'`) as { slug: string }[];
@@ -133,25 +133,38 @@ export default async function KidShopPage({
         books.map((book) => {
           const price = Number(book.price_cents || 0);
           const canAfford = price === 0 || balance >= price;
+          const meta = coverAndTeaserForSlug(book.slug);
           return (
-            <div key={book.id} className="card">
-              <p>
-                <strong>{book.title}</strong> — {book.author}
-                {book.genre ? ` · ${book.genre}` : ""}
-              </p>
-              <p className="muted">{price === 0 ? "Free" : money(price)}</p>
-              {canAfford ? (
-                <form action={addOrBuyBook}>
-                  <input type="hidden" name="child_id" value={kid.id} />
-                  <input type="hidden" name="book_id" value={book.id} />
-                  <input type="hidden" name="by" value="self" />
-                  <button type="submit" className="btn">
-                    {price === 0 ? "Add" : `Buy for ${money(price)}`}
-                  </button>
-                </form>
-              ) : (
-                <p className="muted">Not enough balance.</p>
+            <div key={book.id} className="card" style={{ display: "flex", gap: "0.85rem", alignItems: "flex-start" }}>
+              {meta.cover && (
+                <img
+                  src={meta.cover}
+                  alt=""
+                  style={{ width: 56, height: 84, objectFit: "cover", borderRadius: 6, flexShrink: 0, background: "#eee" }}
+                />
               )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: "0 0 0.2rem" }}>
+                  <strong>{book.title}</strong> — {book.author}
+                  {book.genre ? ` · ${book.genre}` : ""}
+                </p>
+                {meta.teaser && (
+                  <p className="muted" style={{ margin: "0 0 0.35rem", fontSize: "0.9rem" }}>{meta.teaser}</p>
+                )}
+                <p className="muted" style={{ margin: "0 0 0.5rem" }}>{price === 0 ? "Free" : money(price)}</p>
+                {canAfford ? (
+                  <form action={addOrBuyBook}>
+                    <input type="hidden" name="child_id" value={kid.id} />
+                    <input type="hidden" name="book_id" value={book.id} />
+                    <input type="hidden" name="by" value="self" />
+                    <button type="submit" className="btn">
+                      {price === 0 ? "Add" : `Buy for ${money(price)}`}
+                    </button>
+                  </form>
+                ) : (
+                  <p className="muted">Not enough balance.</p>
+                )}
+              </div>
             </div>
           );
         })
@@ -161,20 +174,28 @@ export default async function KidShopPage({
         <>
           <h2>From Project Gutenberg</h2>
           {freshCatalog.map((hit) => (
-            <div key={hit.gutenbergId} className="card">
-              <p>
-                <strong>{hit.title}</strong> — {hit.author}
-              </p>
-              <p className="muted">Free</p>
-              <form action={addCatalogBook}>
-                <input type="hidden" name="child_id" value={kid.id} />
-                <input type="hidden" name="gutenberg_id" value={hit.gutenbergId} />
-                <input type="hidden" name="title" value={hit.title} />
-                <input type="hidden" name="author" value={hit.author} />
-                <input type="hidden" name="genre" value={hit.subjects[0] ?? ""} />
-                <input type="hidden" name="by" value="self" />
-                <button type="submit" className="btn">Add</button>
-              </form>
+            <div key={hit.gutenbergId} className="card" style={{ display: "flex", gap: "0.85rem", alignItems: "flex-start" }}>
+              <img
+                src={hit.coverUrl}
+                alt=""
+                style={{ width: 56, height: 84, objectFit: "cover", borderRadius: 6, flexShrink: 0, background: "#eee" }}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: "0 0 0.2rem" }}>
+                  <strong>{hit.title}</strong> — {hit.author}
+                </p>
+                <p className="muted" style={{ margin: "0 0 0.35rem", fontSize: "0.9rem" }}>{hit.teaser}</p>
+                <p className="muted" style={{ margin: "0 0 0.5rem" }}>Free</p>
+                <form action={addCatalogBook}>
+                  <input type="hidden" name="child_id" value={kid.id} />
+                  <input type="hidden" name="gutenberg_id" value={hit.gutenbergId} />
+                  <input type="hidden" name="title" value={hit.title} />
+                  <input type="hidden" name="author" value={hit.author} />
+                  <input type="hidden" name="genre" value={hit.subjects[0] ?? ""} />
+                  <input type="hidden" name="by" value="self" />
+                  <button type="submit" className="btn">Add</button>
+                </form>
+              </div>
             </div>
           ))}
         </>
