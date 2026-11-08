@@ -158,6 +158,9 @@ export default async function KidHomePage({
     daily_goal_pages: number;
   };
   const goal = Number(kid.daily_goal_pages) || 5;
+  const pagesToday = byDay.get(today) ?? 0;
+  const goalMet = pagesToday >= goal;
+  const streak = streakEndingToday(byDay, today, goal);
   const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
   const last14 = Array.from({ length: 14 }, (_, i) => {
     const d = new Date(`${today}T00:00:00Z`);
@@ -214,6 +217,17 @@ export default async function KidHomePage({
           <p className="unlocked">Request sent. A parent will approve it before it is used.</p>
         </div>
       )}
+      <div className="card" style={{ borderColor: goalMet ? "var(--ok)" : undefined }}>
+        <p style={{ margin: "0 0 0.2rem", color: "var(--ink)", fontWeight: 600 }}>
+          Today: {pagesToday} / {goal} pages
+          {goalMet ? " · Goal met!" : ` · ${goal - pagesToday} left`}
+        </p>
+        <p className={streak > 0 ? "unlocked" : "muted"} style={{ margin: 0 }}>
+          {streak > 0
+            ? `${streak}-day streak`
+            : "No streak yet — read today to start one"}
+        </p>
+      </div>
       <div className="card">
         <h2 style={{ textDecoration: "underline" }}>Last 14 days</h2>
         <p className="muted">Pages read. Green bars met the {goal}-page goal.</p>
@@ -267,7 +281,7 @@ export default async function KidHomePage({
                       assignment.criteria_type === "finish_book"
                         ? `${max} / ${total || "?"}`
                         : `${Math.min(max, target)} / ${target}`;
-                    const goal =
+                    const goalText =
                       assignment.criteria_type === "finish_book"
                         ? `Finish ${assignment.book_title}`
                         : `Read ${target} pages in ${assignment.book_title}`;
@@ -277,7 +291,7 @@ export default async function KidHomePage({
                       <li key={`${assignment.slug}-${assignment.title}`}>
                         <Link href={`/kid/${kid.id}/book/${assignment.slug}`}>{assignment.title}</Link>
                         {" · "}
-                        {goal}
+                        {goalText}
                         {due ? ` · ${due}` : ""}
                         {" — "}
                         <span className={done ? "unlocked" : overdue ? "overdue" : ""}>
