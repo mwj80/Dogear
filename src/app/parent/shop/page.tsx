@@ -41,12 +41,14 @@ export default async function ParentShopPage({
   `) as { id: string; display_name: string }[];
 
   const books = (await db`
-    SELECT id, slug, title, author, COALESCE(genre, '') AS genre, COALESCE(price_cents, 0) AS price_cents
+    SELECT id, slug, title, author, COALESCE(genre, '') AS genre,
+           COALESCE(price_cents, 0) AS price_cents,
+           series, series_number
     FROM books
     WHERE (${q} = '' OR title ILIKE ${'%' + q + '%'} OR author ILIKE ${'%' + q + '%'})
       AND (${genre} = '' OR genre = ${genre})
-    ORDER BY title
-  `) as { id: string; slug: string; title: string; author: string; genre: string; price_cents: number }[];
+    ORDER BY COALESCE(series, title), series_number NULLS LAST, title
+  `) as { id: string; slug: string; title: string; author: string; genre: string; price_cents: number; series: string | null; series_number: number | null }[];
 
   const catalogResult = q ? await searchGutendex({ q, allowAdult: true }) : { hits: [] };
   const knownRows = (await db`SELECT slug FROM books WHERE slug LIKE 'gutenberg-%'`) as { slug: string }[];
@@ -116,6 +118,9 @@ export default async function ParentShopPage({
           ) : (
             books.map((book) => {
               const meta = coverAndTeaserForSlug(book.slug);
+              const seriesLabel = book.series
+                ? `${book.series}${book.series_number ? ` #${book.series_number}` : ""}`
+                : null;
               return (
                 <div key={book.id} className="card" style={{ display: "flex", gap: "0.85rem", alignItems: "flex-start" }}>
                   {meta.cover && (
@@ -126,6 +131,11 @@ export default async function ParentShopPage({
                     />
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
+                    {seriesLabel && (
+                      <p className="muted" style={{ margin: "0 0 0.15rem", fontSize: "0.8rem", fontWeight: 600 }}>
+                        {seriesLabel}
+                      </p>
+                    )}
                     <p style={{ margin: "0 0 0.2rem" }}>
                       <strong>{book.title}</strong>
                       {book.author ? ` — ${book.author}` : ""}
