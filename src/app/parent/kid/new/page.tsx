@@ -5,7 +5,7 @@ import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { createChild } from "../../actions";
-import { removeKid, addGameAccount, removeGameAccount, approveGameRequest, rejectGameRequest } from "../actions";
+import { removeKid, addGameAccount, removeGameAccount, approveGameRequest, rejectGameRequest, toggleShowRewardCodes } from "../actions";
 import { toggleSelfPurchase, toggleFullCatalog } from "../../purchase-actions";
 import { setKidPin } from "../pin-actions";
 import { joinClassByCode } from "@/app/teacher/actions";
@@ -15,7 +15,7 @@ import { PinForm } from "./pin-form";
 export default async function FamilyAdminPage({
   searchParams
 }: {
-  searchParams: Promise<{ permission?: string; name?: string; account?: string; game?: string; catalog?: string; pin?: string; join?: string; class?: string }>;
+  searchParams: Promise<{ permission?: string; name?: string; account?: string; game?: string; catalog?: string; pin?: string; join?: string; class?: string; codes?: string }>;
 }) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
@@ -27,6 +27,7 @@ export default async function FamilyAdminPage({
   const catalog = params.catalog;
   const join = params.join;
   const joinedClass = params.class ? decodeURIComponent(params.class) : "";
+  const codes = params.codes;
 
   const user = await currentUser();
   const email =
@@ -39,11 +40,12 @@ export default async function FamilyAdminPage({
     SELECT id, display_name,
            COALESCE(can_self_purchase, false) AS can_self_purchase,
            COALESCE(can_browse_adult, false) AS can_browse_adult,
+           COALESCE(show_reward_codes, false) AS show_reward_codes,
            (pin_hash IS NOT NULL) AS has_pin
     FROM children
     WHERE household_id = ${household.household_id}::uuid
     ORDER BY created_at
-  `) as { id: string; display_name: string; can_self_purchase: boolean; can_browse_adult: boolean; has_pin: boolean }[];
+  `) as { id: string; display_name: string; can_self_purchase: boolean; can_browse_adult: boolean; show_reward_codes: boolean; has_pin: boolean }[];
 
   const accounts = (await db`
     SELECT a.id::text AS id, a.child_id::text AS child_id, a.provider, a.identifier
@@ -85,7 +87,11 @@ export default async function FamilyAdminPage({
                         ? "That class code was not found."
                         : join === "missing"
                           ? "Enter a class code and pick a kid."
-                          : null;
+                          : codes === "on"
+                            ? `${changedName || "Kid"} can now see reward codes.`
+                            : codes === "off"
+                              ? `${changedName || "Kid"} can no longer see reward codes.`
+                              : null;
 
   return (
     <main>
@@ -184,6 +190,20 @@ export default async function FamilyAdminPage({
                 </label>
                 <button type="submit" className="btn secondary">
                   Save catalog permission
+                </button>
+              </form>
+              <form action={toggleShowRewardCodes} className="stack">
+                <input type="hidden" name="child_id" value={kid.id} />
+                <label>
+                  <input
+                    type="checkbox"
+                    name="show_reward_codes"
+                    defaultChecked={!!kid.show_reward_codes}
+                  />
+                  Show reward codes to this kid
+                </label>
+                <button type="submit" className="btn secondary">
+                  Save code permission
                 </button>
               </form>
 
