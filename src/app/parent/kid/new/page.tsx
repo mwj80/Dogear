@@ -8,13 +8,14 @@ import { createChild } from "../../actions";
 import { removeKid, addGameAccount, removeGameAccount, approveGameRequest, rejectGameRequest } from "../actions";
 import { toggleSelfPurchase, toggleFullCatalog } from "../../purchase-actions";
 import { setKidPin } from "../pin-actions";
+import { joinClassByCode } from "@/app/teacher/actions";
 import { RemoveKidForm } from "./remove-kid-form";
 import { PinForm } from "./pin-form";
 
 export default async function FamilyAdminPage({
   searchParams
 }: {
-  searchParams: Promise<{ permission?: string; name?: string; account?: string; game?: string; catalog?: string; pin?: string }>;
+  searchParams: Promise<{ permission?: string; name?: string; account?: string; game?: string; catalog?: string; pin?: string; join?: string; class?: string }>;
 }) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
@@ -24,6 +25,8 @@ export default async function FamilyAdminPage({
   const accountNotice = params.account;
   const accountGame = params.game ? decodeURIComponent(params.game) : "";
   const catalog = params.catalog;
+  const join = params.join;
+  const joinedClass = params.class ? decodeURIComponent(params.class) : "";
 
   const user = await currentUser();
   const email =
@@ -76,7 +79,13 @@ export default async function FamilyAdminPage({
                   ? `Approved ${accountGame || "account"} for ${changedName || "kid"}.`
                   : accountNotice === "rejected"
                     ? "Rejected a game account request."
-                    : null;
+                    : join === "ok"
+                      ? `Enrolled ${changedName || "kid"} in ${joinedClass || "the class"}.`
+                      : join === "bad"
+                        ? "That class code was not found."
+                        : join === "missing"
+                          ? "Enter a class code and pick a kid."
+                          : null;
 
   return (
     <main>
@@ -86,8 +95,8 @@ export default async function FamilyAdminPage({
       <h1>Family Administration</h1>
       <p>Add kids, set a PIN so they can sign in on their own device, control who can buy books, and store game account IDs for rewards.</p>
       {banner && (
-        <div className="card" style={{ borderColor: "#2e7d32" }}>
-          <p className="unlocked">{banner}</p>
+        <div className="card" style={{ borderColor: join === "bad" || join === "missing" ? "#c62828" : "#2e7d32" }}>
+          <p className={join === "bad" || join === "missing" ? "overdue" : "unlocked"}>{banner}</p>
         </div>
       )}
 
@@ -102,6 +111,34 @@ export default async function FamilyAdminPage({
             Add kid
           </button>
         </form>
+      </div>
+
+      <div className="card">
+        <h2>Join a class</h2>
+        <p className="muted">Enter the code the teacher gave you to enroll one of your kids.</p>
+        {kids.length === 0 ? (
+          <p>Add a kid first.</p>
+        ) : (
+          <form action={joinClassByCode} className="stack">
+            <label>
+              Class code
+              <input name="code" required maxLength={12} placeholder="ABC123" style={{ textTransform: "uppercase" }} />
+            </label>
+            <label>
+              Kid
+              <select name="child_id" required>
+                {kids.map((kid) => (
+                  <option key={kid.id} value={kid.id}>
+                    {kid.display_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="submit" className="btn">
+              Enroll
+            </button>
+          </form>
+        )}
       </div>
 
       <div className="card">
