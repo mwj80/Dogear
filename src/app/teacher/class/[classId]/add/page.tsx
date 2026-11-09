@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
+import { ensureSchema } from "@/lib/ensure-schema";
+import { newClassCode } from "@/lib/class-code";
 import { enrollKid, removeClass, removeEnrollment, renameClass } from "../../../actions";
 
 export default async function ClassAdminPage({
@@ -18,15 +20,21 @@ export default async function ClassAdminPage({
     user?.primaryEmailAddress?.emailAddress ?? `${userId}@users.invalid`;
   const teacher = await ensureHousehold({ clerkUserId: userId, email });
   const db = sql();
+  await ensureSchema();
 
   const classes = await db`
-    SELECT id, name
+    SELECT id, name, code
     FROM classes
     WHERE id = ${classId}::uuid AND teacher_user_id = ${teacher.user_id}::uuid
     LIMIT 1
   `;
   if (!classes[0]) notFound();
-  const klass = classes[0] as { id: string; name: string };
+  let klass = classes[0] as { id: string; name: string; code: string | null };
+  if (!klass.code) {
+    const code = newClassCode();
+    await db`UPDATE classes SET code = ${code} WHERE id = ${klass.id}::uuid`;
+    klass = { ...klass, code };
+  }
 
   const enrolled = (await db`
     SELECT c.id::text AS child_id, c.display_name
@@ -52,6 +60,14 @@ export default async function ClassAdminPage({
       </header>
       <h1>Class Administration</h1>
       <p className="muted">{klass.name}</p>
+
+      <div className="card">
+        <h2>Class code</h2>
+        <p>Give this code to a parent. They enter it on Family Administration to enroll a kid.</p>
+        <p style={{ fontSize: "1.4rem", fontWeight: 700, letterSpacing: "0.15em", margin: "0.25rem 0" }}>
+          {klass.code}
+        </p>
+      </div>
 
       <div className="card">
         <h2>Rename</h2>
@@ -86,7 +102,7 @@ export default async function ClassAdminPage({
       </div>
 
       <div className="card">
-        <h2>Add kid</h2>
+        <h2>Add kid from this household</h2>
         {available.length === 0 ? (
           <p>No kids available to add. Every kid in the household is already enrolled.</p>
         ) : (
