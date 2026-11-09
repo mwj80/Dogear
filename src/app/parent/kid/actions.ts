@@ -237,3 +237,27 @@ export async function markReleaseSent(formData: FormData) {
   revalidatePath("/parent");
   redirect("/parent");
 }
+
+export async function toggleShowRewardCodes(formData: FormData) {
+  const household = await householdOfUser();
+  const childId = String(formData.get("child_id") ?? "");
+  const on = formData.get("show_reward_codes") === "on";
+  if (!childId) throw new Error("Missing kid");
+  const db = sql();
+  const kids = await db`
+    SELECT display_name FROM children
+    WHERE id = ${childId}::uuid AND household_id = ${household.household_id}::uuid
+    LIMIT 1
+  `;
+  if (!kids[0]) throw new Error("Kid not in this household");
+  const name = String((kids[0] as { display_name: string }).display_name);
+  await db`
+    UPDATE children
+    SET show_reward_codes = ${on}
+    WHERE id = ${childId}::uuid AND household_id = ${household.household_id}::uuid
+  `;
+  revalidatePath("/parent");
+  revalidatePath("/parent/kid/new");
+  revalidatePath(`/kid/${childId}`);
+  redirect(`/parent/kid/new?codes=${on ? "on" : "off"}&name=${encodeURIComponent(name)}`);
+}
