@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
+import { ensureSchema } from "@/lib/ensure-schema";
+import { newClassCode } from "@/lib/class-code";
 
 async function teacherOfUser() {
   const { userId } = await auth();
@@ -24,11 +26,13 @@ export async function createClass(formData: FormData) {
   const teacher = await teacherOfUser();
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Class name is required");
+  await ensureSchema();
   const db = sql();
   await db`UPDATE users SET is_teacher = true WHERE id = ${teacher.user_id}::uuid`;
+  const code = newClassCode();
   await db`
-    INSERT INTO classes (teacher_user_id, name)
-    VALUES (${teacher.user_id}::uuid, ${name})
+    INSERT INTO classes (teacher_user_id, name, code)
+    VALUES (${teacher.user_id}::uuid, ${name}, ${code})
   `;
   revalidatePath("/teacher");
 }
@@ -190,4 +194,46 @@ export async function removeAssignment(formData: FormData) {
   revalidatePath("/teacher");
   revalidatePath("/kid");
   redirect("/teacher");
+}
+
+/** Parent enters a class code to enroll one of their kids. */
+export async function joinClassByCode(formData: FormData) {
+  const { userId } = await auth();
+  if (!userId) redirect("/sign-in");
+  const user = await currentUser();
+  const email =
+    user?.primaryEmailAddress?.emailAddress ?? `${userId}@users.invalid`;
+  const parent = await ensureHousehold({ clerkUserId: userId, email });
+  await ensureSchema();
+  const code = String(formData.get("code") ?? "").trim().toUpperCase();
+  const childId = String(formData.get("child_id") ?? "");
+  if (!code || !childId) {
+    redirect("/parent/kid/new?join=missing");
+  }
+  const db = sql();
+  const classes = await db`
+    SELECT id, name FROM classes WHERE code = ${code} LIMIT 1
+  `;
+  if (!classes[0]) {
+    redirect("/parent/kid/new?join=bad");
+  }
+  const klass = classes[0] as { id: string; name: string };
+  const kids = await db`
+    SELECT id, display_name FROM children
+    WHERE id = ${childId}::uuid AND household_id = ${parent.household_id}::uuid
+    LIMIT 1
+  `;
+  if (!kids[0]) {
+    redirect("/parent/kid/new?join=bad");
+  }
+  const kid = kids[0] as { id: string; display_name: string };
+  await db`
+    INSERT INTO enrollments (class_id, child_id)
+    VALUES (${klass.id}::uuid, ${kid.id}::uuid)
+    ON CONFLICT DO NOTHING
+  `;
+  revalidatePath("/teacher");
+  revalidatePath("/parent");
+  revalidatePath("/kid");
+  redirect(`/parent/kid/new?join=ok&class=${encodeURIComponent(klass.name)}&name=${encodeURIComponent(kid.display_name)}`);
 }
