@@ -57,6 +57,15 @@ export async function ensureSchema() {
     ADD COLUMN IF NOT EXISTS pin_hash text
   `;
   await db`
+    ALTER TABLE classes
+    ADD COLUMN IF NOT EXISTS code text
+  `;
+  await db`
+    CREATE UNIQUE INDEX IF NOT EXISTS classes_code_unique
+    ON classes (code)
+    WHERE code IS NOT NULL
+  `;
+  await db`
     CREATE TABLE IF NOT EXISTS kid_books (
       child_id uuid REFERENCES children(id) ON DELETE CASCADE,
       book_id uuid REFERENCES books(id) ON DELETE CASCADE,
