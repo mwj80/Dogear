@@ -68,7 +68,8 @@ export default async function KidShopPage({
   const allowAdult = Boolean(kid.can_browse_adult);
 
   const books = (await db`
-    SELECT b.id, b.slug, b.title, b.author, COALESCE(b.genre, '') AS genre, b.price_cents
+    SELECT b.id, b.slug, b.title, b.author, COALESCE(b.genre, '') AS genre, b.price_cents,
+           b.series, b.series_number
     FROM books b
     WHERE NOT EXISTS (
       SELECT 1 FROM kid_books kb
@@ -76,8 +77,8 @@ export default async function KidShopPage({
     )
       AND (${q} = '' OR b.title ILIKE ${'%' + q + '%'} OR b.author ILIKE ${'%' + q + '%'})
       AND (${genre} = '' OR b.genre = ${genre})
-    ORDER BY b.title
-  `) as { id: string; slug: string; title: string; author: string; genre: string; price_cents: number }[];
+    ORDER BY COALESCE(b.series, b.title), b.series_number NULLS LAST, b.title
+  `) as { id: string; slug: string; title: string; author: string; genre: string; price_cents: number; series: string | null; series_number: number | null }[];
 
   const catalogResult = allowAdult && q ? await searchGutendex({ q, allowAdult }) : { hits: [] };
   const knownRows = (await db`SELECT slug FROM books WHERE slug LIKE 'gutenberg-%'`) as { slug: string }[];
@@ -139,6 +140,9 @@ export default async function KidShopPage({
           const price = Number(book.price_cents || 0);
           const canAfford = price === 0 || balance >= price;
           const meta = coverAndTeaserForSlug(book.slug);
+          const seriesLabel = book.series
+            ? `${book.series}${book.series_number ? ` #${book.series_number}` : ""}`
+            : null;
           return (
             <div key={book.id} className="card" style={{ display: "flex", gap: "0.85rem", alignItems: "flex-start" }}>
               {meta.cover && (
@@ -149,6 +153,11 @@ export default async function KidShopPage({
                 />
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
+                {seriesLabel && (
+                  <p className="muted" style={{ margin: "0 0 0.15rem", fontSize: "0.8rem", fontWeight: 600 }}>
+                    {seriesLabel}
+                  </p>
+                )}
                 <p style={{ margin: "0 0 0.2rem" }}>
                   <strong>{book.title}</strong> — {book.author}
                   {book.genre ? ` · ${book.genre}` : ""}
