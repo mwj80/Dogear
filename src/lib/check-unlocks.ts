@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { sql } from "./db";
 import { ensurePageLog } from "./page-log";
 
@@ -103,7 +104,14 @@ async function spendAndUnlock(reward: RewardRow, note: string) {
 function providerFor(rewardType: string) {
   if (rewardType === "robux") return "roblox";
   if (rewardType === "clash_royale") return "clash_royale";
+  if (rewardType === "gift_card") return "gift_card";
   return null;
+}
+
+function mockCode(provider: string) {
+  const bytes = randomBytes(4).toString("hex").toUpperCase();
+  const prefix = provider === "roblox" ? "ROBUX" : provider === "clash_royale" ? "CLASH" : "GIFT";
+  return `${prefix}-${bytes.slice(0, 4)}-${bytes.slice(4)}`;
 }
 
 async function queueRelease(reward: RewardRow, childId: string) {
@@ -117,15 +125,17 @@ async function queueRelease(reward: RewardRow, childId: string) {
     LIMIT 1
   `;
   const identifier = (accounts[0] as { identifier: string } | undefined)?.identifier;
+  const code = mockCode(provider);
   await db`
-    INSERT INTO reward_releases (reward_id, child_id, provider, identifier, face_value, status)
+    INSERT INTO reward_releases (reward_id, child_id, provider, identifier, face_value, status, code)
     VALUES (
       ${reward.id}::uuid,
       ${childId}::uuid,
       ${provider},
       ${identifier ?? ""},
       ${reward.face_value},
-      ${identifier ? "pending" : "unmatched"}
+      ${identifier ? "pending" : "unmatched"},
+      ${code}
     )
     ON CONFLICT (reward_id) DO NOTHING
   `;
