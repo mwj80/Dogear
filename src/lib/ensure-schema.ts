@@ -57,6 +57,10 @@ export async function ensureSchema() {
     ADD COLUMN IF NOT EXISTS pin_hash text
   `;
   await db`
+    ALTER TABLE children
+    ADD COLUMN IF NOT EXISTS show_reward_codes boolean NOT NULL DEFAULT false
+  `;
+  await db`
     ALTER TABLE classes
     ADD COLUMN IF NOT EXISTS code text
   `;
@@ -119,6 +123,10 @@ export async function ensureSchema() {
       sent_at timestamptz,
       UNIQUE (reward_id)
     )
+  `;
+  await db`
+    ALTER TABLE reward_releases
+    ADD COLUMN IF NOT EXISTS code text
   `;
   await db`
     CREATE TABLE IF NOT EXISTS kid_sign_in_attempts (
