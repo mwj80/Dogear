@@ -18,7 +18,17 @@ export const GUTENBERG_CLASSICS = [
   { id: 98, slug: "call-of-the-wild", title: "The Call of the Wild", author: "Jack London", genre: "Adventure", teaser: "A domesticated dog is stolen and must survive in the Yukon wilderness." },
   { id: 236, slug: "jungle-book-2", title: "The Second Jungle Book", author: "Rudyard Kipling", genre: "Adventure", teaser: "More stories of Mowgli and the animals of the jungle." },
   { id: 43, slug: "jekyll-hyde", title: "The Strange Case of Dr. Jekyll and Mr. Hyde", author: "Robert Louis Stevenson", genre: "Horror", teaser: "A doctor’s experiment unleashes a darker side of himself." },
-  { id: 1080, slug: "secret-garden", title: "The Secret Garden", author: "Frances Hodgson Burnett", genre: "Classic", teaser: "An orphaned girl discovers a locked garden and brings it back to life." }
+  { id: 1080, slug: "secret-garden", title: "The Secret Garden", author: "Frances Hodgson Burnett", genre: "Classic", teaser: "An orphaned girl discovers a locked garden and brings it back to life." },
+  { id: 77924, slug: "nancy-old-clock", title: "The Secret of the Old Clock", author: "Carolyn Keene", genre: "Mystery", teaser: "Nancy Drew’s first case: a missing will and a clock that holds the key." },
+  { id: 77602, slug: "nancy-hidden-staircase", title: "The Hidden Staircase", author: "Carolyn Keene", genre: "Mystery", teaser: "Nancy uncovers a secret staircase in a supposedly haunted mansion." },
+  { id: 78704, slug: "nancy-bungalow", title: "The Bungalow Mystery", author: "Carolyn Keene", genre: "Mystery", teaser: "Nancy helps a new friend whose guardian may not be who he seems." },
+  { id: 77873, slug: "nancy-lilac-inn", title: "The Mystery at Lilac Inn", author: "Carolyn Keene", genre: "Mystery", teaser: "Stolen jewels and a suspicious innkeeper put Nancy on the trail." },
+  { id: 17412, slug: "bobbsey-twins", title: "The Bobbsey Twins", author: "Laura Lee Hope", genre: "Classic", teaser: "Bert, Nan, Flossie, and Freddie’s first adventures at home and around town." },
+  { id: 714, slug: "bobbsey-country", title: "The Bobbsey Twins in the Country", author: "Laura Lee Hope", genre: "Classic", teaser: "The twins spend the summer on a farm with picnics, animals, and outdoor fun." },
+  { id: 737, slug: "bobbsey-school", title: "The Bobbsey Twins at School", author: "Laura Lee Hope", genre: "Classic", teaser: "A circus train and a missing pet kick off a school-year adventure." },
+  { id: 18420, slug: "bobbsey-home", title: "The Bobbsey Twins at Home", author: "Laura Lee Hope", genre: "Classic", teaser: "The twins face mysteries and mischief right in their own neighborhood." },
+  { id: 74217, slug: "bobbsey-keeping-house", title: "The Bobbsey Twins Keeping House", author: "Laura Lee Hope", genre: "Classic", teaser: "The twins try to run the house on their own and things get lively." },
+  { id: 65202, slug: "bobbsey-baby-may", title: "The Bobbsey Twins and Baby May", author: "Laura Lee Hope", genre: "Classic", teaser: "The twins find and care for a lost baby until her family can be found." }
 ] as const;
 
 export const BOOK_GENRES = ["Adventure", "Classic", "Fantasy", "Horror", "Mystery"] as const;
