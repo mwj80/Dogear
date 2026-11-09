@@ -6,6 +6,7 @@ import { sql } from "@/lib/db";
 import { ensurePageLog } from "@/lib/page-log";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { streakEndingToday } from "@/lib/check-unlocks";
+import CopyCode from "@/app/copy-code";
 
 function daysUntil(due: string, today: string) {
   return Math.round(
@@ -62,7 +63,9 @@ export default async function KidHomePage({
   await ensureSchema();
 
   const kids = await db`
-    SELECT id, display_name, daily_goal_pages, COALESCE(can_self_purchase, false) AS can_self_purchase
+    SELECT id, display_name, daily_goal_pages,
+           COALESCE(can_self_purchase, false) AS can_self_purchase,
+           COALESCE(show_reward_codes, false) AS show_reward_codes
     FROM children WHERE id = ${childId}::uuid LIMIT 1
   `;
   if (!kids[0]) notFound();
@@ -115,9 +118,11 @@ export default async function KidHomePage({
            (r.criteria_json->>'days')::int AS days,
            r.criteria_json->>'mode' AS mode,
            r.unlocked_at::text AS unlocked_at,
-           b.title, b.slug
+           b.title, b.slug,
+           rr.code
     FROM rewards r
     LEFT JOIN books b ON b.id = r.book_id
+    LEFT JOIN reward_releases rr ON rr.reward_id = r.id
     WHERE r.child_id = ${childId}::uuid
     ORDER BY r.status, r.created_at
   `) as {
@@ -133,6 +138,7 @@ export default async function KidHomePage({
     unlocked_at: string | null;
     title: string | null;
     slug: string | null;
+    code: string | null;
   }[];
 
   const assignments = (await db`
@@ -166,6 +172,7 @@ export default async function KidHomePage({
     display_name: string;
     can_self_purchase: boolean;
     daily_goal_pages: number;
+    show_reward_codes: boolean;
   };
   const goal = Number(kid.daily_goal_pages) || 5;
   const pagesToday = byDay.get(today) ?? 0;
@@ -368,6 +375,11 @@ export default async function KidHomePage({
                   <div className="progress-bar">
                     <div className="progress-fill" style={{ width: `${fill}%` }} />
                   </div>
+                )}
+                {unlocked && kid.show_reward_codes && reward.code && (
+                  <p style={{ margin: "0.35rem 0 0" }}>
+                    <CopyCode code={reward.code} />
+                  </p>
                 )}
               </div>
             );
