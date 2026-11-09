@@ -118,7 +118,7 @@ export default async function TeacherPage() {
       <p>Create a class, add kids from this household, and assign a book.</p>
 
       <div className="card">
-        <h2>New class</h2>
+        <h2 style={{ textDecoration: "underline" }}>New class</h2>
         <p>
           <Link href="/teacher/class/new">Create a class</Link>
         </p>
@@ -180,7 +180,7 @@ export default async function TeacherPage() {
             overdueCount > 0 ? "overdue" : allDone ? "done" : "open";
           return (
             <div key={klass.id} className="card">
-              <h2 className={classStatus === "overdue" ? "overdue" : classStatus === "done" ? "unlocked" : ""}>
+              <h2 className={classStatus === "overdue" ? "overdue" : classStatus === "done" ? "unlocked" : ""} style={{ textDecoration: "underline" }}>
                 {klass.name}
               </h2>
               <p className="kid-meta muted">
@@ -212,7 +212,7 @@ export default async function TeacherPage() {
                 <span><span className="swatch">•</span> open</span>
               </div>
 
-              <p className="section-head">Kids</p>
+              <p className="section-head" style={{ marginTop: "1rem" }}>Kids</p>
               {enrolled.length === 0 ? (
                 <p className="muted">No kids enrolled yet.</p>
               ) : (
@@ -246,11 +246,11 @@ export default async function TeacherPage() {
                   })}
                 </ul>
               )}
-              <p>
+              <p style={{ marginTop: "0.5rem" }}>
                 <Link href={`/teacher/class/${klass.id}/add`}>Class Administration</Link>
               </p>
 
-              <p style={{ display: "flex", alignItems: "baseline", gap: "1rem", flexWrap: "wrap" }}>
+              <p style={{ display: "flex", alignItems: "baseline", gap: "1.25rem", flexWrap: "wrap", marginTop: "1rem" }}>
                 <span className="section-head" style={{ margin: 0 }}>Assignments</span>
                 <Link href={`/teacher/class/${klass.id}/assign`}>Add an Assignment</Link>
               </p>
