@@ -9,6 +9,7 @@ import { recheckHousehold } from "@/lib/check-unlocks";
 import { markReleaseSent } from "./kid/actions";
 import { resetDemo } from "./actions";
 import { ensureSchema } from "@/lib/ensure-schema";
+import CopyCode from "@/app/copy-code";
 
 function lastSevenDays() {
   const days: string[] = [];
@@ -130,6 +131,7 @@ export default async function ParentPage({
     identifier: string;
     face_value: string;
     status: string;
+    code: string | null;
   }[] = [];
 
   try {
@@ -205,7 +207,7 @@ export default async function ParentPage({
     `) as typeof recentUnlocks;
     releases = (await db`
       SELECT rr.id::text AS id, c.display_name, rr.provider, rr.identifier,
-             rr.face_value, rr.status
+             rr.face_value, rr.status, rr.code
       FROM reward_releases rr
       JOIN children c ON c.id = rr.child_id
       WHERE c.household_id = ${household.household_id}::uuid
@@ -244,7 +246,7 @@ export default async function ParentPage({
       {!dbError && releases.length > 0 && (
         <div className="card" style={{ borderColor: "#d32f2f" }}>
           <h2 style={{ textDecoration: "underline" }}>Reward releases</h2>
-          <p className="muted">Proof of concept. Mark sent after you deliver the reward to the account.</p>
+          <p className="muted">Proof of concept. Codes are mock. Copy and redeem, or mark sent after delivery.</p>
           <ul className="reward-list">
             {releases.map((release) => (
               <li key={release.id}>
@@ -252,11 +254,17 @@ export default async function ParentPage({
                 {" · "}
                 {release.face_value}
                 {" · "}
-                {release.provider === "roblox" ? "Roblox" : "Clash Royale"}
+                {release.provider === "roblox" ? "Roblox" : release.provider === "clash_royale" ? "Clash Royale" : "Gift card"}
                 {" · "}
                 {release.status === "unmatched"
                   ? "no account saved"
                   : release.identifier}
+                {release.code && (
+                  <>
+                    {" · "}
+                    <CopyCode code={release.code} />
+                  </>
+                )}
                 {release.status === "pending" && (
                   <form action={markReleaseSent} style={{ display: "inline", marginLeft: "0.5rem" }}>
                     <input type="hidden" name="release_id" value={release.id} />
@@ -456,77 +464,9 @@ export default async function ParentPage({
                                 reward.scope,
                                 reward.mode,
                                 reward.days
-                              )}{" "}
-                              — {reward.status}
-                              {Number(reward.shortfall_cents) > 0
-                                ? ` (short ${money(Number(reward.shortfall_cents))})`
-                                : ""}
+                              )}
                             </li>
                           ))}
-                        </ul>
-                      </>
-                    )}
-                    <div className="week">
-                      {days.map((day) => {
-                        const pages = kidLog
-                          .filter((l) => l.day === day)
-                          .reduce((n, l) => n + Number(l.pages), 0);
-                        const met = pages >= goal;
-                        const isToday = day === dueToday;
-                        const label = WEEKDAY[new Date(day + "T12:00:00").getDay()];
-                        return (
-                          <div key={day} className={`day${met ? " on" : ""}${isToday ? " today" : ""}`}>
-                            <div className="dot">{pages || ""}</div>
-                            <span>{label}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="legend">
-                      <span><span className="swatch met"></span> goal met</span>
-                      <span><span className="swatch overdue"></span> overdue</span>
-                      <span><span className="swatch unlocked"></span> done</span>
-                      <span><span className="swatch">•</span> open</span>
-                    </div>
-                    {kidProgress.length === 0 ? (
-                      <p className="muted">No reading yet.</p>
-                    ) : (
-                      <>
-                        <p className="section-head">Books</p>
-                        <ul className="reward-list">
-                          {kidProgress.map((p) => {
-                            const pct =
-                              p.total_locations > 0
-                                ? Math.min(100, Math.round((p.max_location / p.total_locations) * 100))
-                                : 0;
-                            const bookAssignments = kidClasses.filter((a) => a.book_id === p.book_id);
-                            let anyOverdue = false;
-                            let bookDone = bookAssignments.length > 0;
-                            for (const assignment of bookAssignments) {
-                              const max = Number(assignment.max_location);
-                              const total = Number(assignment.total_locations);
-                              const target = Number(assignment.pages ?? 0);
-                              const done =
-                                assignment.criteria_type === "finish_book"
-                                  ? total > 0 && max >= total - 1
-                                  : max >= target;
-                              if (!done) bookDone = false;
-                              if (!done && assignment.due_date && assignment.due_date < dueToday) anyOverdue = true;
-                            }
-                            const bookStatus: "overdue" | "done" | "open" = anyOverdue
-                              ? "overdue"
-                              : bookDone
-                                ? "done"
-                                : "open";
-                            return (
-                              <li
-                                key={p.title}
-                                className={bookStatus === "overdue" ? "overdue" : bookStatus === "done" ? "unlocked" : ""}
-                              >
-                                {p.title} — {p.max_location} / {p.total_locations || "?"} ({pct}%)
-                              </li>
-                            );
-                          })}
                         </ul>
                       </>
                     )}
@@ -534,37 +474,18 @@ export default async function ParentPage({
                 );
               })
             )}
-            <p>
-              <Link href="/parent/kid/new">Family Administration</Link>
-            </p>
           </div>
-
           <div className="card">
-            <h2>Reward</h2>
-            <p>
-              <Link href="/parent/reward/new">Reward Administration</Link>
+            <p style={{ textAlign: "center" }}>
+              <form action={resetDemo}>
+                <button type="submit" className="btn secondary">
+                  Reset demo
+                </button>
+              </form>
             </p>
           </div>
-
-          <div className="card">
-            <h2>Shop</h2>
-            <p>
-              <Link href="/parent/shop">Shop for Books</Link>
-            </p>
-          </div>
-
         </>
       )}
-
-      <form action={resetDemo} style={{ textAlign: "center", margin: "1.5rem 0 1rem" }}>
-        <button type="submit" className="btn secondary">
-          Reset demo
-        </button>
-        <p className="muted">
-          Clears test data, resets each kid’s reader to the free titles, seeds public-domain books (some free, some 50¢), loads representative rewards, seeds a demo class, and sets balance to $40.
-        </p>
-      </form>
     </main>
   );
 }
-
