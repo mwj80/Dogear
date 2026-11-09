@@ -41,6 +41,12 @@ function criteriaLabel(
   return `reaching page ${pages} in ${title}`;
 }
 
+function sourceBadge(source: string | null, drm: boolean) {
+  if (drm) return "DRM · native reader soon";
+  if (source === "gutenberg" || !source) return "Public domain";
+  return source;
+}
+
 export default async function KidHomePage({
   params,
   searchParams
@@ -65,7 +71,11 @@ export default async function KidHomePage({
   const today = String((todayRow[0] as { today: string }).today);
 
   const books = await db`
-    SELECT b.slug, b.title, b.author FROM books b JOIN kid_books kb ON kb.book_id = b.id WHERE kb.child_id = ${childId}::uuid ORDER BY b.title
+    SELECT b.slug, b.title, b.author,
+           COALESCE(b.source, 'gutenberg') AS source,
+           COALESCE(b.drm_required, false) AS drm_required
+    FROM books b JOIN kid_books kb ON kb.book_id = b.id
+    WHERE kb.child_id = ${childId}::uuid ORDER BY b.title
   `;
 
   const log = (await db`
@@ -376,12 +386,15 @@ export default async function KidHomePage({
         ) : (
           <ul className="reward-list">
             {books.map((book) => {
-              const b = book as { slug: string; title: string; author: string };
+              const b = book as { slug: string; title: string; author: string; source: string; drm_required: boolean };
               const bookAssignments = assignments.filter((a) => a.slug === b.slug);
+              const badge = sourceBadge(b.source, b.drm_required);
               return (
                 <li key={b.slug}>
                   <Link href={`/kid/${kid.id}/book/${b.slug}`}>{b.title}</Link>
                   {b.author ? ` — ${b.author}` : ""}
+                  {" · "}
+                  <span className="muted" style={{ fontSize: "0.85rem" }}>{badge}</span>
                   {bookAssignments.length > 0 && (
                     <span>
                       {" · "}
