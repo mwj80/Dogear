@@ -12,6 +12,39 @@ export async function ensureSchema() {
     ADD COLUMN IF NOT EXISTS genre text
   `;
   await db`
+    ALTER TABLE books
+    ADD COLUMN IF NOT EXISTS isbn text
+  `;
+  await db`
+    ALTER TABLE books
+    ADD COLUMN IF NOT EXISTS publisher text
+  `;
+  await db`
+    ALTER TABLE books
+    ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'gutenberg'
+  `;
+  await db`
+    ALTER TABLE books
+    ADD COLUMN IF NOT EXISTS drm_required boolean NOT NULL DEFAULT false
+  `;
+  await db`
+    ALTER TABLE books
+    ADD COLUMN IF NOT EXISTS license_status text NOT NULL DEFAULT 'available'
+  `;
+  await db`
+    ALTER TABLE books
+    ADD COLUMN IF NOT EXISTS series text
+  `;
+  await db`
+    ALTER TABLE books
+    ADD COLUMN IF NOT EXISTS series_number integer
+  `;
+  await db`
+    CREATE UNIQUE INDEX IF NOT EXISTS books_isbn_unique
+    ON books (isbn)
+    WHERE isbn IS NOT NULL
+  `;
+  await db`
     ALTER TABLE children
     ADD COLUMN IF NOT EXISTS can_self_purchase boolean NOT NULL DEFAULT false
   `;
@@ -30,6 +63,18 @@ export async function ensureSchema() {
       purchased_at timestamptz DEFAULT now(),
       purchased_by text NOT NULL CHECK (purchased_by IN ('parent', 'self')),
       PRIMARY KEY (child_id, book_id)
+    )
+  `;
+  await db`
+    CREATE TABLE IF NOT EXISTS book_purchases (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      child_id uuid REFERENCES children(id) ON DELETE SET NULL,
+      book_id uuid REFERENCES books(id) ON DELETE SET NULL,
+      isbn text,
+      price_cents integer NOT NULL,
+      purchased_by text NOT NULL CHECK (purchased_by IN ('parent', 'self')),
+      source text NOT NULL DEFAULT 'gutenberg',
+      created_at timestamptz NOT NULL DEFAULT now()
     )
   `;
   await db`
