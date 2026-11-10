@@ -5,6 +5,7 @@ import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { ensurePageLog } from "@/lib/page-log";
 import { streakEndingToday } from "@/lib/check-unlocks";
+import CopyCode from "@/app/copy-code";
 
 const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
@@ -138,9 +139,11 @@ export default async function KidProgressPage({
            (r.criteria_json->>'days')::int AS days,
            r.criteria_json->>'mode' AS mode,
            r.unlocked_at::text AS unlocked_at,
-           b.title
+           b.title,
+           rr.code
     FROM rewards r
     LEFT JOIN books b ON b.id = r.book_id
+    LEFT JOIN reward_releases rr ON rr.reward_id = r.id
     WHERE r.child_id = ${kid.id}::uuid
     ORDER BY r.status, r.created_at
   `) as {
@@ -155,6 +158,7 @@ export default async function KidProgressPage({
     mode: string | null;
     unlocked_at: string | null;
     title: string | null;
+    code: string | null;
   }[];
 
   const start = new Date(`${monthStart}T00:00:00Z`);
@@ -407,6 +411,11 @@ export default async function KidProgressPage({
                   <div className="progress-bar">
                     <div className="progress-fill" style={{ width: `${fill}%` }} />
                   </div>
+                )}
+                {unlocked && reward.code && (
+                  <p style={{ margin: "0.35rem 0 0" }}>
+                    <CopyCode code={reward.code} />
+                  </p>
                 )}
               </div>
             );
