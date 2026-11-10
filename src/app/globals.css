@@ -151,9 +151,14 @@ body.night .modal-card {
 }
 
 .kid-block {
-  border-top: 1px solid var(--line);
-  padding: 0.85rem 0 1rem;
-  margin-top: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  margin: 1.1rem 0;
+  background: #fffef9;
+}
+.kid-block + .kid-block {
+  margin-top: 1.25rem;
 }
 .kid-name {
   margin: 0 0 0.2rem;
