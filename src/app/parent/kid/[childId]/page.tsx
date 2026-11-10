@@ -5,7 +5,6 @@ import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { ensurePageLog } from "@/lib/page-log";
 import { streakEndingToday } from "@/lib/check-unlocks";
-import { renameKid, setDailyGoal } from "../actions";
 
 const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
@@ -247,26 +246,6 @@ export default async function KidProgressPage({
       <h1 style={{ fontStyle: "italic", textDecoration: "underline", color: "var(--ink)" }}>
         {kid.display_name}
       </h1>
-      <form action={renameKid} className="inline-form">
-        <input type="hidden" name="child_id" value={kid.id} />
-        <label>
-          Name
-          <input name="display_name" required maxLength={40} defaultValue={kid.display_name} />
-        </label>
-        <button type="submit" className="btn">
-          Rename
-        </button>
-      </form>
-      <form action={setDailyGoal} className="inline-form">
-        <input type="hidden" name="child_id" value={kid.id} />
-        <label>
-          Pages a day
-          <input name="pages" type="number" min="1" step="1" defaultValue={goal} />
-        </label>
-        <button type="submit" className="btn">
-          Save goal
-        </button>
-      </form>
       <p>Colored days met the goal. A green dot is finished. A red dot is overdue.</p>
 
       {assignments.length > 0 && (
