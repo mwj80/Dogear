@@ -397,23 +397,28 @@ export default async function KidProgressPage({
             const shown = target > 0 ? Math.min(current, target) : current;
             const fill = target > 0 ? Math.round((shown / target) * 100) : 0;
             const unlocked = reward.status === "unlocked";
+            const fillClass = fill < 40 ? "low" : fill < 75 ? "mid" : "";
             return (
-              <div key={reward.id} className="kid-block">
-                <p className={unlocked ? "unlocked" : ""} style={{ fontWeight: 400, margin: "0 0 0.2rem" }}>
-                  {reward.face_value} for {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope, reward.mode, reward.days)}
+              <div key={reward.id} className={`reward-card${unlocked ? " unlocked" : ""}`}>
+                <p className="reward-card-title">{reward.face_value}</p>
+                <p className="reward-card-status muted">
+                  {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope, reward.mode, reward.days)}
                 </p>
-                <p className="muted" style={{ margin: "0 0 0.35rem" }}>
+                <p className={unlocked ? "unlocked" : "muted"} style={{ margin: "0 0 0.2rem", fontSize: "0.85rem" }}>
                   {unlocked
-                    ? `unlocked ${reward.unlocked_at?.slice(0, 10) ?? ""}`
+                    ? `Unlocked ${reward.unlocked_at?.slice(0, 10) ?? ""}`
                     : `${shown} / ${target || "?"}`}
                 </p>
                 {!unlocked && target > 0 && (
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: `${fill}%` }} />
-                  </div>
+                  <>
+                    <div className="progress-bar">
+                      <div className={`progress-fill ${fillClass}`} style={{ width: `${fill}%` }} />
+                    </div>
+                    <p className="progress-pct">{fill}%</p>
+                  </>
                 )}
                 {unlocked && reward.code && (
-                  <p style={{ margin: "0.35rem 0 0" }}>
+                  <p style={{ margin: "0.45rem 0 0" }}>
                     <CopyCode code={reward.code} />
                   </p>
                 )}
