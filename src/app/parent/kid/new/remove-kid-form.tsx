@@ -17,14 +17,15 @@ export function RemoveKidForm({
   }
 
   return (
-    <form action={action} className="stack" onSubmit={onSubmit}>
+    <form action={action} style={{ marginTop: "1.25rem" }} onSubmit={onSubmit}>
       <input type="hidden" name="child_id" value={childId} />
-      <button type="submit" className="btn secondary">
-        Remove {displayName}
+      <button
+        type="submit"
+        className="btn secondary"
+        style={{ fontSize: "0.8rem", padding: "0.25rem 0.6rem", opacity: 0.7 }}
+      >
+        Remove kid
       </button>
-      <p className="muted">
-        Removes this kid, their reading progress, and their rewards. Ledger history stays.
-      </p>
     </form>
   );
 }
