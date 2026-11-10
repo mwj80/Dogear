@@ -42,6 +42,11 @@ function criteriaLabel(
   return `reaching page ${pages} in ${title}`;
 }
 
+
+function decodeEscapes(s: string) {
+  return s.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+}
+
 function sourceBadge(source: string | null, drm: boolean) {
   if (drm) return "DRM · native reader soon";
   if (source === "gutenberg" || !source) return "Public domain";
@@ -315,9 +320,12 @@ export default async function KidHomePage({
                           {done ? "done" : shown}
                         </span>
                         {!done && target > 0 && (
-                          <div className="progress-bar" style={{ marginTop: "0.25rem" }}>
-                            <div className="progress-fill" style={{ width: `${fill}%` }} />
-                          </div>
+                          <>
+                            <div className="progress-bar" style={{ marginTop: "0.25rem" }}>
+                              <div className="progress-fill" style={{ width: `${fill}%` }} />
+                            </div>
+                            <div className="progress-pct" style={{ display: "block", marginTop: "0.15rem" }}>{fill}%</div>
+                          </>
                         )}
                       </li>
                     );
@@ -365,7 +373,7 @@ export default async function KidHomePage({
             return (
               <div key={reward.id} className={`reward-card${unlocked ? " unlocked" : ""}`}>
                 <p className="reward-card-title">
-                  {reward.face_value}
+                  {decodeEscapes(reward.face_value)}
                 </p>
                 <p className="reward-card-status muted" style={{ marginBottom: "0.35rem" }}>
                   {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope, reward.mode, reward.days)}
@@ -380,7 +388,7 @@ export default async function KidHomePage({
                     <div className="progress-bar">
                       <div className={`progress-fill ${fillClass}`} style={{ width: `${fill}%` }} />
                     </div>
-                    <p className="progress-pct">{fill}%</p>
+                    <p className="progress-pct" style={{ display: "block", marginTop: "0.15rem" }}>{fill}%</p>
                   </>
                 )}
                 {unlocked && kid.show_reward_codes && reward.code && (
