@@ -64,6 +64,11 @@ type EpubRendition = {
   currentLocation: () => { start?: { cfi?: string } };
   themes: { default: (obj: Record<string, Record<string, string>>) => void };
   resize: (w: number, h: number) => void;
+  hooks: {
+    content: {
+      register: (fn: (contents: { document: Document }) => void) => void;
+    };
+  };
 };
 
 const SIZES = [80, 100, 110, 130, 150];
@@ -238,6 +243,27 @@ export default function Reader({
         });
         renditionRef.current = rendition;
         rendition.themes.default(themeFor(prefs.current.size, prefs.current.night));
+
+        // Strip Project Gutenberg license header and footer from display
+        rendition.hooks.content.register((contents) => {
+          const doc = contents.document;
+          if (!doc) return;
+          const remove = (sel: string) => {
+            doc.querySelectorAll(sel).forEach((el) => el.remove());
+          };
+          remove("#pg-header, #pg-footer, .pg-boilerplate, .pgheader");
+          // Fallback for older markup: drop any element that is purely the license notice
+          doc.querySelectorAll("div, p, section").forEach((el) => {
+            const t = (el.textContent || "").trim();
+            if (
+              /\*\*\*\s*(START|END)\s+OF\s+THE\s+PROJECT\s+GUTENBERG/i.test(t) ||
+              /^The Project Gutenberg eBook of/i.test(t) ||
+              /THE FULL PROJECT GUTENBERG.{0,10}LICENSE/i.test(t)
+            ) {
+              el.remove();
+            }
+          });
+        });
 
         await rendition.display();
         if (cancelled) return;
