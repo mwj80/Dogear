@@ -446,6 +446,7 @@ export default async function KidHomePage({
           </ul>
         )}
       </div>
+      {/* Mothballed: game account request form kept for future automated payouts
       <div className="card">
         <h2 style={{ textDecoration: "underline" }}>Game account</h2>
         <p className="muted">Ask a parent to update where rewards are sent. Nothing changes until they approve.</p>
@@ -467,6 +468,8 @@ export default async function KidHomePage({
           </button>
         </form>
       </div>
+
+      */}
     </main>
   );
 }
