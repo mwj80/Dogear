@@ -252,9 +252,11 @@ export default function Reader({
             doc.querySelectorAll(sel).forEach((el) => el.remove());
           };
           remove("#pg-header, #pg-footer, .pg-boilerplate, .pgheader");
-          // Drop license markers and PG cross-edition notices that sit outside the header
+          // Drop short license markers and PG cross-edition notices.
+          // Length guard prevents matching a large parent that merely contains a notice.
           doc.querySelectorAll("div, p, section, h4, table").forEach((el) => {
             const t = (el.textContent || "").trim();
+            if (t.length > 600) return;
             if (
               /\*\*\*\s*(START|END)\s+OF\s+THE\s+PROJECT\s+GUTENBERG/i.test(t) ||
               /^The Project Gutenberg eBook of/i.test(t) ||
