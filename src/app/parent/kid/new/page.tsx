@@ -99,7 +99,7 @@ export default async function FamilyAdminPage({
         <Link href="/parent">Back to parent</Link>
       </header>
       <h1>Family Administration</h1>
-      <p>Add kids, set a PIN so they can sign in on their own device, control who can buy books, and store game account IDs for rewards.</p>
+      <p>Add kids, set a PIN so they can sign in on their own device, and control who can buy books.</p>
       {banner && (
         <div className="card" style={{ borderColor: join === "bad" || join === "missing" ? "#c62828" : "#2e7d32" }}>
           <p className={join === "bad" || join === "missing" ? "overdue" : "unlocked"}>{banner}</p>
@@ -207,6 +207,7 @@ export default async function FamilyAdminPage({
                 </button>
               </form>
 
+              {/* Mothballed: game account IDs kept for future automated payouts
               <p className="section-head">Game accounts</p>
               <p className="muted">Usernames and player IDs used to send rewards.</p>
               {requests.filter((r) => r.child_id === kid.id).length > 0 && (
@@ -279,6 +280,7 @@ export default async function FamilyAdminPage({
                 </button>
               </form>
 
+              */}
               <RemoveKidForm
                 childId={kid.id}
                 displayName={kid.display_name}
