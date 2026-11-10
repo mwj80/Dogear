@@ -341,3 +341,47 @@ body.night .modal-card {
   border-radius: 4px 4px 0 0;
 }
 .chart-bar.on { background: #c8e6c9; }
+
+/* Reward progress cards */
+.reward-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  margin: 0.6rem 0;
+  background: #fffef9;
+}
+.reward-card.unlocked {
+  border-color: #a5d6a7;
+  background: #f1f8e9;
+}
+.reward-card-title {
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+.reward-card-status {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+}
+.progress-bar {
+  height: 10px;
+  background: #eee;
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 0.35rem 0 0.15rem;
+}
+.progress-fill {
+  height: 100%;
+  background: #66bb6a;
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+.progress-fill.low { background: #ef9a9a; }
+.progress-fill.mid { background: #ffb74d; }
+.progress-pct {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: right;
+  margin: 0;
+}
