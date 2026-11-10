@@ -5,7 +5,7 @@ import { sql } from "@/lib/db";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { createChild } from "../../actions";
-import { removeKid, addGameAccount, removeGameAccount, approveGameRequest, rejectGameRequest, toggleShowRewardCodes } from "../actions";
+import { removeKid, addGameAccount, removeGameAccount, approveGameRequest, rejectGameRequest, toggleShowRewardCodes, renameKid, setDailyGoal } from "../actions";
 import { toggleSelfPurchase, toggleFullCatalog } from "../../purchase-actions";
 import { setKidPin } from "../pin-actions";
 import { joinClassByCode } from "@/app/teacher/actions";
@@ -37,7 +37,7 @@ export default async function FamilyAdminPage({
   await ensureSchema();
 
   const kids = (await db`
-    SELECT id, display_name,
+    SELECT id, display_name, COALESCE(daily_goal_pages, 5) AS daily_goal_pages,
            COALESCE(can_self_purchase, false) AS can_self_purchase,
            COALESCE(can_browse_adult, false) AS can_browse_adult,
            COALESCE(show_reward_codes, false) AS show_reward_codes,
@@ -45,7 +45,7 @@ export default async function FamilyAdminPage({
     FROM children
     WHERE household_id = ${household.household_id}::uuid
     ORDER BY created_at
-  `) as { id: string; display_name: string; can_self_purchase: boolean; can_browse_adult: boolean; show_reward_codes: boolean; has_pin: boolean }[];
+  `) as { id: string; display_name: string; daily_goal_pages: number; can_self_purchase: boolean; can_browse_adult: boolean; show_reward_codes: boolean; has_pin: boolean }[];
 
   const accounts = (await db`
     SELECT a.id::text AS id, a.child_id::text AS child_id, a.provider, a.identifier
@@ -163,6 +163,30 @@ export default async function FamilyAdminPage({
                   : "No PIN yet. Set a 4-digit PIN so they can sign in on their own device."}
               </p>
               <PinForm childId={kid.id} hasPin={!!kid.has_pin} action={setKidPin} />
+
+              <p className="section-head">Name</p>
+              <form action={renameKid} className="inline-form">
+                <input type="hidden" name="child_id" value={kid.id} />
+                <label>
+                  Name
+                  <input name="display_name" required maxLength={40} defaultValue={kid.display_name} />
+                </label>
+                <button type="submit" className="btn">
+                  Rename
+                </button>
+              </form>
+
+              <p className="section-head">Daily reading goal</p>
+              <form action={setDailyGoal} className="inline-form">
+                <input type="hidden" name="child_id" value={kid.id} />
+                <label>
+                  Pages a day
+                  <input name="pages" type="number" min="1" step="1" defaultValue={Number(kid.daily_goal_pages) || 5} />
+                </label>
+                <button type="submit" className="btn">
+                  Save goal
+                </button>
+              </form>
 
               <form action={toggleSelfPurchase} className="stack">
                 <input type="hidden" name="child_id" value={kid.id} />
