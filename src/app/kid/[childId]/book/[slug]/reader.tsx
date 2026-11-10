@@ -252,13 +252,19 @@ export default function Reader({
             doc.querySelectorAll(sel).forEach((el) => el.remove());
           };
           remove("#pg-header, #pg-footer, .pg-boilerplate, .pgheader");
-          // Fallback for older markup: drop any element that is purely the license notice
-          doc.querySelectorAll("div, p, section").forEach((el) => {
+          // Drop license markers and PG cross-edition notices that sit outside the header
+          doc.querySelectorAll("div, p, section, h4, table").forEach((el) => {
             const t = (el.textContent || "").trim();
             if (
               /\*\*\*\s*(START|END)\s+OF\s+THE\s+PROJECT\s+GUTENBERG/i.test(t) ||
               /^The Project Gutenberg eBook of/i.test(t) ||
-              /THE FULL PROJECT GUTENBERG.{0,10}LICENSE/i.test(t)
+              /THE FULL PROJECT GUTENBERG.{0,10}LICENSE/i.test(t) ||
+              /There are several editions of this ebook in the Project Gutenberg/i.test(t) ||
+              /ILLUSTRATED EDITION OF THIS TITLE/i.test(t) ||
+              /may be viewed at ebook/i.test(t) ||
+              /Click on any of the filenumbers/i.test(t) ||
+              /Cover of .*First Edition/i.test(t) ||
+              /Title Page of .*First Edition/i.test(t)
             ) {
               el.remove();
             }
