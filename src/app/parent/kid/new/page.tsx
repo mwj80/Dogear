@@ -189,46 +189,46 @@ export default async function FamilyAdminPage({
               </form>
 
               <p className="section-head">Permissions</p>
+
               <form action={toggleSelfPurchase} className="stack">
                 <input type="hidden" name="child_id" value={kid.id} />
-                <label>
-                  <input
-                    type="checkbox"
-                    name="can_self_purchase"
-                    defaultChecked={!!kid.can_self_purchase}
-                  />
-                  Can buy books
-                </label>
+                {kid.can_self_purchase && <input type="hidden" name="can_self_purchase" value="" />}
+                {!kid.can_self_purchase && <input type="hidden" name="can_self_purchase" value="on" />}
+                <p className="muted" style={{ margin: "0 0 0.35rem" }}>
+                  {kid.can_self_purchase
+                    ? "This kid is permitted to purchase books."
+                    : "This kid is not permitted to purchase books."}
+                </p>
                 <button type="submit" className="btn secondary">
-                  Save buy permission
+                  {kid.can_self_purchase ? "Disable book purchases" : "Enable book purchases"}
                 </button>
               </form>
+
               <form action={toggleFullCatalog} className="stack">
                 <input type="hidden" name="child_id" value={kid.id} />
-                <label>
-                  <input
-                    type="checkbox"
-                    name="can_browse_adult"
-                    defaultChecked={!!kid.can_browse_adult}
-                  />
-                  Can search the full catalog
-                </label>
+                {kid.can_browse_adult && <input type="hidden" name="can_browse_adult" value="" />}
+                {!kid.can_browse_adult && <input type="hidden" name="can_browse_adult" value="on" />}
+                <p className="muted" style={{ margin: "0 0 0.35rem" }}>
+                  {kid.can_browse_adult
+                    ? "This kid can search the full catalog."
+                    : "This kid cannot search the full catalog."}
+                </p>
                 <button type="submit" className="btn secondary">
-                  Save catalog permission
+                  {kid.can_browse_adult ? "Restrict to kids catalog" : "Allow full catalog"}
                 </button>
               </form>
+
               <form action={toggleShowRewardCodes} className="stack">
                 <input type="hidden" name="child_id" value={kid.id} />
-                <label>
-                  <input
-                    type="checkbox"
-                    name="show_reward_codes"
-                    defaultChecked={!!kid.show_reward_codes}
-                  />
-                  Show reward codes to this kid
-                </label>
+                {kid.show_reward_codes && <input type="hidden" name="show_reward_codes" value="" />}
+                {!kid.show_reward_codes && <input type="hidden" name="show_reward_codes" value="on" />}
+                <p className="muted" style={{ margin: "0 0 0.35rem" }}>
+                  {kid.show_reward_codes
+                    ? "Reward codes are shown to this kid."
+                    : "Reward codes are not shown to this kid."}
+                </p>
                 <button type="submit" className="btn secondary">
-                  Save code permission
+                  {kid.show_reward_codes ? "Hide reward codes" : "Show reward codes"}
                 </button>
               </form>
 
