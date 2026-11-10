@@ -6,7 +6,6 @@ import { ensureHousehold } from "@/lib/ensure-household";
 import { sql } from "@/lib/db";
 import { ensurePageLog } from "@/lib/page-log";
 import { recheckHousehold } from "@/lib/check-unlocks";
-import { markReleaseSent } from "./kid/actions";
 import { resetDemo } from "./actions";
 import { ensureSchema } from "@/lib/ensure-schema";
 import CopyCode from "@/app/copy-code";
@@ -246,7 +245,7 @@ export default async function ParentPage({
       {!dbError && releases.length > 0 && (
         <div className="card" style={{ borderColor: "#d32f2f" }}>
           <h2 style={{ textDecoration: "underline" }}>Reward releases</h2>
-          <p className="muted">Proof of concept. Codes are mock. Copy and redeem, or mark sent after delivery.</p>
+          <p className="muted">Proof of concept. Codes are mock. Copy and redeem.</p>
           <ul className="reward-list">
             {releases.map((release) => (
               <li key={release.id}>
@@ -265,14 +264,7 @@ export default async function ParentPage({
                     <CopyCode code={release.code} />
                   </>
                 )}
-                {release.status === "pending" && (
-                  <form action={markReleaseSent} style={{ display: "inline", marginLeft: "0.5rem" }}>
-                    <input type="hidden" name="release_id" value={release.id} />
-                    <button type="submit" className="btn" style={{ padding: "0.2rem 0.5rem", fontSize: "0.8rem" }}>
-                      Mark sent
-                    </button>
-                  </form>
-                )}
+
               </li>
             ))}
           </ul>
