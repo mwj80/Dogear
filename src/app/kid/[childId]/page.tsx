@@ -446,29 +446,11 @@ export default async function KidHomePage({
           </ul>
         )}
       </div>
-      {/* Mothballed: game account request form kept for future automated payouts
+      {/* Game account request mothballed — re-enable for automated payouts
       <div className="card">
         <h2 style={{ textDecoration: "underline" }}>Game account</h2>
-        <p className="muted">Ask a parent to update where rewards are sent. Nothing changes until they approve.</p>
-        <form action={requestGameAccount} className="stack">
-          <input type="hidden" name="child_id" value={kid.id} />
-          <label>
-            Game
-            <select name="provider" required defaultValue="roblox">
-              <option value="roblox">Roblox</option>
-              <option value="clash_royale">Clash Royale</option>
-            </select>
-          </label>
-          <label>
-            Username or player ID
-            <input name="identifier" required maxLength={80} placeholder="Roblox username or Clash Royale tag" />
-          </label>
-          <button type="submit" className="btn">
-            Request update
-          </button>
-        </form>
+        <p className="muted">Ask a parent to update where rewards are sent.</p>
       </div>
-
       */}
     </main>
   );
