@@ -385,8 +385,9 @@ body.night .modal-card {
 .progress-fill.low { background: #ef9a9a; }
 .progress-fill.mid { background: #ffb74d; }
 .progress-pct {
+  display: block;
   font-size: 0.75rem;
   color: var(--muted);
   text-align: right;
-  margin: 0;
+  margin: 0.15rem 0 0;
 }
