@@ -245,7 +245,7 @@ export default async function ParentPage({
       {!dbError && releases.length > 0 && (
         <div className="card" style={{ borderColor: "#d32f2f" }}>
           <h2 style={{ textDecoration: "underline" }}>Reward releases</h2>
-          <p className="muted">Proof of concept. Codes are mock. Copy and redeem.</p>
+          <p className="muted">Copy the code to redeem.</p>
           <ul className="reward-list">
             {releases.map((release) => (
               <li key={release.id}>
@@ -539,19 +539,10 @@ export default async function ParentPage({
             </p>
           </div>
 
-          <div className="card">
-            <h2>Reward</h2>
-            <p>
-              <Link href="/parent/reward/new">Reward Administration</Link>
-            </p>
-          </div>
-
-          <div className="card">
-            <h2>Shop</h2>
-            <p>
-              <Link href="/parent/shop">Shop for Books</Link>
-            </p>
-          </div>
+          <p style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", margin: "1rem 0" }}>
+            <Link href="/parent/reward/new">Reward Administration</Link>
+            <Link href="/parent/shop">Shop for Books</Link>
+          </p>
 
         </>
       )}
