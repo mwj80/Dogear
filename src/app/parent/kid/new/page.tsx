@@ -188,6 +188,7 @@ export default async function FamilyAdminPage({
                 </button>
               </form>
 
+              <p className="section-head">Permissions</p>
               <form action={toggleSelfPurchase} className="stack">
                 <input type="hidden" name="child_id" value={kid.id} />
                 <label>
@@ -231,79 +232,9 @@ export default async function FamilyAdminPage({
                 </button>
               </form>
 
-              {/* Mothballed: game account IDs kept for future automated payouts
+              {/* Game accounts mothballed — re-enable when automated payouts are ready
               <p className="section-head">Game accounts</p>
-              <p className="muted">Usernames and player IDs used to send rewards.</p>
-              {requests.filter((r) => r.child_id === kid.id).length > 0 && (
-                <>
-                  <p className="group-head">Waiting for approval</p>
-                  <ul className="reward-list">
-                    {requests
-                      .filter((r) => r.child_id === kid.id)
-                      .map((request) => (
-                        <li key={request.id}>
-                          <strong>{request.provider === "roblox" ? "Roblox" : request.provider === "clash_royale" ? "Clash Royale" : request.provider}</strong>
-                          {" · "}
-                          {request.identifier}
-                          {" · "}
-                          <form action={approveGameRequest} style={{ display: "inline" }}>
-                            <input type="hidden" name="request_id" value={request.id} />
-                            <button type="submit" className="btn" style={{ padding: "0.2rem 0.5rem", fontSize: "0.8rem" }}>
-                              Approve
-                            </button>
-                          </form>
-                          {" "}
-                          <form action={rejectGameRequest} style={{ display: "inline" }}>
-                            <input type="hidden" name="request_id" value={request.id} />
-                            <button type="submit" className="btn secondary" style={{ padding: "0.2rem 0.5rem", fontSize: "0.8rem" }}>
-                              Reject
-                            </button>
-                          </form>
-                        </li>
-                      ))}
-                  </ul>
-                </>
-              )}
-              {accounts.filter((a) => a.child_id === kid.id).length === 0 ? (
-                <p className="muted">None yet.</p>
-              ) : (
-                <ul className="reward-list">
-                  {accounts
-                    .filter((a) => a.child_id === kid.id)
-                    .map((account) => (
-                      <li key={account.id}>
-                        <strong>{account.provider === "roblox" ? "Roblox" : account.provider === "clash_royale" ? "Clash Royale" : account.provider}</strong>
-                        {" · "}
-                        {account.identifier}
-                        {" · "}
-                        <form action={removeGameAccount} style={{ display: "inline" }}>
-                          <input type="hidden" name="account_id" value={account.id} />
-                          <button type="submit" className="btn secondary" style={{ padding: "0.2rem 0.5rem", fontSize: "0.8rem" }}>
-                            Remove
-                          </button>
-                        </form>
-                      </li>
-                    ))}
-                </ul>
-              )}
-              <form action={addGameAccount} className="stack">
-                <input type="hidden" name="child_id" value={kid.id} />
-                <label>
-                  Game
-                  <select name="provider" required defaultValue="roblox">
-                    <option value="roblox">Roblox</option>
-                    <option value="clash_royale">Clash Royale</option>
-                  </select>
-                </label>
-                <label>
-                  Username or player ID
-                  <input name="identifier" required maxLength={80} placeholder="Roblox username or Clash Royale tag" />
-                </label>
-                <button type="submit" className="btn">
-                  Save account
-                </button>
-              </form>
-
+              <p className="muted">Usernames and player IDs for future automated reward delivery.</p>
               */}
               <RemoveKidForm
                 childId={kid.id}
