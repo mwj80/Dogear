@@ -236,7 +236,7 @@ export default async function ParentPage({
         <Link href="/">✨ LitLoot</Link>
         <span>
           <Link href="/teacher">Teacher</Link>
-          <Link href="/admin">Rates</Link>
+          <Link href="/admin">Admin</Link>
           <UserButton />
         </span>
       </header>
