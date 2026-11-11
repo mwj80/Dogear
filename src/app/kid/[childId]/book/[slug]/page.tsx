@@ -157,6 +157,8 @@ export default async function BookPage({
         startLocation={startLocation}
         readThis={readThis}
         readAcross={readAcross}
+        title={book.title}
+        author={book.author}
         rewards={withStreak}
         assignments={assignments}
         today={today}
