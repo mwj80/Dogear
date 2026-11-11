@@ -428,13 +428,22 @@ export default async function ParentPage({
                                       ? `${max} / ${total || "?"}`
                                       : `${Math.min(max, target)} / ${target}`;
                                   const due = dueLabel(item.due_date, dueToday, done);
+                                  const fill = target > 0 ? Math.round((Math.min(max, target) / target) * 100) : 0;
                                   return (
                                     <li
                                       key={`${item.class_name}-${item.title}`}
                                       className={done ? "unlocked" : overdue ? "overdue" : ""}
+                                      style={{ marginBottom: "0.5rem" }}
                                     >
-                                      {item.title} · {item.book_title}
-                                      {due ? ` · ${due}` : ""} — {done ? "done" : shown}
+                                      <div>{item.title} · {item.book_title}{due ? ` · ${due}` : ""}</div>
+                                      <div style={{ fontSize: "0.85rem", marginTop: "0.15rem" }}>
+                                        {done ? "done" : shown}
+                                      </div>
+                                      {!done && target > 0 && (
+                                        <div className="progress-bar" style={{ marginTop: "0.25rem" }}>
+                                          <div className="progress-fill" style={{ width: `${fill}%` }} />
+                                        </div>
+                                      )}
                                     </li>
                                   );
                                 })}
@@ -452,20 +461,22 @@ export default async function ParentPage({
                             <li
                               key={reward.id}
                               className={reward.status === "unlocked" ? "unlocked" : ""}
+                              style={{ marginBottom: "0.4rem" }}
                             >
-                              {decodeEscapes(reward.face_value)} for{" "}
-                              {criteriaLabel(
-                                reward.criteria_type,
-                                reward.pages,
-                                reward.title,
-                                reward.scope,
-                                reward.mode,
-                                reward.days
-                              )}{" "}
-                              — {reward.status}
-                              {Number(reward.shortfall_cents) > 0
-                                ? ` (short ${money(Number(reward.shortfall_cents))})`
-                                : ""}
+                              <div>{decodeEscapes(reward.face_value)}</div>
+                              <div style={{ fontSize: "0.85rem", color: "var(--muted)" }}>
+                                {criteriaLabel(
+                                  reward.criteria_type,
+                                  reward.pages,
+                                  reward.title,
+                                  reward.scope,
+                                  reward.mode,
+                                  reward.days
+                                )} · {reward.status}
+                                {Number(reward.shortfall_cents) > 0
+                                  ? ` (short ${money(Number(reward.shortfall_cents))})`
+                                  : ""}
+                              </div>
                             </li>
                           ))}
                         </ul>
