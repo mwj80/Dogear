@@ -171,7 +171,6 @@ export default function Reader({
   const [status, setStatus] = useState("Loading book\u2026");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
-  const [showTitle, setShowTitle] = useState(startLocation === 0);
   const [items, setItems] = useState(rewards);
   const [justUnlocked, setJustUnlocked] = useState<string[]>([]);
   const [highest, setHighest] = useState(startLocation);
@@ -229,8 +228,48 @@ export default function Reader({
 
         const res = await fetch(epubPath);
         if (!res.ok) throw new Error(`Could not download the book (${res.status})`);
-        const buffer = await res.arrayBuffer();
+        let buffer = await res.arrayBuffer();
         if (cancelled || !hostRef.current) return;
+
+        // Inject a LitLoot title page as the first page of the book
+        const JSZip = (window as any).JSZip;
+        if (JSZip) {
+          const zip = await JSZip.loadAsync(buffer);
+          const titleHtml = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>${title.replace(/</g, "<")}</title>
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: Georgia, serif; text-align: center; }
+  h1 { font-size: 2rem; margin: 0 0 0.5rem; }
+  p { font-size: 1.1rem; color: #555; margin: 0; }
+</style></head>
+<body>
+  <div>
+    <h1>${title.replace(/</g, "<")}</h1>
+    <p>by ${author.replace(/</g, "<")}</p>
+  </div>
+</body></html>`;
+          zip.file("title.html", titleHtml);
+          // Find and update the OPF to add title.html as the first spine item
+          const opfName = Object.keys(zip.files).find((n) => n.endsWith(".opf"));
+          if (opfName) {
+            let opf = await zip.file(opfName)!.async("string");
+            // Add manifest item if not present
+            if (!opf.includes('id="litloot-title"')) {
+              opf = opf.replace(
+                /<\/manifest>/,
+                '  <item id="litloot-title" href="title.html" media-type="application/xhtml+xml"/>\n</manifest>'
+              );
+              opf = opf.replace(
+                /<spine[^>]*>/,
+                (m) => m + '\n    <itemref idref="litloot-title"/>'
+              );
+            }
+            zip.file(opfName, opf);
+          }
+          const newBuffer = await zip.generateAsync({ type: "arraybuffer" });
+          buffer = newBuffer as ArrayBuffer;
+        }
+
 
         const book = window.ePub(buffer);
         bookRef.current = book;
@@ -387,16 +426,7 @@ export default function Reader({
 
   return (
     <div>
-      {showTitle && (
-        <div className="title-card" style={{
-          textAlign: "center", padding: "2rem 1.5rem", margin: "0.5rem 0 1rem",
-          background: "var(--card)", border: "1px solid var(--line)", borderRadius: "12px"
-        }}>
-          <h1 style={{ margin: "0 0 0.5rem", fontSize: "1.6rem" }}>{title}</h1>
-          <p className="muted" style={{ margin: "0 0 1.25rem" }}>by {author}</p>
-          <button type="button" className="btn" onClick={() => setShowTitle(false)}>Start reading</button>
-        </div>
-      )}
+
       {(assignments.length > 0 || active.length > 0) && (
         <p style={{ margin: "0.25rem 0" }}>
           <button type="button" className="btn secondary" style={{ fontSize: "0.85rem", padding: "0.3rem 0.7rem" }}
