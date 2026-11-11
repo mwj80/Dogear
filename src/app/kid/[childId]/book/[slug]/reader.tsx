@@ -28,6 +28,8 @@ type AssignmentInfo = {
 type Props = {
   childId: string;
   bookId: string;
+  title: string;
+  author: string;
   epubPath: string;
   startLocation: number;
   readThis: number;
@@ -151,6 +153,8 @@ function dueLabel(due: string | null, today: string, done: boolean) {
 export default function Reader({
   childId,
   bookId,
+  title,
+  author,
   epubPath,
   startLocation,
   readThis,
@@ -300,7 +304,9 @@ export default function Reader({
           // Book is open; page counts can fail on some catalog EPUBs.
         }
       } catch (err) {
-        setStatus(err instanceof Error ? err.message : "Could not open book");
+        const msg = err instanceof Error ? err.message : "Could not open the book";
+        setLoadError(msg);
+        setStatus("");
       }
     }
 
@@ -309,6 +315,14 @@ export default function Reader({
       cancelled = true;
     };
   }, [bookId, childId, epubPath, startLocation]);
+
+  function retry() {
+    setLoadError(null);
+    setStatus("Loading book…");
+    // Force re-run by toggling a key would be cleaner, but we re-trigger via location
+    window.location.reload();
+  }
+
 
   async function updateFromRendition(direction: "next" | "prev") {
     const rendition = renditionRef.current;
@@ -370,7 +384,25 @@ export default function Reader({
 
   return (
     <div>
-      {assignments.length > 0 && (
+      {showTitle && (
+        <div className="title-card" style={{
+          textAlign: "center", padding: "2rem 1.5rem", margin: "0.5rem 0 1rem",
+          background: "var(--card)", border: "1px solid var(--line)", borderRadius: "12px"
+        }}>
+          <h1 style={{ margin: "0 0 0.5rem", fontSize: "1.6rem" }}>{title}</h1>
+          <p className="muted" style={{ margin: "0 0 1.25rem" }}>by {author}</p>
+          <button type="button" className="btn" onClick={() => setShowTitle(false)}>Start reading</button>
+        </div>
+      )}
+      {(assignments.length > 0 || active.length > 0) && (
+        <p style={{ margin: "0.25rem 0" }}>
+          <button type="button" className="btn secondary" style={{ fontSize: "0.85rem", padding: "0.3rem 0.7rem" }}
+            onClick={() => setShowDetails((v) => !v)}>
+            {showDetails ? "Hide" : "Show"} progress & rewards
+          </button>
+        </p>
+      )}
+      {showDetails && assignments.length > 0 && (
         <div className="banner">
           <p className="muted">
             {assignments.length} assignments{" · "}
@@ -417,7 +449,7 @@ export default function Reader({
           })}
         </div>
       )}
-      {active.length > 0 && (
+      {showDetails && active.length > 0 && (
         <div className="banner">
           {active.map((r) => {
             const target = targetOf(r, total);
@@ -464,7 +496,12 @@ export default function Reader({
         Page {page}
         {total ? ` of ${total}` : ""} · Highest reached {pct}%
       </p>
-      {status ? <p>{status}</p> : null}
+      {loadError ? (
+        <div className="banner" style={{ borderColor: "var(--bad)" }}>
+          <p>Could not open the book: {loadError}</p>
+          <button type="button" className="btn" onClick={retry}>Try again</button>
+        </div>
+      ) : status ? <p>{status}</p> : null}
       <div className="reader-tools">
         <button type="button" className="btn secondary" onClick={() => stepSize(-1)} disabled={sizeIdx <= 0}>
           A−
