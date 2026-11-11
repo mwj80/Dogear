@@ -10,6 +10,11 @@ import { resetDemo } from "./actions";
 import { ensureSchema } from "@/lib/ensure-schema";
 import CopyCode from "@/app/copy-code";
 
+
+function decodeEscapes(s: string) {
+  return s.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+}
+
 function lastSevenDays() {
   const days: string[] = [];
   for (let i = 6; i >= 0; i--) {
@@ -251,7 +256,7 @@ export default async function ParentPage({
               <li key={release.id}>
                 {release.display_name}
                 {" · "}
-                {release.face_value}
+                {decodeEscapes(release.face_value)}
                 {" · "}
                 {release.provider === "roblox" ? "Roblox" : release.provider === "clash_royale" ? "Clash Royale" : "Gift card"}
                 {" · "}
@@ -276,7 +281,7 @@ export default async function ParentPage({
           <ul className="reward-list">
             {recentUnlocks.map((item) => (
               <li key={`${item.display_name}-${item.unlocked_at}`} className="unlocked">
-                {item.display_name} unlocked {item.face_value}
+                {item.display_name} unlocked {decodeEscapes(item.face_value)}
                 {" · "}
                 {item.unlocked_at.slice(0, 10)}
               </li>
@@ -448,7 +453,7 @@ export default async function ParentPage({
                               key={reward.id}
                               className={reward.status === "unlocked" ? "unlocked" : ""}
                             >
-                              {reward.face_value} for{" "}
+                              {decodeEscapes(reward.face_value)} for{" "}
                               {criteriaLabel(
                                 reward.criteria_type,
                                 reward.pages,
