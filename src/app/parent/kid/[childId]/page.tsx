@@ -25,6 +25,11 @@ function dueLabel(due: string | null, today: string, done: boolean) {
   return `due ${due} · ${days} days left`;
 }
 
+function decodeEscapes(s: string) {
+  if (!s) return s;
+  return s.split("\\u2192").join("→").split("\u2192").join("→");
+}
+
 function criteriaLabel(
   type: string,
   pages: number | null,
@@ -400,7 +405,7 @@ export default async function KidProgressPage({
             const fillClass = fill < 40 ? "low" : fill < 75 ? "mid" : "";
             return (
               <div key={reward.id} className={`reward-card${unlocked ? " unlocked" : ""}`}>
-                <p className="reward-card-title">{reward.face_value}</p>
+                <p className="reward-card-title">{decodeEscapes(reward.face_value)}</p>
                 <p className="reward-card-status muted">
                   {criteriaLabel(reward.criteria_type, reward.pages, reward.title, reward.scope, reward.mode, reward.days)}
                 </p>
@@ -414,7 +419,7 @@ export default async function KidProgressPage({
                     <div className="progress-bar">
                       <div className={`progress-fill ${fillClass}`} style={{ width: `${fill}%` }} />
                     </div>
-                    <p className="progress-pct">{fill}%</p>
+                    <div style={{ display: "block", marginTop: "0.35rem", fontSize: "0.75rem", color: "#666", textAlign: "right" }}>{fill}%</div>
                   </>
                 )}
                 {unlocked && reward.code && (
