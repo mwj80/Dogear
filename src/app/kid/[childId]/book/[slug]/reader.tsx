@@ -399,11 +399,13 @@ export default function Reader({
                   {assignment.class_name}: {assignment.title} · {goal}
                   {due ? ` · ${due}` : ""}
                 </p>
-                <div className="progress-meta">
+                <div className="progress-meta" style={{ display: "block" }}>
                   <span className={statusClass}>
                     {done ? "done" : `${current} / ${target || "?"}`}
                   </span>
-                  {!done && target > 0 && <span>{fill}%</span>}
+                  {!done && target > 0 && (
+                    <div style={{ display: "block", marginTop: "0.2rem", fontSize: "0.75rem", color: "#666", textAlign: "right" }}>{fill}%</div>
+                  )}
                 </div>
                 {!done && target > 0 && (
                   <div className="progress-bar">
@@ -430,16 +432,16 @@ export default function Reader({
             return (
               <div key={r.id} className="reward-track">
                 <p>
-                  {goalLabel(r)} \u2192 <strong>{r.face_value}</strong>
+                  {goalLabel(r)} → <strong>{r.face_value}</strong>
                 </p>
                 {target > 0 && (
                   <>
-                    <div className="progress-meta">
+                    <div className="progress-meta" style={{ display: "block" }}>
                       <span>
                         {current} / {target}
                         {r.criteria_type === "daily_streak" ? " days" : ""}
                       </span>
-                      <span>{fill}%</span>
+                      <div style={{ display: "block", marginTop: "0.2rem", fontSize: "0.75rem", color: "#666", textAlign: "right" }}>{fill}%</div>
                     </div>
                     <div className="progress-bar">
                       <div className="progress-fill" style={{ width: `${fill}%` }} />
