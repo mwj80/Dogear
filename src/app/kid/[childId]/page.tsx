@@ -44,10 +44,8 @@ function criteriaLabel(
 
 
 function decodeEscapes(s: string) {
-  return s
-    .replace(/\\u2192/g, "→")
-    .replace(/\u2192/g, "→")
-    .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+  if (!s) return s;
+  return s.split("\\u2192").join("→").split("\u2192").join("→");
 }
 
 function sourceBadge(source: string | null, drm: boolean) {
@@ -327,7 +325,7 @@ export default async function KidHomePage({
                             <div className="progress-bar" style={{ marginTop: "0.25rem" }}>
                               <div className="progress-fill" style={{ width: `${fill}%` }} />
                             </div>
-                            <br /><span className="progress-pct" style={{ display: "block", clear: "both", marginTop: "0.25rem" }}>{fill}%</span>
+                            <div style={{ display: "block", marginTop: "0.35rem", fontSize: "0.75rem", color: "#666", textAlign: "right" }}>{fill}%</div>
                           </>
                         )}
                       </li>
@@ -391,7 +389,7 @@ export default async function KidHomePage({
                     <div className="progress-bar">
                       <div className={`progress-fill ${fillClass}`} style={{ width: `${fill}%` }} />
                     </div>
-                    <br /><span className="progress-pct" style={{ display: "block", clear: "both", marginTop: "0.25rem" }}>{fill}%</span>
+                    <div style={{ display: "block", marginTop: "0.35rem", fontSize: "0.75rem", color: "#666", textAlign: "right" }}>{fill}%</div>
                   </>
                 )}
                 {unlocked && kid.show_reward_codes && reward.code && (
