@@ -40,6 +40,23 @@ export async function ensureSchema() {
     ADD COLUMN IF NOT EXISTS series_number integer
   `;
   await db`
+    ALTER TABLE books
+    ADD COLUMN IF NOT EXISTS age_min integer
+  `;
+  await db`
+    ALTER TABLE books
+    ADD COLUMN IF NOT EXISTS age_max integer
+  `;
+  await db`
+    ALTER TABLE books
+    ADD COLUMN IF NOT EXISTS cover_url text
+  `;
+  await db`
+    ALTER TABLE books
+    ADD COLUMN IF NOT EXISTS teaser text
+  `;
+
+  await db`
     CREATE UNIQUE INDEX IF NOT EXISTS books_isbn_unique
     ON books (isbn)
     WHERE isbn IS NOT NULL
