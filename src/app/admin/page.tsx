@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
 import { updateRates } from "./actions";
+import { addCatalogBook } from "../parent/catalog-actions";
 
 type Rates = {
   robux_dollars_per_100: string;
@@ -93,6 +94,34 @@ export default async function AdminPage() {
           {updated && <p className="muted">Last updated {updated}</p>}
         </form>
       </div>
+    
+      <h2 style={{ marginTop: "2rem" }}>Catalog</h2>
+      <details open>
+        <summary style={{ cursor: "pointer", fontWeight: 600 }}>Add a book to the catalog</summary>
+        <form action={addCatalogBook} style={{ display: "grid", gap: "0.5rem", marginTop: "0.75rem", maxWidth: "36rem" }}>
+          <input name="title" placeholder="Title" required />
+          <input name="author" placeholder="Author" required />
+          <input name="slug" placeholder="Slug (e.g. nancy-drew-1)" required />
+          <input name="epub_path" placeholder="EPUB path (e.g. /books/nancy-drew-1.epub)" required />
+          <input name="genre" placeholder="Genre" />
+          <input name="publisher" placeholder="Publisher" />
+          <input name="source" placeholder="Source (gutenberg, licensed, manual)" defaultValue="manual" />
+          <input name="cover_url" placeholder="Cover image URL" />
+          <input name="teaser" placeholder="One-sentence teaser" />
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <input name="age_min" type="number" placeholder="Min age" style={{ width: "6rem" }} />
+            <input name="age_max" type="number" placeholder="Max age" style={{ width: "6rem" }} />
+            <input name="price_cents" type="number" placeholder="Price (cents)" defaultValue="0" style={{ width: "8rem" }} />
+          </div>
+          <input name="series" placeholder="Series name" />
+          <input name="series_number" type="number" placeholder="Series #" style={{ width: "6rem" }} />
+          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            <input type="checkbox" name="drm_required" /> DRM required
+          </label>
+          <button type="submit" className="btn">Add to catalog</button>
+        </form>
+      </details>
+
     </main>
   );
 }
