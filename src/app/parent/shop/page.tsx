@@ -8,6 +8,7 @@ import { ensureClassics } from "@/lib/ensure-classics";
 import { BOOK_GENRES, coverAndTeaserForSlug } from "@/lib/gutenberg-classics";
 import { searchGutendex } from "@/lib/gutendex";
 import { addOrBuyBook, addCatalogBook } from "../purchase-actions";
+import { addCatalogBook as importCatalogBook } from "../catalog-actions";
 
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
@@ -43,12 +44,12 @@ export default async function ParentShopPage({
   const books = (await db`
     SELECT id, slug, title, author, COALESCE(genre, '') AS genre,
            COALESCE(price_cents, 0) AS price_cents,
-           series, series_number
+           series, series_number, teaser, cover_url, age_min, age_max, publisher, source, drm_required
     FROM books
     WHERE (${q} = '' OR title ILIKE ${'%' + q + '%'} OR author ILIKE ${'%' + q + '%'})
       AND (${genre} = '' OR genre = ${genre})
     ORDER BY COALESCE(series, title), series_number NULLS LAST, title
-  `) as { id: string; slug: string; title: string; author: string; genre: string; price_cents: number; series: string | null; series_number: number | null }[];
+  `) as { id: string; slug: string; title: string; author: string; genre: string; price_cents: number; series: string | null; series_number: number | null; teaser: string | null; cover_url: string | null; age_min: number | null; age_max: number | null; publisher: string | null; source: string | null; drm_required: boolean }[];
 
   const catalogResult = q ? await searchGutendex({ q, allowAdult: true }) : { hits: [] };
   const knownRows = (await db`SELECT slug FROM books WHERE slug LIKE 'gutenberg-%'`) as { slug: string }[];
@@ -98,6 +99,32 @@ export default async function ParentShopPage({
           <Link href="/parent/shop">Clear</Link>
         )}
       </form>
+      <details style={{ margin: "0.75rem 0" }}>
+        <summary style={{ cursor: "pointer", fontWeight: 600 }}>Add a book to the catalog</summary>
+        <form action={importCatalogBook} style={{ display: "grid", gap: "0.5rem", marginTop: "0.75rem", maxWidth: "36rem" }}>
+          <input name="title" placeholder="Title" required />
+          <input name="author" placeholder="Author" required />
+          <input name="slug" placeholder="Slug (e.g. nancy-drew-1)" required />
+          <input name="epub_path" placeholder="EPUB path (e.g. /books/nancy-drew-1.epub)" required />
+          <input name="genre" placeholder="Genre" />
+          <input name="publisher" placeholder="Publisher" />
+          <input name="source" placeholder="Source (gutenberg, licensed, manual)" defaultValue="manual" />
+          <input name="cover_url" placeholder="Cover image URL" />
+          <input name="teaser" placeholder="One-sentence teaser" />
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <input name="age_min" type="number" placeholder="Min age" style={{ width: "6rem" }} />
+            <input name="age_max" type="number" placeholder="Max age" style={{ width: "6rem" }} />
+            <input name="price_cents" type="number" placeholder="Price (cents)" defaultValue="0" style={{ width: "8rem" }} />
+          </div>
+          <input name="series" placeholder="Series name" />
+          <input name="series_number" type="number" placeholder="Series #" style={{ width: "6rem" }} />
+          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            <input type="checkbox" name="drm_required" /> DRM required
+          </label>
+          <button type="submit" className="btn">Add to catalog</button>
+        </form>
+      </details>
+
 
       {catalogResult.error && (
         <div className="card">
@@ -117,7 +144,7 @@ export default async function ParentShopPage({
             </div>
           ) : (
             books.map((book) => {
-              const meta = coverAndTeaserForSlug(book.slug);
+              const meta = { cover: book.cover_url || coverAndTeaserForSlug(book.slug).cover, teaser: book.teaser || coverAndTeaserForSlug(book.slug).teaser };
               const seriesLabel = book.series
                 ? `${book.series}${book.series_number ? ` #${book.series_number}` : ""}`
                 : null;
@@ -139,7 +166,7 @@ export default async function ParentShopPage({
                     <p style={{ margin: "0 0 0.2rem" }}>
                       <strong>{book.title}</strong>
                       {book.author ? ` — ${book.author}` : ""}
-                      {book.genre ? ` · ${book.genre}` : ""} · {money(Number(book.price_cents || 0))}
+                      {book.genre ? ` · ${book.genre}` : ""}{book.age_min != null ? ` · ages ${book.age_min}${book.age_max ? `–${book.age_max}` : "+"}` : ""} · {money(Number(book.price_cents || 0))}
                     </p>
                     {meta.teaser && (
                       <p className="muted" style={{ margin: "0 0 0.5rem", fontSize: "0.9rem" }}>{meta.teaser}</p>
