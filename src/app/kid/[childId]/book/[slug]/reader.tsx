@@ -228,8 +228,53 @@ export default function Reader({
 
         const res = await fetch(epubPath);
         if (!res.ok) throw new Error(`Could not download the book (${res.status})`);
-        const buffer = await res.arrayBuffer();
+        let buffer = await res.arrayBuffer();
         if (cancelled || !hostRef.current) return;
+
+        // Inject a LitLoot title page as the first page of the book
+        const JSZip = (window as any).JSZip;
+        if (JSZip) {
+          try {
+            const zip = await JSZip.loadAsync(buffer);
+            const titleHtml = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>${title.replace(/</g, "<")}</title>
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: Georgia, serif; text-align: center; }
+  h1 { font-size: 2rem; margin: 0 0 0.5rem; }
+  p { font-size: 1.1rem; color: #555; margin: 0; }
+</style></head>
+<body>
+  <div>
+    <h1>${title.replace(/</g, "<")}</h1>
+    <p>by ${author.replace(/</g, "<")}</p>
+  </div>
+</body></html>`;
+            // Find the OPF and put title.html next to it
+            const opfName = Object.keys(zip.files).find((n) => n.endsWith(".opf"));
+            if (opfName) {
+              const dir = opfName.includes("/") ? opfName.slice(0, opfName.lastIndexOf("/") + 1) : "";
+              const titlePath = dir + "litloot-title.html";
+              zip.file(titlePath, titleHtml);
+              let opf = await zip.file(opfName)!.async("string");
+              if (!opf.includes('id="litloot-title"')) {
+                opf = opf.replace(
+                  /<\/manifest>/,
+                  '  <item id="litloot-title" href="litloot-title.html" media-type="application/xhtml+xml"/>\n</manifest>'
+                );
+                opf = opf.replace(
+                  /<spine[^>]*>/,
+                  (m: string) => m + '\n    <itemref idref="litloot-title"/>'
+                );
+                zip.file(opfName, opf);
+              }
+            }
+            const newBuffer = await zip.generateAsync({ type: "arraybuffer" });
+            buffer = newBuffer as ArrayBuffer;
+          } catch {
+            // If injection fails, open the original book
+          }
+        }
+
 
         const book = window.ePub(buffer);
         bookRef.current = book;
