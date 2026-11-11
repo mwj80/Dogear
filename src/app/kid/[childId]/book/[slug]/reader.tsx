@@ -169,6 +169,9 @@ export default function Reader({
   const [page, setPage] = useState(startLocation + 1);
   const [total, setTotal] = useState(0);
   const [status, setStatus] = useState("Loading book\u2026");
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [showTitle, setShowTitle] = useState(startLocation === 0);
   const [items, setItems] = useState(rewards);
   const [justUnlocked, setJustUnlocked] = useState<string[]>([]);
   const [highest, setHighest] = useState(startLocation);
