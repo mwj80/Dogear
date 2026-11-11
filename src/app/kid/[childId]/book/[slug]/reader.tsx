@@ -261,7 +261,7 @@ export default function Reader({
               );
               opf = opf.replace(
                 /<spine[^>]*>/,
-                (m) => m + '\n    <itemref idref="litloot-title"/>'
+                (m: string) => m + '\n    <itemref idref="litloot-title"/>'
               );
             }
             zip.file(opfName, opf);
