@@ -37,6 +37,8 @@ type Props = {
   rewards: RewardInfo[];
   assignments: AssignmentInfo[];
   today: string;
+  coverUrl?: string | null;
+  teaser?: string | null;
 };
 
 declare global {
