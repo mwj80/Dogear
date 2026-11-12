@@ -60,7 +60,7 @@ export default async function TeacherPage() {
     FROM classes
     WHERE teacher_user_id = ${teacher.user_id}::uuid
     ORDER BY created_at
-  `) as { id: string; name: string }[];
+  `) as { id: string; name: string; code: string | null }[];
   const enrollments = (await db`
     SELECT e.class_id::text AS class_id, c.id::text AS child_id, c.display_name
     FROM enrollments e
@@ -131,6 +131,7 @@ export default async function TeacherPage() {
       ) : (
         classes.map((klass) => {
           const enrolled = enrollments.filter((e) => e.class_id === klass.id);
+          const code = klass.code || "";
           const enrolledIds = new Set(enrolled.map((e) => e.child_id));
           const available = kids.filter((kid) => !enrolledIds.has(kid.id));
           const classAssignments = assignments.filter((a) => a.class_id === klass.id);
