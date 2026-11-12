@@ -235,6 +235,7 @@ export default async function ParentPage({
       <header className="top">
         <Link href="/">✨ LitLoot</Link>
         <span>
+          <Link href="/parent/read">Read</Link>
           <Link href="/teacher">Teacher</Link>
           <Link href="/admin">Admin</Link>
           <UserButton />
