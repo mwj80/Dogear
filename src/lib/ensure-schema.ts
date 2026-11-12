@@ -107,6 +107,18 @@ export async function ensureSchema() {
       created_at timestamptz NOT NULL DEFAULT now()
     )
   `;
+
+  await db`
+    CREATE TABLE IF NOT EXISTS parent_progress (
+      household_id uuid REFERENCES households(id) ON DELETE CASCADE,
+      book_id uuid REFERENCES books(id) ON DELETE CASCADE,
+      max_location integer NOT NULL DEFAULT 0,
+      total_locations integer NOT NULL DEFAULT 0,
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (household_id, book_id)
+    )
+  `;
+
   await db`
     CREATE TABLE IF NOT EXISTS kid_game_accounts (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
