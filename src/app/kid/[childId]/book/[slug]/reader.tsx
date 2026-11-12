@@ -305,6 +305,14 @@ export default function Reader({
             doc.querySelectorAll(sel).forEach((el) => el.remove());
           };
           remove("#pg-header, #pg-footer, .pg-boilerplate, .pgheader");
+          // Disable internal links so chapter jumps don't break the reader
+          doc.querySelectorAll("a").forEach((a) => {
+            a.removeAttribute("href");
+            a.style.pointerEvents = "none";
+            a.style.color = "inherit";
+            a.style.textDecoration = "none";
+          });
+
           // Drop short license markers and PG cross-edition notices.
           // Length guard prevents matching a large parent that merely contains a notice.
           doc.querySelectorAll("div, p, section, h4, table").forEach((el) => {
