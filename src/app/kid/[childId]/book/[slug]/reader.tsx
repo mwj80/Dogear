@@ -243,7 +243,7 @@ export default function Reader({
             const safeTitle = title.replace(/</g, "<");
             const safeAuthor = author.replace(/</g, "<");
             const safeTeaser = (teaser || "").replace(/</g, "<");
-            const safeCover = coverUrl ? String(coverUrl).replace(/"/g, """) : "";
+            const safeCover = coverUrl ? String(coverUrl) : "";
             const coverImg = safeCover
               ? '<img src="' + safeCover + '" alt="" style="width:120px;height:180px;object-fit:cover;border-radius:8px;margin-bottom:1rem;" />'
               : "";
