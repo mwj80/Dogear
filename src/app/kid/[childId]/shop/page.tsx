@@ -80,7 +80,7 @@ export default async function KidShopPage({
     ORDER BY COALESCE(b.series, b.title), b.series_number NULLS LAST, b.title
   `) as { id: string; slug: string; title: string; author: string; genre: string; price_cents: number; series: string | null; series_number: number | null; teaser: string | null; cover_url: string | null }[];
 
-  const catalogResult = allowAdult && q ? await searchGutendex({ q, allowAdult }) : { hits: [] };
+  const catalogResult = q ? await searchGutendex({ q, allowAdult }) : { hits: [] };
   const knownRows = (await db`SELECT slug FROM books WHERE slug LIKE 'gutenberg-%'`) as { slug: string }[];
   const knownSlugs = new Set(knownRows.map((row) => row.slug));
   const freshCatalog = catalogResult.hits.filter((hit) => !knownSlugs.has(`gutenberg-${hit.gutenbergId}`));
@@ -134,8 +134,10 @@ export default async function KidShopPage({
       {books.length === 0 && freshCatalog.length === 0 ? (
         <div className="card">
           <p>{q || genre ? "No books match that search." : "No more books to add."}</p>
+          {!q && !genre && <p className="muted">Search by title or author to find more from Project Gutenberg.</p>}
         </div>
       ) : (
+        {books.length > 0 && <h2>In the shop</h2>}
         books.map((book) => {
           const price = Number(book.price_cents || 0);
           const canAfford = price === 0 || balance >= price;
