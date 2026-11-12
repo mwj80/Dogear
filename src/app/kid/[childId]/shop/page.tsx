@@ -69,7 +69,7 @@ export default async function KidShopPage({
 
   const books = (await db`
     SELECT b.id, b.slug, b.title, b.author, COALESCE(b.genre, '') AS genre, b.price_cents,
-           b.series, b.series_number
+           b.series, b.series_number, b.teaser, b.cover_url
     FROM books b
     WHERE NOT EXISTS (
       SELECT 1 FROM kid_books kb
@@ -78,7 +78,7 @@ export default async function KidShopPage({
       AND (${q} = '' OR b.title ILIKE ${'%' + q + '%'} OR b.author ILIKE ${'%' + q + '%'})
       AND (${genre} = '' OR b.genre = ${genre})
     ORDER BY COALESCE(b.series, b.title), b.series_number NULLS LAST, b.title
-  `) as { id: string; slug: string; title: string; author: string; genre: string; price_cents: number; series: string | null; series_number: number | null }[];
+  `) as { id: string; slug: string; title: string; author: string; genre: string; price_cents: number; series: string | null; series_number: number | null; teaser: string | null; cover_url: string | null }[];
 
   const catalogResult = allowAdult && q ? await searchGutendex({ q, allowAdult }) : { hits: [] };
   const knownRows = (await db`SELECT slug FROM books WHERE slug LIKE 'gutenberg-%'`) as { slug: string }[];
@@ -139,7 +139,7 @@ export default async function KidShopPage({
         books.map((book) => {
           const price = Number(book.price_cents || 0);
           const canAfford = price === 0 || balance >= price;
-          const meta = coverAndTeaserForSlug(book.slug);
+          const meta = { cover: book.cover_url || coverAndTeaserForSlug(book.slug).cover, teaser: book.teaser || coverAndTeaserForSlug(book.slug).teaser };
           const seriesLabel = book.series
             ? `${book.series}${book.series_number ? ` #${book.series_number}` : ""}`
             : null;
