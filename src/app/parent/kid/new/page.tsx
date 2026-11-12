@@ -35,6 +35,14 @@ export default async function FamilyAdminPage({
   const household = await ensureHousehold({ clerkUserId: userId, email });
   const db = sql();
   await ensureSchema();
+  const enrollments = (await db`
+    SELECT e.child_id::text AS child_id, cl.name AS class_name, cl.code
+    FROM enrollments e
+    JOIN classes cl ON cl.id = e.class_id
+    WHERE e.child_id IN (SELECT id FROM children WHERE household_id = ${household.household_id}::uuid)
+    ORDER BY cl.name
+  `) as { child_id: string; class_name: string; code: string | null }[];
+
 
   const kids = (await db`
     SELECT id, display_name, COALESCE(daily_goal_pages, 5) AS daily_goal_pages,
@@ -117,6 +125,22 @@ export default async function FamilyAdminPage({
             Add kid
           </button>
         </form>
+      </div>
+
+
+      <div className="card">
+        <h2>Current classes</h2>
+        {kids.map((kid) => {
+          const kidClasses = enrollments.filter((e) => e.child_id === kid.id);
+          return (
+            <p key={kid.id} style={{ margin: "0.4rem 0" }}>
+              <strong>{kid.display_name}</strong>
+              {kidClasses.length === 0
+                ? <span className="muted"> — not in a class yet</span>
+                : <span> — {kidClasses.map((c) => c.class_name).join(", ")}</span>}
+            </p>
+          );
+        })}
       </div>
 
       <div className="card">
