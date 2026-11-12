@@ -30,6 +30,8 @@ type Props = {
   bookId: string;
   title: string;
   author: string;
+  coverUrl?: string | null;
+  teaser?: string | null;
   epubPath: string;
   startLocation: number;
   readThis: number;
@@ -155,6 +157,8 @@ export default function Reader({
   bookId,
   title,
   author,
+  coverUrl,
+  teaser,
   epubPath,
   startLocation,
   readThis,
@@ -236,8 +240,17 @@ export default function Reader({
         if (JSZip) {
           try {
             const zip = await JSZip.loadAsync(buffer);
+            const safeTitle = title.replace(/</g, "<");
+            const safeAuthor = author.replace(/</g, "<");
+            const safeTeaser = (teaser || "").replace(/</g, "<");
+            const coverImg = coverUrl
+              ? `<img src="${coverUrl.replace(/"/g, """)}" alt="" style="width:120px;height:180px;object-fit:cover;border-radius:8px;margin-bottom:1rem;" />`
+              : "";
+            const teaserP = safeTeaser
+              ? `<p style="margin-top:0.75rem;font-size:1rem;color:#666;max-width:28rem;">${safeTeaser}</p>`
+              : "";
             const titleHtml = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>${title.replace(/</g, "<")}</title>
+<html><head><meta charset="utf-8"><title>${safeTitle}</title>
 <style>
   body { display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: Georgia, serif; text-align: center; }
   h1 { font-size: 2rem; margin: 0 0 0.5rem; }
@@ -245,8 +258,10 @@ export default function Reader({
 </style></head>
 <body>
   <div>
-    <h1>${title.replace(/</g, "<")}</h1>
-    <p>by ${author.replace(/</g, "<")}</p>
+    ${coverImg}
+    <h1>${safeTitle}</h1>
+    <p>by ${safeAuthor}</p>
+    ${teaserP}
   </div>
 </body></html>`;
             // Find the OPF and put title.html next to it
