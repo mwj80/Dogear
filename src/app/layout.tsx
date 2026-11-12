@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
+import { RegisterSW } from "./register-sw";
 
 export const metadata: Metadata = {
   title: "LitLoot",
@@ -15,7 +16,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body>{children}</body>
+        <body>{children}<RegisterSW /></body>
       </html>
     </ClerkProvider>
   );
