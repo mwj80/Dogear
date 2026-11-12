@@ -137,8 +137,9 @@ export default async function KidShopPage({
           {!q && !genre && <p className="muted">Search by title or author to find more from Project Gutenberg.</p>}
         </div>
       ) : (
+        <>
         {books.length > 0 && <h2>In the shop</h2>}
-        books.map((book) => {
+        {books.map((book) => {
           const price = Number(book.price_cents || 0);
           const canAfford = price === 0 || balance >= price;
           const meta = { cover: book.cover_url || coverAndTeaserForSlug(book.slug).cover, teaser: book.teaser || coverAndTeaserForSlug(book.slug).teaser };
@@ -183,7 +184,8 @@ export default async function KidShopPage({
               </div>
             </div>
           );
-        })
+        })}
+        </>
       )}
 
       {freshCatalog.length > 0 && (
