@@ -342,7 +342,7 @@ export default function Reader({
             setPage(start + 1);
             setHighest(Math.max(start, maxRef.current));
           }
-          let unlocked: string[] = [];
+          let unlocked: { id: string; face_value: string }[] = [];
           if (childId) {
             unlocked = await saveProgress({
               childId,
