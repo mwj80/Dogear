@@ -30,8 +30,6 @@ type Props = {
   bookId: string;
   title: string;
   author: string;
-  coverUrl?: string | null;
-  teaser?: string | null;
   epubPath: string;
   startLocation: number;
   readThis: number;
@@ -157,8 +155,6 @@ export default function Reader({
   bookId,
   title,
   author,
-  coverUrl,
-  teaser,
   epubPath,
   startLocation,
   readThis,
@@ -240,17 +236,20 @@ export default function Reader({
         if (JSZip) {
           try {
             const zip = await JSZip.loadAsync(buffer);
-            const safeTitle = title.replace(/</g, "<");
-            const safeAuthor = author.replace(/</g, "<");
-            const safeTeaser = (teaser || "").replace(/</g, "<");
-            const safeCover = coverUrl ? String(coverUrl) : "";
-            const coverImg = safeCover
-              ? '<img src="' + safeCover + '" alt="" style="width:120px;height:180px;object-fit:cover;border-radius:8px;margin-bottom:1rem;" />'
-              : "";
-            const teaserP = safeTeaser
-              ? '<p style="margin-top:0.75rem;font-size:1rem;color:#666;max-width:28rem;">' + safeTeaser + '</p>'
-              : "";
-            const titleHtml = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + safeTitle + '</title><style>body{display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:Georgia,serif;text-align:center;}h1{font-size:2rem;margin:0 0 0.5rem;}p{font-size:1.1rem;color:#555;margin:0;}</style></head><body><div>' + coverImg + '<h1>' + safeTitle + '</h1><p>by ' + safeAuthor + '</p>' + teaserP + '</div></body></html>';
+            const titleHtml = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>${title.replace(/</g, "<")}</title>
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: Georgia, serif; text-align: center; }
+  h1 { font-size: 2rem; margin: 0 0 0.5rem; }
+  p { font-size: 1.1rem; color: #555; margin: 0; }
+</style></head>
+<body>
+  <div>
+    <h1>${title.replace(/</g, "<")}</h1>
+    <p>by ${author.replace(/</g, "<")}</p>
+  </div>
+</body></html>`;
+            // Find the OPF and put title.html next to it
             const opfName = Object.keys(zip.files).find((n) => n.endsWith(".opf"));
             if (opfName) {
               const dir = opfName.includes("/") ? opfName.slice(0, opfName.lastIndexOf("/") + 1) : "";
@@ -275,6 +274,7 @@ export default function Reader({
             // If injection fails, open the original book
           }
         }
+
 
         const book = window.ePub(buffer);
         bookRef.current = book;
@@ -340,12 +340,12 @@ export default function Reader({
             setPage(start + 1);
             setHighest(Math.max(start, maxRef.current));
           }
-          const unlocked = await saveProgress({
+          const unlocked = childId ? await saveProgress({
             childId,
             bookId,
             maxLocation: Math.max(start, maxRef.current),
             totalLocations: length
-          });
+          }); : [];
           applyUnlocks(unlocked ?? []);
         } catch {
           // Book is open; page counts can fail on some catalog EPUBs.
@@ -387,7 +387,7 @@ export default function Reader({
       maxRef.current = safe;
       setHighest(safe);
       const length = book.locations.length() || total;
-      void saveProgress({
+      if (childId) void saveProgress({
         childId,
         bookId,
         maxLocation: safe,
