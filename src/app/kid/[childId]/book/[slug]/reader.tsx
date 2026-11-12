@@ -340,13 +340,16 @@ export default function Reader({
             setPage(start + 1);
             setHighest(Math.max(start, maxRef.current));
           }
-          const unlocked = childId ? await saveProgress({
-            childId,
-            bookId,
-            maxLocation: Math.max(start, maxRef.current),
-            totalLocations: length
-          }); : [];
-          applyUnlocks(unlocked ?? []);
+          let unlocked: string[] = [];
+          if (childId) {
+            unlocked = await saveProgress({
+              childId,
+              bookId,
+              maxLocation: Math.max(start, maxRef.current),
+              totalLocations: length
+            }) ?? [];
+          }
+          applyUnlocks(unlocked);
         } catch {
           // Book is open; page counts can fail on some catalog EPUBs.
         }
