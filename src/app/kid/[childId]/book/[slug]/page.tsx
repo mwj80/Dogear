@@ -21,7 +21,7 @@ export default async function BookPage({
     FROM children WHERE id = ${childId}::uuid LIMIT 1
   `;
   const books = await db`
-    SELECT id, title, author, epub_path FROM books WHERE slug = ${slug} LIMIT 1
+    SELECT id, title, author, epub_path, cover_url, teaser FROM books WHERE slug = ${slug} LIMIT 1
   `;
   if (!kids[0] || !books[0]) notFound();
   const kid = kids[0] as { id: string; display_name: string; can_self_purchase: boolean };
@@ -51,6 +51,8 @@ export default async function BookPage({
     id: string;
     title: string;
     author: string;
+    cover_url: string | null;
+    teaser: string | null;
     epub_path: string;
   };
 
@@ -159,6 +161,8 @@ export default async function BookPage({
         readAcross={readAcross}
         title={book.title}
         author={book.author}
+        coverUrl={book.cover_url}
+        teaser={book.teaser}
         rewards={withStreak}
         assignments={assignments}
         today={today}
