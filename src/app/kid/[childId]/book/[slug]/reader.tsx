@@ -228,9 +228,17 @@ export default function Reader({
         );
         if (cancelled || !hostRef.current || !window.ePub) return;
 
-        const res = await fetch(epubPath);
+        let res = await fetch(epubPath);
+        if (!res.ok) {
+          // Retry bypassing any service worker cache
+          res = await fetch(epubPath, { cache: "reload" });
+        }
         if (!res.ok) throw new Error(`Could not download the book (${res.status})`);
         let buffer = await res.arrayBuffer();
+        // Basic EPUB check (ZIP starts with PK)
+        if (buffer.byteLength < 4 || new Uint8Array(buffer)[0] !== 0x50) {
+          throw new Error("Downloaded file is not a valid book");
+        }
         if (cancelled || !hostRef.current) return;
 
         // Inject a LitLoot title page as the first page of the book
