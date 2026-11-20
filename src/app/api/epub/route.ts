@@ -31,9 +31,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Book not in the library" }, { status: 403 });
     }
 
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; LitLoot/1.0; +https://litloot.us)",
+        Accept: "application/epub+zip, application/octet-stream, */*",
+      },
+      redirect: "follow",
+    });
     if (!res.ok) {
-      return NextResponse.json({ error: "Failed to fetch EPUB" }, { status: 502 });
+      return NextResponse.json(
+        { error: `Upstream returned ${res.status}` },
+        { status: 502 }
+      );
     }
     const buffer = await res.arrayBuffer();
     return new NextResponse(buffer, {
