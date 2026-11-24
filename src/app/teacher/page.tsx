@@ -2,7 +2,8 @@ import Link from "next/link";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
-import { ensureHousehold } from "@/lib/ensure-household";
+import { ensureUser } from "@/lib/ensure-user";
+import { sql } from "@/lib/db";
 
 const WEEKDAY = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
@@ -38,19 +39,27 @@ export default async function TeacherPage() {
   const user = await currentUser();
   const email =
     user?.primaryEmailAddress?.emailAddress ?? `${userId}@users.invalid`;
-  const teacher = await ensureHousehold({ clerkUserId: userId, email });
+  const u = await ensureUser({ clerkUserId: userId, email });
   const db = sql();
+  // Optional household (only if this user is also a parent)
+  const hh = await db`
+    SELECT id FROM households WHERE parent_user_id = ${u.id}::uuid LIMIT 1
+  `;
+  const householdId = hh[0]?.id as string | undefined;
+  const teacher = { user_id: u.id, household_id: householdId };
 
   const todayRow = await db`SELECT CURRENT_DATE::text AS today`;
   const today = String((todayRow[0] as { today: string }).today);
   const days = weekAroundToday();
 
-  const kids = (await db`
-    SELECT id, display_name
-    FROM children
-    WHERE household_id = ${teacher.household_id}::uuid
-    ORDER BY display_name
-  `) as { id: string; display_name: string }[];
+  const kids = householdId
+    ? ((await db`
+        SELECT id, display_name
+        FROM children
+        WHERE household_id = ${householdId}::uuid
+        ORDER BY display_name
+      `) as { id: string; display_name: string }[])
+    : [];
   const books = (await db`SELECT id, title FROM books ORDER BY title`) as {
     id: string;
     title: string;
@@ -89,24 +98,28 @@ export default async function TeacherPage() {
     book_title: string;
     due_date: string | null;
   }[];
-  const progress = (await db`
-    SELECT p.child_id::text AS child_id, p.book_id::text AS book_id,
-           p.max_location, p.total_locations
-    FROM progress p
-    JOIN children c ON c.id = p.child_id
-    WHERE c.household_id = ${teacher.household_id}::uuid
-  `) as {
-    child_id: string;
-    book_id: string;
-    max_location: number;
-    total_locations: number;
-  }[];
-  const owned = (await db`
-    SELECT kb.child_id::text AS child_id, kb.book_id::text AS book_id
-    FROM kid_books kb
-    JOIN children c ON c.id = kb.child_id
-    WHERE c.household_id = ${teacher.household_id}::uuid
-  `) as { child_id: string; book_id: string }[];
+  const progress = householdId
+    ? ((await db`
+        SELECT p.child_id::text AS child_id, p.book_id::text AS book_id,
+               p.max_location, p.total_locations
+        FROM progress p
+        JOIN children c ON c.id = p.child_id
+        WHERE c.household_id = ${householdId}::uuid
+      `) as {
+        child_id: string;
+        book_id: string;
+        max_location: number;
+        total_locations: number;
+      }[])
+    : [];
+  const owned = householdId
+    ? ((await db`
+        SELECT kb.child_id::text AS child_id, kb.book_id::text AS book_id
+        FROM kid_books kb
+        JOIN children c ON c.id = kb.child_id
+        WHERE c.household_id = ${householdId}::uuid
+      `) as { child_id: string; book_id: string }[])
+    : [];
   const ownedSet = new Set(owned.map((o) => `${o.child_id}:${o.book_id}`));
 
   return (
@@ -115,7 +128,7 @@ export default async function TeacherPage() {
         <Link href="/parent">Back to parent</Link>
       </header>
       <h1>Teacher</h1>
-      <p>Create a class, add kids from this household, and assign a book.</p>
+      <p>Create a class and share the join code. Parents add their kids.</p>
 
       <div className="card">
         <h2 style={{ textDecoration: "underline" }}>New class</h2>
