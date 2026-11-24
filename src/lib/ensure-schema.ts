@@ -4,6 +4,20 @@ import { sql } from "./db";
 export async function ensureSchema() {
   const db = sql();
   await db`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS clerk_user_id text
+  `;
+  await db`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS is_teacher boolean NOT NULL DEFAULT false
+  `;
+  await db`
+    CREATE UNIQUE INDEX IF NOT EXISTS users_clerk_user_id_unique
+    ON users (clerk_user_id)
+    WHERE clerk_user_id IS NOT NULL
+  `;
+
+  await db`
     ALTER TABLE books
     ADD COLUMN IF NOT EXISTS price_cents integer NOT NULL DEFAULT 0
   `;
