@@ -12,14 +12,16 @@ export default function HomePage() {
         <span>
           <Link href="/kid/sign-in">Kid sign in</Link>
           <SignedOut>
-            <SignInButton mode="redirect">
+            <SignInButton mode="redirect" forceRedirectUrl="/role">
               <button type="button" className="btn">
-                Parent sign in
+                Sign in
               </button>
             </SignInButton>
           </SignedOut>
           <SignedIn>
-            <Link href="/parent">Parent dashboard</Link>
+            <Link href="/parent">Parent</Link>
+            {" · "}
+            <Link href="/teacher">Teacher</Link>
             <UserButton />
           </SignedIn>
         </span>
@@ -30,21 +32,26 @@ export default function HomePage() {
       </p>
       <div className="card">
         <SignedOut>
-          <p>Phase 1: create a parent account to continue.</p>
+          <p>Parents fund rewards. Teachers assign books. Kids read and earn.</p>
           <p>
-            <Link href="/sign-up">Create parent account</Link>
+            <Link href="/sign-up">Create account</Link>
             {" · "}
             <Link href="/sign-in">Sign in</Link>
             {" · "}
             <Link href="/kid/sign-in">Kid sign in</Link>
           </p>
+          <p>
+            <Link href="/sign-in?redirect_url=/role">I'm a teacher</Link>
+          </p>
         </SignedOut>
         <SignedIn>
           <p>You are signed in.</p>
           <p>
-            <Link href="/parent">Go to parent dashboard</Link>
+            <Link href="/parent">Parent dashboard</Link>
             {" · "}
-            <Link href="/kid/sign-in">Kid sign in</Link>
+            <Link href="/teacher">Teacher dashboard</Link>
+            {" · "}
+            <Link href="/role">Change role</Link>
           </p>
         </SignedIn>
       </div>
