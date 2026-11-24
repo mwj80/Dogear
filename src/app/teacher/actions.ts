@@ -4,6 +4,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { sql } from "@/lib/db";
+import { ensureUser } from "@/lib/ensure-user";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { newClassCode } from "@/lib/class-code";
@@ -14,7 +15,12 @@ async function teacherOfUser() {
   const user = await currentUser();
   const email =
     user?.primaryEmailAddress?.emailAddress ?? `${userId}@users.invalid`;
-  return ensureHousehold({ clerkUserId: userId, email });
+  const u = await ensureUser({ clerkUserId: userId, email });
+  const db = sql();
+  const hh = await db`
+    SELECT id FROM households WHERE parent_user_id = ${u.id}::uuid LIMIT 1
+  `;
+  return { user_id: u.id, household_id: hh[0]?.id as string | undefined };
 }
 
 function dueDate(formData: FormData) {
