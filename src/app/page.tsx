@@ -11,6 +11,7 @@ export default function HomePage() {
         </div>
         <span>
           <Link href="/kid/sign-in">Kid sign in</Link>
+          <Link href="/kid/create">Create kid account</Link>
           <SignedOut>
             <SignInButton mode="redirect" forceRedirectUrl="/role">
               <button type="button" className="btn">
@@ -39,6 +40,7 @@ export default function HomePage() {
             <Link href="/sign-in">Sign in</Link>
             {" · "}
             <Link href="/kid/sign-in">Kid sign in</Link>
+          <Link href="/kid/create">Create kid account</Link>
           </p>
           <p>
             <Link href="/sign-in?redirect_url=/role">I'm a teacher</Link>
