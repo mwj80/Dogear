@@ -39,13 +39,27 @@ export async function joinClassAsKid(formData: FormData) {
     ON CONFLICT DO NOTHING
   `;
 
-  await db`
-    INSERT INTO parent_notices (household_id, message)
-    VALUES (
-      ${kid.household_id}::uuid,
-      ${`${kid.display_name} joined the class “${klass.name}” using the class code.`}
-    )
+  // Give the kid the assignment books so they can read them
+  const books = await db`
+    SELECT DISTINCT book_id FROM assignments WHERE class_id = ${klass.id}::uuid
   `;
+  for (const b of books as { book_id: string }[]) {
+    await db`
+      INSERT INTO kid_books (child_id, book_id, purchased_by)
+      VALUES (${kid.id}::uuid, ${b.book_id}::uuid, 'self')
+      ON CONFLICT DO NOTHING
+    `;
+  }
+
+  if (kid.household_id) {
+    await db`
+      INSERT INTO parent_notices (household_id, message)
+      VALUES (
+        ${kid.household_id}::uuid,
+        ${`${kid.display_name} joined the class “${klass.name}” using the class code.`}
+      )
+    `;
+  }
 
   revalidatePath("/teacher");
   revalidatePath("/parent");
