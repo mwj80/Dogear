@@ -87,6 +87,13 @@ export default async function RewardAdminPage({
     title: string | null;
   }[];
 
+  const byKid = new Map<string, typeof rewards>();
+  for (const r of rewards) {
+    const list = byKid.get(r.display_name) ?? [];
+    list.push(r);
+    byKid.set(r.display_name, list);
+  }
+
   return (
     <main>
       <header className="top">
@@ -100,7 +107,7 @@ export default async function RewardAdminPage({
       )}
 
       <div className="card">
-        <h2>Set a reward</h2>
+        <h2 style={{ fontWeight: 700, textDecoration: "underline" }}>Set a reward</h2>
         {kids.length === 0 ? (
           <p>Add a kid first.</p>
         ) : (
@@ -109,28 +116,48 @@ export default async function RewardAdminPage({
       </div>
 
       <div className="card">
-        <h2>Existing rewards</h2>
+        <h2 style={{ fontWeight: 700, textDecoration: "underline" }}>Existing rewards</h2>
         {rewards.length === 0 ? (
           <p>None yet.</p>
         ) : (
-          rewards.map((reward) => (
-            <div key={reward.id} className="reward-item">
-              <div className={reward.status === "unlocked" ? "unlocked" : ""}>
-                {reward.display_name}: {reward.face_value} for{" "}
-                {criteriaLabel(
-                  reward.criteria_type,
-                  reward.pages,
-                  reward.title,
-                  reward.scope,
-                  reward.mode,
-                  reward.days
-                )}{" "}
-                — {reward.status} ({money(Number(reward.cost_cents))} from balance)
-                {Number(reward.shortfall_cents) > 0
-                  ? ` — short ${money(Number(reward.shortfall_cents))}`
-                  : ""}
-              </div>
-              <RewardEditor reward={reward} />
+          Array.from(byKid.entries()).map(([name, list]) => (
+            <div key={name} style={{ marginBottom: "1.25rem" }}>
+              <h3 style={{ fontWeight: 700, margin: "0.75rem 0 0.4rem", color: "var(--ink)" }}>{name}</h3>
+              {list.map((reward) => (
+                <div key={reward.id} className="reward-item" style={{ marginBottom: "0.6rem" }}>
+                  <div>
+                    <span>{reward.face_value}</span>
+                    {" for "}
+                    {criteriaLabel(
+                      reward.criteria_type,
+                      reward.pages,
+                      reward.title,
+                      reward.scope,
+                      reward.mode,
+                      reward.days
+                    )}
+                    {" "}
+                    <span
+                      style={{
+                        fontSize: "0.8rem",
+                        padding: "0.1rem 0.4rem",
+                        borderRadius: "4px",
+                        background: reward.status === "unlocked" ? "#e8f5e9" : "#f5f5f5",
+                        color: reward.status === "unlocked" ? "#2e7d32" : "#666"
+                      }}
+                    >
+                      {reward.status}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "0.85rem", color: "var(--muted)", marginTop: "0.15rem" }}>
+                    {money(Number(reward.cost_cents))} from balance
+                    {Number(reward.shortfall_cents) > 0
+                      ? ` · short ${money(Number(reward.shortfall_cents))}`
+                      : ""}
+                  </div>
+                  <RewardEditor reward={reward} />
+                </div>
+              ))}
             </div>
           ))
         )}
