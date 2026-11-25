@@ -5,6 +5,11 @@ export async function ensureSchema() {
   const db = sql();
   await db`
     ALTER TABLE children
+    ADD COLUMN IF NOT EXISTS age integer
+  `;
+
+  await db`
+    ALTER TABLE children
     ALTER COLUMN household_id DROP NOT NULL
   `;
   await db`
