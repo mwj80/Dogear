@@ -4,6 +4,20 @@ import { sql } from "./db";
 export async function ensureSchema() {
   const db = sql();
   await db`
+    ALTER TABLE children
+    ALTER COLUMN household_id DROP NOT NULL
+  `;
+  await db`
+    ALTER TABLE children
+    ADD COLUMN IF NOT EXISTS claim_code text
+  `;
+  await db`
+    CREATE UNIQUE INDEX IF NOT EXISTS children_claim_code_unique
+    ON children (claim_code)
+    WHERE claim_code IS NOT NULL
+  `;
+
+  await db`
     CREATE TABLE IF NOT EXISTS parent_notices (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       household_id uuid NOT NULL REFERENCES households(id) ON DELETE CASCADE,
