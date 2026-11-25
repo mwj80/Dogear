@@ -32,7 +32,13 @@ function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-export default async function RewardAdminPage() {
+export default async function RewardAdminPage({
+  searchParams
+}: {
+  searchParams: Promise<{ added?: string }>;
+}) {
+  const params = await searchParams;
+  const added = params.added === "1";
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
   const user = await currentUser();
@@ -87,6 +93,11 @@ export default async function RewardAdminPage() {
         <Link href="/parent">Back to parent</Link>
       </header>
       <h1>Reward Administration</h1>
+      {added && (
+        <div className="card" style={{ borderColor: "#2e7d32" }}>
+          <p className="unlocked">Reward added.</p>
+        </div>
+      )}
 
       <div className="card">
         <h2>Set a reward</h2>
