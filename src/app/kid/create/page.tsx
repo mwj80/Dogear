@@ -9,10 +9,12 @@ export default async function CreateKidPage({
   const params = await searchParams;
   const error =
     params.error === "missing"
-      ? "Enter a name and a PIN of at least 4 digits."
+      ? "Enter a name, age, and a PIN of at least 4 digits."
       : params.error === "taken"
         ? "That name is already in use. Try a different name or sign in."
-        : null;
+        : params.error === "young"
+          ? "You must be 13 or older to create an account without a parent. Ask a parent to set one up for you."
+          : null;
 
   return (
     <main>
@@ -31,6 +33,10 @@ export default async function CreateKidPage({
           <label>
             Your name
             <input name="name" required maxLength={40} />
+          </label>
+          <label>
+            Your age
+            <input name="age" type="number" min={1} max={18} required />
           </label>
           <label>
             PIN (at least 4 digits)
