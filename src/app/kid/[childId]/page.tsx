@@ -74,7 +74,8 @@ export default async function KidHomePage({
   const kids = await db`
     SELECT id, display_name, daily_goal_pages,
            COALESCE(can_self_purchase, false) AS can_self_purchase,
-           COALESCE(show_reward_codes, false) AS show_reward_codes
+           COALESCE(show_reward_codes, false) AS show_reward_codes,
+           claim_code, household_id
     FROM children WHERE id = ${childId}::uuid LIMIT 1
   `;
   if (!kids[0]) notFound();
@@ -227,7 +228,7 @@ export default async function KidHomePage({
   return (
     <main>
       <header className="top">
-        <Link href="/parent">Back to parent</Link>
+        {kid.household_id ? <Link href="/parent">Back to parent</Link> : <Link href="/">✨ LitLoot</Link>}
         <form action={signOutKid}>
           <button type="submit" className="btn secondary" style={{ padding: "0.25rem 0.6rem" }}>
             Sign out
@@ -237,7 +238,13 @@ export default async function KidHomePage({
       <h1 style={{ fontStyle: "italic", textDecoration: "underline", color: "var(--ink)" }}>
         Hi, {kid.display_name}
       </h1>
-      <p>Pick a book and earn your rewards.</p>
+      <p>{kid.household_id ? "Pick a book and earn your rewards." : "Pick a book. Join a class with your teacher’s code for assignments."}</p>
+      {kid.claim_code && (
+        <div className="card" style={{ borderColor: "var(--muted)" }}>
+          <p className="muted">No parent account yet. Share this claim code if a parent wants to add rewards later:</p>
+          <p style={{ fontWeight: 600 }}>{kid.claim_code}</p>
+        </div>
+      )}
       {requested && (
         <div className="card" style={{ borderColor: "#2e7d32" }}>
           <p className="unlocked">Request sent. A parent will approve it before it is used.</p>
