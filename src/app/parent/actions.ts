@@ -180,6 +180,8 @@ export async function createFinishReward(formData: FormData) {
     `;
   }
   revalidatePath("/parent");
+  revalidatePath("/parent/reward/new");
+  redirect("/parent/reward/new?added=1");
 }
 
 export async function removeReward(formData: FormData) {
