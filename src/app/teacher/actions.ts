@@ -150,6 +150,26 @@ export async function createAssignment(formData: FormData) {
       ${due}::date
     )
   `;
+
+  // Grant free non-DRM books to enrolled kids who don't have them
+  const bookRows = await db`
+    SELECT price_cents, COALESCE(drm_required, false) AS drm_required
+    FROM books WHERE id = ${bookId}::uuid LIMIT 1
+  `;
+  const book = bookRows[0] as { price_cents: number; drm_required: boolean } | undefined;
+  if (book && book.price_cents === 0 && !book.drm_required) {
+    const kids = await db`
+      SELECT child_id FROM enrollments WHERE class_id = ${classId}::uuid
+    `;
+    for (const k of kids as { child_id: string }[]) {
+      await db`
+        INSERT INTO kid_books (child_id, book_id, purchased_by)
+        VALUES (${k.child_id}::uuid, ${bookId}::uuid, 'self')
+        ON CONFLICT DO NOTHING
+      `;
+    }
+  }
+
   revalidatePath("/teacher");
   revalidatePath("/kid");
   return title;
