@@ -7,6 +7,7 @@ import { sql } from "@/lib/db";
 import { ensurePageLog } from "@/lib/page-log";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { streakEndingToday } from "@/lib/check-unlocks";
+import { readKidSession } from "@/lib/kid-auth";
 import CopyCode from "@/app/copy-code";
 
 function daysUntil(due: string, today: string) {
@@ -64,6 +65,8 @@ export default async function KidHomePage({
 }) {
   const { childId } = await params;
   const query = await searchParams;
+  const session = await readKidSession();
+  const isOwnSession = session === childId;
   const requested = query.requested === "1";
   const join = query.join;
   const joinedClass = query.class ? decodeURIComponent(query.class) : "";
@@ -230,7 +233,7 @@ export default async function KidHomePage({
   return (
     <main>
       <header className="top">
-        {kid.household_id ? <Link href="/parent">Back to parent</Link> : <Link href="/">✨ LitLoot</Link>}
+        {isOwnSession ? <Link href="/">✨ LitLoot</Link> : <Link href="/parent">Back to parent</Link>}
         <form action={signOutKid}>
           <button type="submit" className="btn secondary" style={{ padding: "0.25rem 0.6rem" }}>
             Sign out
