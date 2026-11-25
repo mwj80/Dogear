@@ -2,6 +2,7 @@ import { UserButton } from "@clerk/nextjs";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { dismissNotice } from "@/app/kid/[childId]/join-actions";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { sql } from "@/lib/db";
 import { ensurePageLog } from "@/lib/page-log";
@@ -226,6 +227,18 @@ export default async function ParentPage({
   const allocatedCents = rewards
     .filter((r) => r.status === "active")
     .reduce((n, r) => n + Number(r.cost_cents), 0);
+  let notices: { id: string; message: string }[] = [];
+  if (household) {
+    const db2 = sql();
+    notices = (await db2`
+      SELECT id::text AS id, message
+      FROM parent_notices
+      WHERE household_id = ${household.household_id}::uuid AND dismissed = false
+      ORDER BY created_at DESC
+      LIMIT 5
+    `) as { id: string; message: string }[];
+  }
+
   const remainingCents = availableCents - allocatedCents;
   const overdrawn = remainingCents < 0;
   const days = lastSevenDays();
@@ -242,6 +255,21 @@ export default async function ParentPage({
         </span>
       </header>
       <h1>Parent dashboard</h1>
+      {notices.length > 0 && (
+        <div className="card" style={{ borderColor: "#2e7d32" }}>
+          {notices.map((n) => (
+            <div key={n.id} style={{ marginBottom: "0.4rem" }}>
+              <p className="unlocked">{n.message}</p>
+              <form action={dismissNotice}>
+                <input type="hidden" name="notice_id" value={n.id} />
+                <button type="submit" className="btn secondary" style={{ padding: "0.2rem 0.5rem" }}>
+                  Dismiss
+                </button>
+              </form>
+            </div>
+          ))}
+        </div>
+      )}
       <p>Signed in as {email}.</p>
       {fundsAdded > 0 && (
         <div className="card" style={{ borderColor: "#2e7d32" }}>
