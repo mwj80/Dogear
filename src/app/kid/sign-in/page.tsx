@@ -11,7 +11,7 @@ export default async function KidSignInPage({
     params.error === "missing"
       ? "Enter your name and PIN."
       : params.error === "no"
-        ? "That name and PIN did not match. Ask a parent to check the PIN."
+        ? "That name and PIN did not match. Check them and try again."
         : params.error === "locked"
           ? "Too many tries. Wait 15 minutes, or ask a parent to check the PIN."
           : null;
@@ -22,7 +22,7 @@ export default async function KidSignInPage({
         <Link href="/">✨ LitLoot</Link>
       </header>
       <h1>Kid sign in</h1>
-      <p>Use the name and PIN a parent set for you.</p>
+      <p>Use the name and PIN you set (or a parent set for you).</p>
       {error && (
         <div className="card" style={{ borderColor: "#d32f2f" }}>
           <p className="overdue">{error}</p>
@@ -52,6 +52,7 @@ export default async function KidSignInPage({
           </button>
         </form>
       </div>
+          <p><Link href="/kid/create">Create a kid account</Link> (no parent needed)</p>
     </main>
   );
 }
