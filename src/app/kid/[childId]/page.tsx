@@ -183,6 +183,8 @@ export default async function KidHomePage({
     can_self_purchase: boolean;
     daily_goal_pages: number;
     show_reward_codes: boolean;
+    claim_code: string | null;
+    household_id: string | null;
   };
   const goal = Number(kid.daily_goal_pages) || 5;
   const pagesToday = byDay.get(today) ?? 0;
