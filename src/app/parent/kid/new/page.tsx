@@ -9,13 +9,14 @@ import { removeKid, addGameAccount, removeGameAccount, approveGameRequest, rejec
 import { toggleSelfPurchase, toggleFullCatalog } from "../../purchase-actions";
 import { setKidPin } from "../pin-actions";
 import { joinClassByCode } from "@/app/teacher/actions";
+import { claimKid } from "@/app/kid/create/actions";
 import { RemoveKidForm } from "./remove-kid-form";
 import { PinForm } from "./pin-form";
 
 export default async function FamilyAdminPage({
   searchParams
 }: {
-  searchParams: Promise<{ permission?: string; name?: string; account?: string; game?: string; catalog?: string; pin?: string; join?: string; class?: string; codes?: string }>;
+  searchParams: Promise<{ permission?: string; name?: string; account?: string; game?: string; catalog?: string; pin?: string; join?: string; class?: string; codes?: string; claim?: string }>;
 }) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
@@ -26,6 +27,7 @@ export default async function FamilyAdminPage({
   const accountGame = params.game ? decodeURIComponent(params.game) : "";
   const catalog = params.catalog;
   const join = params.join;
+  const claim = params.claim;
   const joinedClass = params.class ? decodeURIComponent(params.class) : "";
   const codes = params.codes;
 
@@ -144,6 +146,14 @@ export default async function FamilyAdminPage({
       </div>
 
       <div className="card">
+        <h2>Claim a teen account</h2>
+        <p className="muted">If a teen created their own account, enter the claim code they share with you.</p>
+        <form action={claimKid} className="inline-form">
+          <input name="claim_code" placeholder="Claim code" required style={{ textTransform: "uppercase" }} />
+          <button type="submit" className="btn">Claim</button>
+        </form>
+        {claim === "ok" && <p className="unlocked">Claimed {params.name ? decodeURIComponent(params.name) : "kid"}. They now have rewards access.</p>}
+        {claim === "bad" && <p>That claim code was not found or already used.</p>}
         <h2>Join a class</h2>
         <p className="muted">Enter the code the teacher gave you to enroll one of your kids.</p>
         {kids.length === 0 ? (
