@@ -15,8 +15,13 @@ function newClaimCode() {
 export async function createKidAccount(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const pin = String(formData.get("pin") ?? "").trim();
-  if (!name || pin.length < 4) {
+  const ageRaw = String(formData.get("age") ?? "").trim();
+  const age = Number(ageRaw);
+  if (!name || pin.length < 4 || !Number.isFinite(age)) {
     redirect("/kid/create?error=missing");
+  }
+  if (age < 13) {
+    redirect("/kid/create?error=young");
   }
   await ensureSchema();
   const db = sql();
@@ -32,8 +37,8 @@ export async function createKidAccount(formData: FormData) {
 
   const claim = newClaimCode();
   const created = await db`
-    INSERT INTO children (display_name, pin_hash, claim_code, household_id)
-    VALUES (${name}, ${hashPin(pin)}, ${claim}, NULL)
+    INSERT INTO children (display_name, pin_hash, claim_code, household_id, age)
+    VALUES (${name}, ${hashPin(pin)}, ${claim}, NULL, ${age})
     RETURNING id::text AS id
   `;
   const childId = (created[0] as { id: string }).id;
