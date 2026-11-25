@@ -4,6 +4,16 @@ import { sql } from "./db";
 export async function ensureSchema() {
   const db = sql();
   await db`
+    CREATE TABLE IF NOT EXISTS parent_notices (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      household_id uuid NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+      message text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      dismissed boolean NOT NULL DEFAULT false
+    )
+  `;
+
+  await db`
     ALTER TABLE users
     ADD COLUMN IF NOT EXISTS clerk_user_id text
   `;
