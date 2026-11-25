@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requestGameAccount } from "@/app/parent/kid/actions";
+import { joinClassAsKid } from "./join-actions";
 import { signOutKid } from "../sign-in/actions";
 import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
@@ -59,11 +60,13 @@ export default async function KidHomePage({
   searchParams
 }: {
   params: Promise<{ childId: string }>;
-  searchParams: Promise<{ requested?: string }>;
+  searchParams: Promise<{ requested?: string; join?: string; class?: string }>;
 }) {
   const { childId } = await params;
   const query = await searchParams;
   const requested = query.requested === "1";
+  const join = query.join;
+  const joinedClass = query.class ? decodeURIComponent(query.class) : "";
   const db = sql();
   await ensurePageLog();
   await ensureSchema();
@@ -240,6 +243,30 @@ export default async function KidHomePage({
           <p className="unlocked">Request sent. A parent will approve it before it is used.</p>
         </div>
       )}
+      {join === "ok" && (
+        <div className="card" style={{ borderColor: "#2e7d32" }}>
+          <p className="unlocked">Joined {joinedClass}. Your parent has been notified.</p>
+        </div>
+      )}
+      {join === "bad" && (
+        <div className="card" style={{ borderColor: "#c62828" }}>
+          <p>That class code was not found. Check with your teacher and try again.</p>
+        </div>
+      )}
+      {join === "missing" && (
+        <div className="card" style={{ borderColor: "#c62828" }}>
+          <p>Enter the class code your teacher gave you.</p>
+        </div>
+      )}
+      <div className="card">
+        <h2>Join a class</h2>
+        <p className="muted">Got a code from your teacher? Enter it here.</p>
+        <form action={joinClassAsKid}>
+          <input type="hidden" name="child_id" value={kid.id} />
+          <input name="code" placeholder="Class code" required style={{ marginRight: "0.5rem" }} />
+          <button type="submit" className="btn">Join</button>
+        </form>
+      </div>
       <div className="card" style={{ borderColor: goalMet ? "var(--ok)" : undefined }}>
         <p style={{ margin: "0 0 0.2rem", color: "var(--ink)", fontWeight: 600 }}>
           Today: {pagesToday} / {goal} pages
