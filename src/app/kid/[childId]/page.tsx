@@ -258,15 +258,7 @@ export default async function KidHomePage({
           <p>Enter the class code your teacher gave you.</p>
         </div>
       )}
-      <div className="card">
-        <h2>Join a class</h2>
-        <p className="muted">Got a code from your teacher? Enter it here.</p>
-        <form action={joinClassAsKid}>
-          <input type="hidden" name="child_id" value={kid.id} />
-          <input name="code" placeholder="Class code" required style={{ marginRight: "0.5rem" }} />
-          <button type="submit" className="btn">Join</button>
-        </form>
-      </div>
+
       <div className="card" style={{ borderColor: goalMet ? "var(--ok)" : undefined }}>
         <p style={{ margin: "0 0 0.2rem", color: "var(--ink)", fontWeight: 600 }}>
           Today: {pagesToday} / {goal} pages
@@ -488,6 +480,15 @@ export default async function KidHomePage({
         <p className="muted">Ask a parent to update where rewards are sent.</p>
       </div>
       */}
-    </main>
+    
+      <details style={{ marginTop: "1.5rem", color: "var(--muted)" }}>
+        <summary style={{ cursor: "pointer", fontSize: "0.9rem" }}>Join a class with a code</summary>
+        <form action={joinClassAsKid} style={{ marginTop: "0.4rem" }}>
+          <input type="hidden" name="child_id" value={kid.id} />
+          <input name="code" placeholder="Class code" required style={{ marginRight: "0.4rem", padding: "0.2rem 0.4rem" }} />
+          <button type="submit" className="btn secondary" style={{ padding: "0.2rem 0.5rem" }}>Join</button>
+        </form>
+      </details>
+</main>
   );
 }
