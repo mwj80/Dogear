@@ -124,7 +124,8 @@ export default async function TeacherPage() {
   return (
     <main>
       <header className="top">
-        <Link href="/parent">Back to parent</Link>
+        {u.is_parent ? <Link href="/parent">Back to parent</Link> : null}
+        <Link href="/role">Change role</Link>
       </header>
       <h1>Teacher</h1>
       <p>Create a class and share the join code. Parents add their kids.</p>
