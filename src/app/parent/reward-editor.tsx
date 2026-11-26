@@ -52,6 +52,7 @@ export default function RewardEditor({ reward }: { reward: Reward }) {
         </button>
       </div>
       {open && (
+        <>
         <form action={updateReward} className="stack">
           <input type="hidden" name="reward_id" value={reward.id} />
           <label>
@@ -91,6 +92,7 @@ export default function RewardEditor({ reward }: { reward: Reward }) {
           <input type="hidden" name="reward_id" value={reward.id} />
           <button type="submit" className="btn secondary">Remove</button>
         </form>
+        </>
       )}
     </div>
   );
