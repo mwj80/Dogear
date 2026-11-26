@@ -5,6 +5,10 @@ import { ensureHousehold } from "@/lib/ensure-household";
 import { createCheckoutSession } from "./actions";
 import { hasStripe } from "@/lib/stripe";
 
+function isTestMode() {
+  return (process.env.STRIPE_SECRET_KEY || "").startsWith("sk_test_");
+}
+
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
@@ -34,6 +38,11 @@ export default async function AddFundsPage({
       </header>
       <h1>Add Funds</h1>
       <p>Available balance: {money(available)}</p>
+      {isTestMode() && (
+        <div className="card" style={{ borderColor: "#f9a825", background: "#fff8e1" }}>
+          <p>Test mode — payments will not charge a real card.</p>
+        </div>
+      )}
 
       {canceled && (
         <div className="card">
