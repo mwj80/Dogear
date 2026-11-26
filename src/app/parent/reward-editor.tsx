@@ -50,12 +50,6 @@ export default function RewardEditor({ reward }: { reward: Reward }) {
         <button type="button" className="btn secondary" onClick={() => setOpen((v) => !v)}>
           {open ? "Close" : "Edit"}
         </button>
-        <form action={removeReward}>
-          <input type="hidden" name="reward_id" value={reward.id} />
-          <button type="submit" className="btn secondary">
-            Remove
-          </button>
-        </form>
       </div>
       {open && (
         <form action={updateReward} className="stack">
@@ -90,6 +84,12 @@ export default function RewardEditor({ reward }: { reward: Reward }) {
             Save changes
           </button>
           <p className="muted">Book and scope stay as they are. Cost is recalculated from the value.</p>
+        </form>
+        <form action={removeReward} onSubmit={(e) => {
+          if (!confirm("Remove this reward?")) e.preventDefault();
+        }}>
+          <input type="hidden" name="reward_id" value={reward.id} />
+          <button type="submit" className="btn secondary">Remove</button>
         </form>
       )}
     </div>
