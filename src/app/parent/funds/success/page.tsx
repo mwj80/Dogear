@@ -64,11 +64,5 @@ export default async function FundsSuccessPage({
     `;
   }
 
-  return (
-    <main>
-      <h1>Funds added</h1>
-      <p>${(cents / 100).toFixed(2)} has been added to your balance.</p>
-      <p><Link href="/parent">Back to parent</Link></p>
-    </main>
-  );
+  redirect(`/parent?funds=${cents}`);
 }
