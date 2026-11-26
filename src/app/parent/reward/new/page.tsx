@@ -35,10 +35,11 @@ function money(cents: number) {
 export default async function RewardAdminPage({
   searchParams
 }: {
-  searchParams: Promise<{ added?: string }>;
+  searchParams: Promise<{ added?: string; status?: string }>;
 }) {
   const params = await searchParams;
   const added = params.added === "1";
+  const statusFilter = params.status === "unlocked" ? "unlocked" : params.status === "all" ? "all" : "active";
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
   const user = await currentUser();
@@ -61,13 +62,16 @@ export default async function RewardAdminPage({
   const rewards = (await db`
     SELECT r.id, r.face_value, r.reward_type, r.status, r.cost_cents,
            r.shortfall_cents, r.child_id, r.criteria_type, r.scope,
+           r.book_id::text AS book_id,
            (r.criteria_json->>'pages')::int AS pages,
            (r.criteria_json->>'days')::int AS days,
            r.criteria_json->>'mode' AS mode,
-           c.display_name, b.title
+           c.display_name, b.title,
+           COALESCE(p.max_location, 0) AS current_page
     FROM rewards r
     JOIN children c ON c.id = r.child_id
     LEFT JOIN books b ON b.id = r.book_id
+    LEFT JOIN progress p ON p.child_id = r.child_id AND p.book_id = r.book_id
     WHERE r.household_id = ${household.household_id}::uuid
     ORDER BY r.created_at DESC
   `) as {
@@ -85,10 +89,13 @@ export default async function RewardAdminPage({
     mode: string | null;
     display_name: string;
     title: string | null;
+    book_id: string | null;
+    current_page: number;
   }[];
 
-  const byKid = new Map<string, typeof rewards>();
-  for (const r of rewards) {
+  const filtered = statusFilter === "all" ? rewards : rewards.filter((r) => r.status === statusFilter);
+  const byKid = new Map<string, typeof filtered>();
+  for (const r of filtered) {
     const list = byKid.get(r.display_name) ?? [];
     list.push(r);
     byKid.set(r.display_name, list);
@@ -117,7 +124,14 @@ export default async function RewardAdminPage({
 
       <div className="card">
         <h2 style={{ fontWeight: 700, textDecoration: "underline" }}>Existing rewards</h2>
-        {rewards.length === 0 ? (
+        <p style={{ margin: "0.4rem 0 0.8rem" }}>
+          <Link href="/parent/reward/new?status=active" style={{ fontWeight: statusFilter === "active" ? 700 : 400 }}>Active</Link>
+          {" · "}
+          <Link href="/parent/reward/new?status=unlocked" style={{ fontWeight: statusFilter === "unlocked" ? 700 : 400 }}>Unlocked</Link>
+          {" · "}
+          <Link href="/parent/reward/new?status=all" style={{ fontWeight: statusFilter === "all" ? 700 : 400 }}>All</Link>
+        </p>
+        {filtered.length === 0 ? (
           <p>None yet.</p>
         ) : (
           Array.from(byKid.entries()).map(([name, list]) => (
@@ -150,6 +164,9 @@ export default async function RewardAdminPage({
                     </span>
                   </div>
                   <div style={{ fontSize: "0.85rem", color: "var(--muted)", marginTop: "0.15rem" }}>
+                    {reward.status === "active" && reward.pages
+                      ? `${reward.current_page} of ${reward.pages} pages · `
+                      : ""}
                     {money(Number(reward.cost_cents))} from balance
                     {Number(reward.shortfall_cents) > 0
                       ? ` · short ${money(Number(reward.shortfall_cents))}`
