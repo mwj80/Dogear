@@ -298,7 +298,7 @@ export default async function KidHomePage({
                   />
                 </div>
                 <span>{d.pages}</span>
-                <span>{d.label}</span>
+                <span>{d.isToday ? "Today" : d.label}</span>
               </div>
             );
           })}
@@ -371,7 +371,11 @@ export default async function KidHomePage({
       <div className="card">
         <h2 style={{ textDecoration: "underline" }}>Rewards</h2>
         {rewards.length === 0 ? (
-          <p>No rewards yet.</p>
+          <p className="muted">
+            {kid.household_id
+              ? "No rewards yet. A parent can add one from the Rewards page."
+              : "No rewards yet. Rewards appear after a parent claims this account with your claim code."}
+          </p>
         ) : (
           rewards.map((reward) => {
             const target =
@@ -493,14 +497,15 @@ export default async function KidHomePage({
       </div>
       */}
     
-      <details style={{ marginTop: "1.5rem", color: "var(--muted)" }}>
-        <summary style={{ cursor: "pointer", fontSize: "0.9rem" }}>Join a class with a code</summary>
+      <div className="card" style={{ marginTop: "1.5rem" }}>
+        <h2 style={{ textDecoration: "underline", fontSize: "1.05rem" }}>Join a class</h2>
+        <p className="muted">Enter the code your teacher gave you.</p>
         <form action={joinClassAsKid} style={{ marginTop: "0.4rem" }}>
           <input type="hidden" name="child_id" value={kid.id} />
-          <input name="code" placeholder="Class code" required style={{ marginRight: "0.4rem", padding: "0.2rem 0.4rem" }} />
-          <button type="submit" className="btn secondary" style={{ padding: "0.2rem 0.5rem" }}>Join</button>
+          <input name="code" placeholder="Class code" required style={{ marginRight: "0.4rem", padding: "0.25rem 0.45rem" }} />
+          <button type="submit" className="btn">Join</button>
         </form>
-      </details>
+      </div>
 </main>
   );
 }
