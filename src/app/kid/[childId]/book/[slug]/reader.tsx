@@ -558,7 +558,13 @@ export default function Reader({
       {loadError ? (
         <div className="banner" style={{ borderColor: "var(--bad)" }}>
           <p>Could not open the book: {loadError}</p>
-          <button type="button" className="btn" onClick={retry}>Try again</button>
+          <p className="muted" style={{ margin: "0.35rem 0" }}>
+            The book source may be temporarily unavailable. You can try again, or pick a different book.
+          </p>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.4rem" }}>
+            <button type="button" className="btn" onClick={retry}>Try again</button>
+            <a href={`/kid/${childId}`} className="btn secondary">Try a different book</a>
+          </div>
         </div>
       ) : status ? <p>{status}</p> : null}
       <div className="reader-tools">
