@@ -212,3 +212,14 @@ export async function ensureSchema() {
     ON kid_sign_in_attempts (key, created_at)
   `;
 }
+
+  await db`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS display_name text
+  `;
+
+  await db`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS display_name text
+  `;
+}
