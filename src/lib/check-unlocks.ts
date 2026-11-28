@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import { sql } from "./db";
 import { ensurePageLog } from "./page-log";
+import { createTremendousLink } from "./tremendous";
 import { sendEmail } from "./email";
 
 type RewardRow = {
@@ -126,7 +127,24 @@ async function queueRelease(reward: RewardRow, childId: string) {
     LIMIT 1
   `;
   const identifier = (accounts[0] as { identifier: string } | undefined)?.identifier;
-  const code = mockCode(provider);
+
+  let code = mockCode(provider);
+  const json = typeof reward.criteria_json === "string"
+    ? JSON.parse(reward.criteria_json || "{}")
+    : reward.criteria_json || {};
+  const productId = json.tremendous_product_id as string | undefined;
+  const amount = Number(json.tremendous_amount || 0) || Math.max(1, Number(reward.cost_cents || 0) / 100 || 5);
+  if (productId) {
+    const link = await createTremendousLink({
+      amount,
+      productId,
+      recipientName: "LitLoot Kid",
+      recipientEmail: "rewards@litloot.invalid",
+      externalId: `reward-${reward.id}`
+    });
+    if (link) code = link;
+  }
+
   await db`
     INSERT INTO reward_releases (reward_id, child_id, provider, identifier, face_value, status, code)
     VALUES (
