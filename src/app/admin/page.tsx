@@ -47,47 +47,17 @@ export default async function AdminPage() {
       <div className="card">
         <form action={updateRates} className="stack">
           <label>
-            Robux: dollars per 100 Robux
-            <input
-              name="robux_dollars_per_100"
-              type="number"
-              min="0.01"
-              step="0.01"
-              defaultValue={Number(rates.robux_dollars_per_100)}
-            />
-          </label>
-          <p className="muted">800 Robux at $0.75 per 100 costs $6.00.</p>
-          <label>
-            Gift card markup
+            Markup multiplier
             <input
               name="gift_multiplier"
               type="number"
-              min="0.01"
+              min="1.00"
               step="0.01"
               defaultValue={Number(rates.gift_multiplier)}
             />
           </label>
-          <p className="muted">A $10 gift card at 1.10 costs $11.00.</p>
-          <label>
-            Pizza coupon, fixed dollars
-            <input
-              name="pizza_fixed_dollars"
-              type="number"
-              min="0.01"
-              step="0.01"
-              defaultValue={Number(rates.pizza_fixed_dollars)}
-            />
-          </label>
-          <label>
-            Custom reward, default dollars
-            <input
-              name="custom_default_dollars"
-              type="number"
-              min="0.01"
-              step="0.01"
-              defaultValue={Number(rates.custom_default_dollars)}
-            />
-          </label>
+          <p className="muted">A $5 gift card at 1.10 costs $5.50. Custom rewards are not marked up.</p>
+
           <button type="submit" className="btn">
             Save rates
           </button>
