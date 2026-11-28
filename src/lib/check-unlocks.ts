@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import { sql } from "./db";
 import { ensurePageLog } from "./page-log";
+import { sendEmail } from "./email";
 
 type RewardRow = {
   id: string;
@@ -234,6 +235,26 @@ export async function checkUnlocks(
               ? "Read-pages unlock"
               : "Reach-page unlock";
     const claimed = await spendAndUnlock(reward, note);
+    if (claimed) {
+      try {
+        const parent = await db`
+          SELECT u.email FROM users u
+          JOIN households h ON h.id = ${reward.household_id}::uuid
+          WHERE u.clerk_user_id = h.clerk_user_id
+          LIMIT 1
+        `;
+        const to = (parent[0] as { email?: string } | undefined)?.email;
+        if (to) {
+          await sendEmail({
+            to,
+            subject: "LitLoot: a reward unlocked",
+            text: "A reward unlocked for one of your kids.\n\n" + reward.face_value + "\n\nOpen LitLoot to see the code."
+          });
+        }
+      } catch (e) {
+        console.error("unlock email failed", e);
+      }
+    }
     if (!claimed) continue;
     await queueRelease(reward, childId);
     unlocked.push({ id: reward.id, face_value: reward.face_value });
