@@ -259,7 +259,7 @@ export default async function ParentPage({
           <UserButton />
         </span>
       </header>
-      <h1>Parent dashboard</h1>
+      <h1>{parentName ? `Hi, ${parentName}` : "Parent dashboard"}</h1>
       {notices.length > 0 && (
         <div className="card" style={{ borderColor: "#2e7d32" }}>
           {notices.map((n) => (
@@ -275,12 +275,27 @@ export default async function ParentPage({
           ))}
         </div>
       )}
-      <p>Signed in as {email}.</p>
-      <form action={updateParentName} style={{ margin: "0.4rem 0 0.8rem", display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap" }}>
-        <label htmlFor="parent-name" className="muted" style={{ fontSize: "0.9rem" }}>What should we call you?</label>
-        <input id="parent-name" name="display_name" placeholder="e.g. Mom, Dad, or your name" defaultValue={parentName ?? ""} maxLength={60} style={{ padding: "0.25rem 0.45rem" }} />
-        <button type="submit" className="btn secondary" style={{ padding: "0.25rem 0.6rem" }}>Save</button>
-      </form>
+      <p className="muted" style={{ margin: "0.2rem 0 0.6rem" }}>
+        Signed in as {email}
+        {parentName ? (
+          <>
+            {" · "}
+            <details style={{ display: "inline" }}>
+              <summary style={{ display: "inline", cursor: "pointer", color: "var(--link, #1565c0)" }}>Change name</summary>
+              <form action={updateParentName} style={{ marginTop: "0.4rem", display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap" }}>
+                <input name="display_name" defaultValue={parentName} maxLength={60} style={{ padding: "0.25rem 0.45rem" }} />
+                <button type="submit" className="btn secondary" style={{ padding: "0.25rem 0.6rem" }}>Save</button>
+              </form>
+            </details>
+          </>
+        ) : (
+          <form action={updateParentName} style={{ margin: "0.4rem 0 0", display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap" }}>
+            <label htmlFor="parent-name" className="muted" style={{ fontSize: "0.9rem" }}>What should we call you?</label>
+            <input id="parent-name" name="display_name" placeholder="e.g. Mom, Dad, or your name" maxLength={60} style={{ padding: "0.25rem 0.45rem" }} />
+            <button type="submit" className="btn secondary" style={{ padding: "0.25rem 0.6rem" }}>Save</button>
+          </form>
+        )}
+      </p>
       {fundsAdded > 0 && (
         <div className="card" style={{ borderColor: "#2e7d32" }}>
           <p className="unlocked">Added {money(fundsAdded)} to the available balance.</p>
@@ -353,7 +368,7 @@ export default async function ParentPage({
                 Active rewards are allocated {money(Math.abs(remainingCents))} more than the available balance. Add funds, or a reward may unlock short.
               </div>
             )}
-            <p>
+            <p style={{ margin: "0.6rem 0 0" }}>
               <Link href="/parent/funds">Add Funds</Link>
             </p>
           </>
@@ -361,9 +376,22 @@ export default async function ParentPage({
       </div>
 
       {!dbError && (
+        <p style={{ display: "flex", gap: "1.25rem", flexWrap: "wrap", margin: "0.4rem 0 1rem", fontSize: "0.95rem" }}>
+          <Link href="/parent/shop">Shop for Books</Link>
+          <Link href="/parent/reward/new">Rewards</Link>
+          <Link href="/parent/kid/new">Family</Link>
+        </p>
+      )}
+
+      {!dbError && (
         <>
           <div className="card">
             <h2>Kids</h2>
+            {log.length > 0 && (
+              <p className="muted" style={{ margin: "0 0 0.6rem" }}>
+                Family this week: {log.reduce((n, l) => n + Number(l.pages), 0)} pages
+              </p>
+            )}
             {kids.length === 0 ? (
               <p>No kids yet.</p>
             ) : (
@@ -423,6 +451,7 @@ export default async function ParentPage({
                       <Link href={`/kid/${kid.id}`}>Open kid view</Link>
                     </p>
                     <p className={todayMet ? "kid-meta unlocked" : "kid-meta muted"}>Today: {todayPages} pages · goal {goal}</p>
+                    <p className="kid-meta muted">This week: {kidLog.reduce((n, l) => n + Number(l.pages), 0)} pages</p>
                     {kidClasses.length > 0 && (
                       <>
                         <p className="section-head">Classes</p>
@@ -594,10 +623,7 @@ export default async function ParentPage({
             </p>
           </div>
 
-          <p style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", margin: "1rem 0" }}>
-            <Link href="/parent/reward/new">Reward Administration</Link>
-            <Link href="/parent/shop">Shop for Books</Link>
-          </p>
+
 
         </>
       )}
