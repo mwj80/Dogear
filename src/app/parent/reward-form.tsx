@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { createFinishReward } from "./actions";
+import { GIFT_OPTIONS } from "@/lib/curated-rewards";
 
 type Kid = { id: string; display_name: string };
 type Book = { id: string; title: string };
@@ -97,13 +98,11 @@ export default function RewardForm({ kids, books, markup = 1.1 }: { kids: Kid[];
       <label>
         Reward
         <select name="curated_id" defaultValue="amazon-5" required>
-          {["amazon-5", "amazon-10", "visa-5", "visa-10"].map((id) => {
-            const amount = id.endsWith("10") ? 10 : 5;
-            const fee = (amount * (markup - 1)).toFixed(2);
-            const label = id.startsWith("amazon") ? "Amazon" : "Visa";
+          {GIFT_OPTIONS.map((item) => {
+            const fee = (item.amount * (markup - 1)).toFixed(2);
             return (
-              <option key={id} value={id}>
-                {label} ${amount} (+${fee} markup)
+              <option key={item.id} value={item.id}>
+                {item.label} (+${fee} markup)
               </option>
             );
           })}
