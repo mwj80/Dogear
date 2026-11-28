@@ -54,6 +54,8 @@ export default async function RewardAdminPage({
     WHERE household_id = ${household.household_id}::uuid
     ORDER BY display_name
   `) as { id: string; display_name: string }[];
+  const rates = (await db`SELECT gift_multiplier FROM admin_rates LIMIT 1`) as { gift_multiplier: string }[];
+  const markup = Number(rates[0]?.gift_multiplier || 1.1);
   const books = (await db`SELECT id, title FROM books ORDER BY title`) as {
     id: string;
     title: string;
@@ -118,7 +120,7 @@ export default async function RewardAdminPage({
         {kids.length === 0 ? (
           <p>Add a kid first.</p>
         ) : (
-          <RewardForm kids={kids} books={books} />
+          <RewardForm kids={kids} books={books} markup={markup} />
         )}
       </div>
 
