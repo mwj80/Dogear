@@ -4,6 +4,7 @@ import { useState } from "react";
 
 export default function CopyCode({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
+  const isLink = /^https?:\/\//i.test(code);
 
   async function copy() {
     try {
@@ -16,13 +17,13 @@ export default function CopyCode({ code }: { code: string }) {
   }
 
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
-      <code style={{ fontFamily: "ui-monospace, monospace", background: "#f5f0e8", padding: "0.15rem 0.4rem", borderRadius: "4px" }}>
-        {code}
-      </code>
-      <button type="button" className="btn secondary" style={{ padding: "0.15rem 0.45rem", fontSize: "0.75rem" }} onClick={copy}>
-        {copied ? "Copied" : "Copy"}
-      </button>
-    </span>
+    <button
+      type="button"
+      className="btn secondary"
+      style={{ padding: "0.2rem 0.55rem", fontSize: "0.8rem" }}
+      onClick={copy}
+    >
+      {copied ? "Copied" : isLink ? "Copy Link" : "Copy Code"}
+    </button>
   );
 }
