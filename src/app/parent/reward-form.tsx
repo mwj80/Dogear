@@ -6,7 +6,7 @@ import { createFinishReward } from "./actions";
 type Kid = { id: string; display_name: string };
 type Book = { id: string; title: string };
 
-export default function RewardForm({ kids, books }: { kids: Kid[]; books: Book[] }) {
+export default function RewardForm({ kids, books, markup = 1.1 }: { kids: Kid[]; books: Book[]; markup?: number }) {
   const [scope, setScope] = useState("book");
   const [goal, setGoal] = useState("reach");
 
@@ -97,10 +97,16 @@ export default function RewardForm({ kids, books }: { kids: Kid[]; books: Book[]
       <label>
         Reward
         <select name="curated_id" defaultValue="amazon-5" required>
-          <option value="amazon-5">Amazon $5</option>
-          <option value="amazon-10">Amazon $10</option>
-          <option value="visa-5">Visa $5</option>
-          <option value="visa-10">Visa $10</option>
+          {["amazon-5", "amazon-10", "visa-5", "visa-10"].map((id) => {
+            const amount = id.endsWith("10") ? 10 : 5;
+            const fee = (amount * (markup - 1)).toFixed(2);
+            const label = id.startsWith("amazon") ? "Amazon" : "Visa";
+            return (
+              <option key={id} value={id}>
+                {label} ${amount} (+${fee} markup)
+              </option>
+            );
+          })}
           <option value="custom">Custom (describe below)</option>
         </select>
       </label>
