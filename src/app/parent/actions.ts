@@ -9,6 +9,7 @@ import { ensurePageLog } from "@/lib/page-log";
 import { costCents } from "@/lib/rates";
 import { recheckHousehold } from "@/lib/check-unlocks";
 import { ensureSchema } from "@/lib/ensure-schema";
+import { curatedById } from "@/lib/curated-rewards";
 
 async function householdOfUser() {
   const { userId } = await auth();
@@ -78,12 +79,10 @@ export async function createFinishReward(formData: FormData) {
 
   const childId = String(formData.get("child_id") ?? "");
   const bookId = String(formData.get("book_id") ?? "");
-  const rewardType = String(formData.get("reward_type") ?? "robux") as
-    | "robux"
-    | "gift_card"
-    | "pizza"
-    | "custom";
-  const faceValue = String(formData.get("face_value") ?? "").trim();
+  const curatedId = String(formData.get("curated_id") ?? "amazon-5");
+  const curated = curatedById(curatedId);
+  const rewardType = curated && curated.productId ? "gift_card" : "custom";
+  const faceValue = String(formData.get("face_value") ?? "").trim() || curated?.label || "Reward";
   const scope = String(formData.get("scope") ?? "book") === "any" ? "any" : "book";
   let goal = String(formData.get("goal") ?? "reach");
   const pages = Number(formData.get("pages") ?? 0);
@@ -122,7 +121,7 @@ export async function createFinishReward(formData: FormData) {
     custom_default_dollars: string;
   };
   if (!rates) throw new Error("Admin rates are not configured");
-  const cost = costCents({
+  let cost = costCents({
     rewardType,
     faceValue,
     robuxPer100: Number(rates.robux_dollars_per_100),
@@ -130,15 +129,18 @@ export async function createFinishReward(formData: FormData) {
     pizzaFixed: Number(rates.pizza_fixed_dollars),
     customDefault: Number(rates.custom_default_dollars)
   });
+  if (curated && curated.productId && curated.amount > 0) {
+    cost = curated.amount * 100;
+  }
 
   const type =
     goal === "finish" ? "finish_book" : goal === "streak" ? "daily_streak" : "total_pages";
-  const criteriaJson =
-    goal === "finish"
-      ? "{}"
-      : goal === "streak"
-        ? JSON.stringify({ pages, days })
-        : JSON.stringify({ pages, mode: goal });
+  const base = goal === "finish" ? {} : goal === "streak" ? { pages, days } : { pages, mode: goal };
+  if (curated && curated.productId) {
+    (base as any).tremendous_product_id = curated.productId;
+    (base as any).tremendous_amount = curated.amount;
+  }
+  const criteriaJson = JSON.stringify(base);
 
   if (scope === "any") {
     await db`
