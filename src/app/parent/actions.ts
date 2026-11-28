@@ -538,3 +538,19 @@ export async function resetDemo() {
   revalidatePath("/kid");
   revalidatePath("/teacher");
 }
+
+export async function updateParentName(formData: FormData) {
+  const { userId } = await auth();
+  if (!userId) return;
+  const name = String(formData.get("display_name") ?? "").trim().slice(0, 60);
+  if (!name) return;
+
+  await ensureSchema();
+  const db = sql();
+  await db`
+    UPDATE users
+    SET display_name = ${name}
+    WHERE clerk_user_id = ${userId}
+  `;
+  revalidatePath("/parent");
+}
