@@ -14,7 +14,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      appearance={{
+        variables: {
+          colorPrimary: "#1565c0",
+          colorText: "#111",
+          fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+        },
+        layout: {
+          logoLinkUrl: "/",
+          helpPageUrl: "https://litloot.us"
+        }
+      }}
+    >
       <html lang="en">
         <body>{children}<RegisterSW /></body>
       </html>
