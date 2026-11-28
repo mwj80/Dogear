@@ -5,6 +5,7 @@ import { stripe } from "@/lib/stripe";
 import { ensureHousehold } from "@/lib/ensure-household";
 import { sql } from "@/lib/db";
 import { ensureSchema } from "@/lib/ensure-schema";
+import { sendEmail } from "@/lib/email";
 
 export default async function FundsSuccessPage({
   searchParams
@@ -62,6 +63,14 @@ export default async function FundsSuccessPage({
       INSERT INTO ledger (household_id, kind, amount_cents, note)
       VALUES (${household.household_id}::uuid, 'load', ${cents}, ${`Stripe ${sessionId}`})
     `;
+  }
+
+  if (!existing[0]) {
+    await sendEmail({
+      to: email,
+      subject: "LitLoot: funds added",
+      text: `$${ (cents/100).toFixed(2) } has been added to your LitLoot balance.`
+    });
   }
 
   redirect(`/parent?funds=${cents}`);
