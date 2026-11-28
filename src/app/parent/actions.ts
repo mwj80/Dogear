@@ -121,16 +121,19 @@ export async function createFinishReward(formData: FormData) {
     custom_default_dollars: string;
   };
   if (!rates) throw new Error("Admin rates are not configured");
-  let cost = costCents({
-    rewardType,
-    faceValue,
-    robuxPer100: Number(rates.robux_dollars_per_100),
-    giftMultiplier: Number(rates.gift_multiplier),
-    pizzaFixed: Number(rates.pizza_fixed_dollars),
-    customDefault: Number(rates.custom_default_dollars)
-  });
+  let cost = 0;
   if (curated && curated.productId && curated.amount > 0) {
-    cost = curated.amount * 100;
+    const mult = Number(rates.gift_multiplier || 1);
+    cost = Math.round(curated.amount * mult * 100);
+  } else {
+    cost = costCents({
+      rewardType,
+      faceValue,
+      robuxPer100: Number(rates.robux_dollars_per_100),
+      giftMultiplier: Number(rates.gift_multiplier),
+      pizzaFixed: Number(rates.pizza_fixed_dollars),
+      customDefault: Number(rates.custom_default_dollars)
+    });
   }
 
   const type =
