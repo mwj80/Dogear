@@ -95,18 +95,22 @@ export default function RewardForm({ kids, books }: { kids: Kid[]; books: Book[]
         </label>
       )}
       <label>
-        Type
-        <select name="reward_type" defaultValue="robux">
-          <option value="robux">Roblox Robux</option>
-          <option value="gift_card">Gift card</option>
-          <option value="pizza">Pizza coupon</option>
-          <option value="custom">Custom</option>
+        Reward
+        <select name="curated_id" defaultValue="amazon-5" required>
+          <option value="amazon-5">Amazon $5</option>
+          <option value="amazon-10">Amazon $10</option>
+          <option value="visa-5">Visa $5</option>
+          <option value="visa-10">Visa $10</option>
+          <option value="custom">Custom (describe below)</option>
         </select>
       </label>
       <label>
-        Value the kid sees
-        <input name="face_value" required placeholder="800 Robux" />
+        What the kid sees
+        <input name="face_value" placeholder="Amazon $5 gift card" />
       </label>
+      <p className="muted" style={{ fontSize: "0.85rem", margin: "0.2rem 0 0.6rem" }}>
+        Gift cards are delivered as a redemption link when the reward unlocks. Custom rewards are noted only.
+      </p>
       <button type="submit" className="btn">
         Save reward
       </button>
