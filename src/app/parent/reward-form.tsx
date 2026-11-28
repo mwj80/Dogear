@@ -10,6 +10,7 @@ type Book = { id: string; title: string };
 export default function RewardForm({ kids, books, markup = 1.1 }: { kids: Kid[]; books: Book[]; markup?: number }) {
   const [scope, setScope] = useState("book");
   const [goal, setGoal] = useState("reach");
+  const [curatedId, setCuratedId] = useState("amazon-5");
 
   const goals = useMemo(
     () =>
@@ -97,7 +98,7 @@ export default function RewardForm({ kids, books, markup = 1.1 }: { kids: Kid[];
       )}
       <label>
         Reward
-        <select name="curated_id" defaultValue="amazon-5" required>
+        <select name="curated_id" value={curatedId} onChange={(e) => setCuratedId(e.target.value)} required>
           {GIFT_OPTIONS.map((item) => {
             const fee = (item.amount * (markup - 1)).toFixed(2);
             return (
@@ -109,12 +110,16 @@ export default function RewardForm({ kids, books, markup = 1.1 }: { kids: Kid[];
           <option value="custom">Custom (describe below)</option>
         </select>
       </label>
-      <label>
-        What the kid sees
-        <input name="face_value" placeholder="Amazon $5 gift card" />
-      </label>
+      {curatedId === "custom" && (
+        <label>
+          What the kid sees
+          <input name="face_value" placeholder="Movie night, extra screen time…" required />
+        </label>
+      )}
       <p className="muted" style={{ fontSize: "0.85rem", margin: "0.2rem 0 0.6rem" }}>
-        Gift cards are delivered as a redemption link when the reward unlocks. Custom rewards are noted only.
+        {curatedId === "custom"
+          ? "Custom rewards are noted only — no gift card is sent."
+          : "The kid sees the selected gift card. A redemption link is created when the reward unlocks."}
       </p>
       <button type="submit" className="btn">
         Save reward
