@@ -7,6 +7,7 @@ function baseUrl(key: string) {
 
 export async function createTremendousLink(opts: {
   amount: number;
+  productId: string;
   recipientName: string;
   recipientEmail: string;
   externalId: string;
@@ -14,7 +15,6 @@ export async function createTremendousLink(opts: {
   const key = process.env.TREMENDOUS_API_KEY;
   if (!key) return null;
 
-  const productId = process.env.TREMENDOUS_PRODUCT_ID || "OKMHM2X2OHYV"; // sandbox Amazon-style product; override if needed
   const funding = process.env.TREMENDOUS_FUNDING_SOURCE || "BALANCE";
 
   const body = {
@@ -27,7 +27,7 @@ export async function createTremendousLink(opts: {
         name: opts.recipientName || "LitLoot Kid",
         email: opts.recipientEmail || "kid@litloot.invalid"
       },
-      products: [productId]
+      products: [opts.productId]
     }
   };
 
