@@ -8,12 +8,9 @@ export async function updateRates(formData: FormData) {
   const { userId } = await auth();
   if (!userId) throw new Error("Not signed in");
 
-  const robux = Number(formData.get("robux_dollars_per_100"));
   const gift = Number(formData.get("gift_multiplier"));
-  const pizza = Number(formData.get("pizza_fixed_dollars"));
-  const custom = Number(formData.get("custom_default_dollars"));
-  if (![robux, gift, pizza, custom].every((n) => Number.isFinite(n) && n > 0)) {
-    throw new Error("Each rate must be greater than 0");
+  if (!Number.isFinite(gift) || gift < 1) {
+    throw new Error("Markup must be at least 1.00");
   }
 
   const db = sql();
@@ -22,19 +19,14 @@ export async function updateRates(formData: FormData) {
     const id = (existing[0] as { id: string }).id;
     await db`
       UPDATE admin_rates
-      SET robux_dollars_per_100 = ${robux},
-          gift_multiplier = ${gift},
-          pizza_fixed_dollars = ${pizza},
-          custom_default_dollars = ${custom},
+      SET gift_multiplier = ${gift},
           updated_at = now()
       WHERE id = ${id}::uuid
     `;
   } else {
     await db`
-      INSERT INTO admin_rates (
-        robux_dollars_per_100, gift_multiplier, pizza_fixed_dollars, custom_default_dollars
-      )
-      VALUES (${robux}, ${gift}, ${pizza}, ${custom})
+      INSERT INTO admin_rates (gift_multiplier)
+      VALUES (${gift})
     `;
   }
 
