@@ -211,12 +211,6 @@ export async function ensureSchema() {
     CREATE INDEX IF NOT EXISTS kid_sign_in_attempts_key_created
     ON kid_sign_in_attempts (key, created_at)
   `;
-}
-
-  await db`
-    ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS display_name text
-  `;
 
   await db`
     ALTER TABLE users
