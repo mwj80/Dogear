@@ -7,7 +7,7 @@ import { ensureHousehold } from "@/lib/ensure-household";
 import { sql } from "@/lib/db";
 import { ensurePageLog } from "@/lib/page-log";
 import { recheckHousehold } from "@/lib/check-unlocks";
-import { resetDemo } from "./actions";
+import { resetDemo, updateParentName } from "./actions";
 import { ensureSchema } from "@/lib/ensure-schema";
 import CopyCode from "@/app/copy-code";
 
@@ -128,6 +128,7 @@ export default async function ParentPage({
   }[] = [];
   let dueToday = new Date().toISOString().slice(0, 10);
   let dbError: string | null = null;
+  let parentName: string | null = null;
   let recentUnlocks: { face_value: string; display_name: string; unlocked_at: string }[] = [];
   let releases: {
     id: string;
@@ -145,6 +146,10 @@ export default async function ParentPage({
     await ensureSchema();
     await recheckHousehold(household.household_id);
     const db = sql();
+    try {
+      const nameRow = await db`SELECT display_name FROM users WHERE clerk_user_id = ${userId} LIMIT 1`;
+      parentName = (nameRow[0] as { display_name: string | null } | undefined)?.display_name ?? null;
+    } catch {}
     const todayRow = await db`SELECT CURRENT_DATE::text AS today`;
     dueToday = String((todayRow[0] as { today: string }).today);
     kids = (await db`
@@ -271,6 +276,11 @@ export default async function ParentPage({
         </div>
       )}
       <p>Signed in as {email}.</p>
+      <form action={updateParentName} style={{ margin: "0.4rem 0 0.8rem", display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap" }}>
+        <label htmlFor="parent-name" className="muted" style={{ fontSize: "0.9rem" }}>What should we call you?</label>
+        <input id="parent-name" name="display_name" placeholder="e.g. Mom, Dad, or your name" defaultValue={parentName ?? ""} maxLength={60} style={{ padding: "0.25rem 0.45rem" }} />
+        <button type="submit" className="btn secondary" style={{ padding: "0.25rem 0.6rem" }}>Save</button>
+      </form>
       {fundsAdded > 0 && (
         <div className="card" style={{ borderColor: "#2e7d32" }}>
           <p className="unlocked">Added {money(fundsAdded)} to the available balance.</p>
