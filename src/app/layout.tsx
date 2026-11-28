@@ -8,6 +8,21 @@ export const metadata: Metadata = {
   description: "Read pages. Earn loot."
 };
 
+const localization = {
+  signIn: {
+    start: {
+      title: "Sign in to LitLoot",
+      subtitle: "Welcome back"
+    }
+  },
+  signUp: {
+    start: {
+      title: "Create your LitLoot account",
+      subtitle: "Read pages. Earn loot."
+    }
+  }
+};
+
 export default function RootLayout({
   children
 }: {
@@ -15,6 +30,7 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider
+      localization={localization}
       appearance={{
         variables: {
           colorPrimary: "#1565c0",
@@ -23,7 +39,8 @@ export default function RootLayout({
         },
         layout: {
           logoLinkUrl: "/",
-          helpPageUrl: "https://litloot.us"
+          helpPageUrl: "https://litloot.us",
+          unsafe_disableDevelopmentModeWarnings: true
         }
       }}
     >
